@@ -23,7 +23,15 @@ def get_hindex(au_id):
     au = AuthorRetrieval(au_id)
     return au.h_index
 
-
+def filter_country(author_list, country_code):
+    filtered_authors = []
+    for i in author_list:
+        aff_list = AuthorRetrieval(i).affiliation_current
+        for aff_cur in aff_list:
+            if aff_cur.country_code == country_code:
+                filtered_authors.append(i)
+                break
+    return filtered_authors
 
 def clean_text(text):
     text = text.replace('\n'," ") 
