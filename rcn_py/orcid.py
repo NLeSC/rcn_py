@@ -1,7 +1,7 @@
 from crossref.restful import Works
 import requests
 import pandas as pd
-
+import itertools
 
 # Query ORCID by a fullname
 headers = {
@@ -34,9 +34,11 @@ def get_authors(doi):
             if 'ORCID' in i.keys():
                 orcid_id_split = i['ORCID'].split("http://orcid.org/")[1]
                 orcid_list.append(orcid_id_split)
-            else:
+            elif 'given' in i.keys() and 'family' in i.keys():
                 orcid_id_by_name = name_to_orcid_id(i['given']+' '+i['family'])
                 orcid_list.append(orcid_id_by_name)
+            else:
+                continue
             author_names.append(i['given']+' '+i['family'])
         return orcid_list, author_names
     else:
@@ -83,19 +85,21 @@ def get_coauthors(full_name):
     docs = extract_works_section(orcid_record)
     all_orcid = []
     all_names = []
+    coauthor_links = []
         
     for doc in docs:
-        dois, titles = extract_doi(doc)
-        
-        for doi in dois:
-            orcid_list, name_list = get_authors(doi)
-            all_orcid += orcid_list
-            all_names += name_list
+        doi, title = extract_doi(doc)
+        orcid_list, name_list = get_authors(doi)
+
+        coauthor_links = coauthor_links+list(itertools.combinations(orcid_list, 2))
+
+        all_orcid += orcid_list
+        all_names += name_list
         
     df = pd.DataFrame()
     df['orcid'] = all_orcid
     df['name'] = all_names
     new_df = df.drop_duplicates(subset = ['orcid'],keep='first', ignore_index=True)
     
-    return new_df
+    return new_df, coauthor_links
     

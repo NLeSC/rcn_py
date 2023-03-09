@@ -45,7 +45,7 @@ def scholar_search_coauthor(author_fullname):
     return df, link
 
 
-def scholar_build_network(fullname, node, link, au_group):
+def scholar_pyvis_network(fullname, node, link, au_group):
     sources = []
     targets = []
     weights = []
@@ -85,7 +85,7 @@ def scholar_build_network(fullname, node, link, au_group):
     N.show(fullname + ".html")
 
 
-def build_graph(G, sch_id, depth: int, bredth: int, last_author=[]):
+def scholar_build_graph(G, sch_id, depth: int, bredth: int, last_author=[]):
     author_search = scholarly.search_author_id(sch_id)
     author = scholarly.fill(author_search,sections=['coauthors','indices','counts'])
     author_name = author['name']
@@ -98,5 +98,4 @@ def build_graph(G, sch_id, depth: int, bredth: int, last_author=[]):
             G.add_edge(author_name,coauthor['name'])
             if coauthor['name'] not in last_author:
                 last_author.append(author_name)
-                build_graph(G,coauthor['scholar_id'],depth-1,bredth,last_author)
-    
+                scholar_build_graph(G,coauthor['scholar_id'],depth-1,bredth,last_author)
