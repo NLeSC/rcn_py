@@ -23,7 +23,12 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: CPython",
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
-dependencies = []
+dependencies = [
+  "pybliometrics",
+  "crossrefapi",
+  "scholarly",
+
+]
 dynamic = ["version"]
 
 [project.urls]
