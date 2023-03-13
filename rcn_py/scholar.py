@@ -17,14 +17,14 @@ def scholar_search_coauthor(author_fullname):
         docs.append(author['publications'][i]['bib'])
         
     # Filter by year
-    new_docs = []
-    for j in docs:
-            new_docs.append(j)       
+    # new_docs = []
+    # for j in docs:
+    #         new_docs.append(j)       
         
     # Search the authors of each publication
     df = pd.DataFrame()
     link = []
-    for doc in new_docs:
+    for doc in docs:
         search_pub = scholarly.search_pubs(doc['title'])
         pub_info = next(search_pub)
         # Build a dataframe containing authors' name and id
