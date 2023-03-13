@@ -4,11 +4,12 @@ import pandas as pd
 import nltk
 import re
 from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+nltk.download('omw-1.4')
 nltk.download("stopwords")
+nltk.download('wordnet')
 stop_words = set(stopwords.words("english"))
-from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
-ps = PorterStemmer()
+wnl = WordNetLemmatizer()
 from itertools import combinations
 import numpy as np
 import gensim
@@ -65,9 +66,12 @@ def query_orcid_for_record(orcid_id):
 
     response = requests.get(url = requests.utils.requote_uri(ORCID_RECORD_API + orcid_id),
                           headers = {'Accept': 'application/json'})
-    response.raise_for_status()
-    result=response.json()
-    return result
+    if response.ok:
+        response.raise_for_status()
+        result=response.json()
+        return result
+    else:
+        return False
 
 # query author name from ORCID
 def from_orcid_to_name(orcid_id):
@@ -85,7 +89,7 @@ def extract_works_section(orcid_record):
 def extract_doi(work):
     work_summary = work['work-summary'][0]
     title = work_summary['title']['title']['value']
-    dois =  [doi['external-id-value'] for doi in work_summary['external-ids']['external-id'] if doi['external-id-type']=="doi"]
+    dois =  [doi['external-id-value'] for doi in work_summary['external-ids']['external-id'] if doi if doi['external-id-type']=="doi"]
     # if there is a DOI, we can extract the first one
     doi = dois[0] if dois else None
     doi = str(doi)
@@ -165,7 +169,7 @@ def clean_text(text):
             letter = letter.lower()
             pure_text += letter
             
-    corpus_lst = [ps.stem(word) for word in pure_text.split() if word not in stop_words]
+    corpus_lst = [wnl.lemmatize(word) for word in pure_text.split() if word not in stop_words]
     return corpus_lst
     
 

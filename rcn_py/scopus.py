@@ -4,18 +4,18 @@ import numpy as np
 import pandas as pd
 import itertools
 from pyvis.network import Network
-from nltk.stem import PorterStemmer
-from nltk.tokenize import word_tokenize
 import gensim
 from gensim import corpora
 import time
 import nltk
 import re
 from nltk.corpus import stopwords
-
-ps = PorterStemmer()
+from nltk.stem import WordNetLemmatizer
 nltk.download("stopwords")
+nltk.download('wordnet')
 stop_words = set(stopwords.words("english"))
+wnl = WordNetLemmatizer()
+
 
 
 
@@ -47,7 +47,7 @@ def clean_text(text):
             letter = letter.lower()
             pure_text += letter
             
-    corpus_lst = [ps.stem(word) for word in pure_text.split() if word not in stop_words]
+    corpus_lst = [wnl.lemmatize(word) for word in pure_text.split() if word not in stop_words]
     return corpus_lst
 
 
@@ -87,7 +87,7 @@ def lda_cluster(docs):
 
 
 
-def nld_coauthor(author_id, depth, width, node_retrieved):
+def nld_coauthor(author_id, depth, node_retrieved):
     au = AuthorRetrieval(author_id)
     docs = pd.DataFrame(au.get_documents())
     # Get clusters of docs
@@ -107,7 +107,7 @@ def nld_coauthor(author_id, depth, width, node_retrieved):
         coau_id = au_id[i].split(";")
         coau_id = list(map(int, coau_id))
         new_coau_id = []
-        for j in coau_id[:int(width)]:
+        for j in coau_id:
             aff = AuthorRetrieval(j).affiliation_current
             if aff:
                 # Geo-filtering 
@@ -125,19 +125,19 @@ def nld_coauthor(author_id, depth, width, node_retrieved):
         link = link+list(itertools.combinations(sorted_new_coauid, 2))
         # Do recursion (increase depth of the network)
         if depth > 0:
-            for j in sorted_new_coauid[:int(width)]:
+            for j in sorted_new_coauid:
                 if j not in node_retrieved:
-                    nld_coauthor(j, depth-1, width, node_retrieved)
+                    nld_coauthor(j, depth-1, node_retrieved)
     return all_node, link, au_group
 
 
 
-def get_coauthor(author_first, author_last, depth, width):
+def get_coauthor(author_first, author_last, depth):
     s = AuthorSearch('AUTHLAST('+author_last+') and AUTHFIRST('+author_first+')')
     author_id = s.authors[0].eid.split('-')[-1]
     
     node_retrieved = []
-    node, link, au_group = nld_coauthor(author_id, depth, width, node_retrieved)
+    node, link, au_group = nld_coauthor(author_id, depth, node_retrieved)
     sources = []
     targets = []
     weights = []
