@@ -1,5 +1,6 @@
-import orcid
+from rcn_py import orcid
 import pandas as pd
+import requests
 from scholarly import scholarly
 from crossref.restful import Works
 import itertools
@@ -28,11 +29,14 @@ def get_scholar_data(fullname, folderpath):
 
     pub_df = pd.DataFrame()
     for doc in docs:
-        search_pub = scholarly.search_pubs(doc['title'])
-        pub_info = next(search_pub)
-        title.append(pub_info['bib']['title'])
-        coauthor_name.append(pub_info['bib']['author'])
-        abstract.append(pub_info['bib']['abstract'])
+        try:
+            search_pub = scholarly.search_pubs(doc['title'])
+            pub_info = next(search_pub)
+            title.append(pub_info['bib']['title'])
+            coauthor_name.append(pub_info['bib']['author'])
+            abstract.append(pub_info['bib']['abstract'])
+        except:
+            continue
     pub_df['title'] = title
     pub_df['authors'] = coauthor_name
     pub_df['abstarct'] = abstract
@@ -142,10 +146,16 @@ def coauthor_data_from_csv(fullname, folderpath):
         coauthors_id = coauthors_id.split(',')
         for id in coauthors_id:
             id = id.strip('\' ')
-            if id != orcid_id:
-                df2 = get_crossref_data_by_orcid(id)
-                if not df2.empty:
-                    frames.append(df2)
+            orcid_record = orcid.query_orcid_for_record(id)
+            if orcid_record['person']['addresses']['address']:
+                country = orcid_record['person']['addresses']['address'][0]['country']['value']
+            else:
+                country = ''
+            if country == 'NL':
+                if id != orcid_id:
+                    df2 = get_crossref_data_by_orcid(id)
+                    if not df2.empty:
+                        frames.append(df2)
     new_df = pd.concat(frames)
     new_df2 = new_df.drop_duplicates(subset = ['doi'],keep='first', ignore_index=True)
     new_df2.to_csv(folderpath+'/'+fullname+"_coauthors_allpub.csv")
@@ -165,14 +175,15 @@ def get_links_from_csv(fullname, folderpath):
         res = coauthors_id.strip('[')
         res = res.strip(']')
         res = res.split(',')
+        
         if len(res) >=2:
             link = link+list(itertools.combinations(res, 2))
     edge_data = pd.DataFrame()
     sources = []
     targets = []
     for l in link:
-        sources.append(l[0])
-        targets.append(l[1])
+        sources.append(l[0].strip('\' '))
+        targets.append(l[1].strip('\' '))
     edge_data['source'] = sources
     edge_data['target'] = targets
     edge_data.to_csv(folderpath+'/'+fullname+"_coauthors_link.csv")
@@ -200,8 +211,10 @@ def assign_group_node(fullname, folderpath):
         authors_name[i] = authors_name[i].split(',')
         
         for j in range(len(authors_orcid[i])):
-            orcid_id.append(authors_orcid[i][j])
-            name.append(authors_name[i][j])
+            temp_orcid = authors_orcid[i][j].strip('\' ')
+            temp_name = authors_name[i][j].strip('\' ')
+            orcid_id.append(temp_orcid)
+            name.append(temp_name)
             group.append(clusters[dois[i]])
 
     node_data['orcid'] = orcid_id

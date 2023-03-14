@@ -33,7 +33,7 @@ def name_to_orcid_id(name):
     return orcid_id
 
 
-# Extract authors from a doc
+# Extract authors from a doc, and filter authors by country
 def get_authors(doi):
     works = Works()
     metadata = works.doi(doi)
@@ -50,6 +50,46 @@ def get_authors(doi):
             elif 'given' in i.keys() and 'family' in i.keys():
                 orcid_id_by_name = name_to_orcid_id(i['given']+' '+i['family'])
                 orcid_list.append(orcid_id_by_name)
+            else:
+                continue
+            author_names.append(i['given']+' '+i['family'])
+        return orcid_list, author_names
+    else:
+        return [],[]
+
+
+
+# Extract authors from a doc, and filter authors by country
+# country_abb should be upper case, for example, 'NL'
+def get_authors_one_country(doi, country_abb):
+    works = Works()
+    metadata = works.doi(doi)
+    # It's possible that the acquired  
+    if (metadata) and ('author' in metadata.keys()):
+        authors = metadata['author']
+        orcid_list = []
+        author_names = []
+
+        for i in authors:
+            if 'ORCID' in i.keys():
+                orcid_id_split = i['ORCID'].split("http://orcid.org/")[1]
+                orcid_record = query_orcid_for_record(orcid_id_split)
+                if orcid_record['person']['addresses']['address']:
+                    country = orcid_record['person']['addresses']['address'][0]['country']['value']
+                else:
+                    country = ''
+                if country == country_abb:
+                    orcid_list.append(orcid_id_split)
+            elif 'given' in i.keys() and 'family' in i.keys():
+                
+                orcid_id_by_name = name_to_orcid_id(i['given']+' '+i['family'])
+                orcid_record = query_orcid_for_record(orcid_id_by_name)
+                if orcid_record['person']['addresses']['address']:
+                    country = orcid_record['person']['addresses']['address'][0]['country']['value']
+                else:
+                    country = ''
+                if country == country_abb:
+                    orcid_list.append(orcid_id_by_name)
             else:
                 continue
             author_names.append(i['given']+' '+i['family'])
