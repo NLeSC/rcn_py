@@ -197,7 +197,7 @@ def assign_group_node(fullname, folderpath):
     authors_orcid = all_df['author_orcid']
     authors_name = all_df['authors']
 
-    clusters = orcid.orcid_lda_cluster(dois)
+    clusters, idx2topics = orcid.orcid_lda_cluster(dois)
     node_data = pd.DataFrame()
     orcid_id = []
     name = []
@@ -220,6 +220,7 @@ def assign_group_node(fullname, folderpath):
     node_data['orcid'] = orcid_id
     node_data['name'] = name
     node_data['group'] = group
+    node_data['topics'] = idx2topics[group]
     
     new_node_data = node_data.drop_duplicates(subset = ['orcid'],keep='first', ignore_index=True)
 
