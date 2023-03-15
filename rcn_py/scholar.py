@@ -25,13 +25,16 @@ def scholar_search_coauthor(author_fullname):
     df = pd.DataFrame()
     link = []
     for doc in docs:
-        search_pub = scholarly.search_pubs(doc['title'])
-        pub_info = next(search_pub)
-        # Build a dataframe containing authors' name and id
-        temp_df = pd.DataFrame()
-        temp_df['name'] = pub_info['bib']['author']
-        temp_df['id'] = pub_info['author_id']
-        
+        try:
+            search_pub = scholarly.search_pubs(doc['title'])
+        except:
+            continue
+        else:
+            pub_info = next(search_pub)
+            # Build a dataframe containing authors' name and id
+            temp_df = pd.DataFrame()
+            temp_df['name'] = pub_info['bib']['author']
+            temp_df['id'] = pub_info['author_id']
         # Build links
         id_list = temp_df['id']
         id_list_notnull = [i for i in id_list if i != '']

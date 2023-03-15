@@ -5,11 +5,14 @@ import nltk
 import re
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from nltk.stem import PorterStemmer
 nltk.download('omw-1.4')
 nltk.download("stopwords")
 nltk.download('wordnet')
 stop_words = set(stopwords.words("english"))
 wnl = WordNetLemmatizer()
+ps = PorterStemmer()
+
 from itertools import combinations
 import numpy as np
 import gensim
@@ -118,6 +121,7 @@ def from_orcid_to_name(orcid_id):
     orcid_record = query_orcid_for_record(orcid_id)
     name_attr = orcid_record['person']['name']
     name = name_attr['given-names']['value'] + ' ' + name_attr['family-name']['value']
+    return name
 
 
 # Extract works from ORCID
@@ -143,6 +147,7 @@ def orcid_get_coauthors(full_name):
     all_orcid = []
     all_names = []
     all_group = []
+    all_topic = []
     coauthor_links = []
 
     # LDA topic modeling
@@ -150,7 +155,7 @@ def orcid_get_coauthors(full_name):
     for doc in docs:
         doi, title = extract_doi(doc)
         doi_list.append(doi)
-    cluster_dict = orcid_lda_cluster(doi_list)
+    cluster_dict, idx2topics = orcid_lda_cluster(doi_list)
         
     for doc in docs:
         doi, title = extract_doi(doc)
@@ -160,6 +165,7 @@ def orcid_get_coauthors(full_name):
         filtered_orcid_list = []
         filtered_name_list = []
         author_group_list = []
+        author_topics = []
         for i in range(len(orcid_list)):
             # orcid_record = orcid.query_orcid_for_record(orcid_list[i])
             # if orcid_record['person']['addresses']['address']:
@@ -170,6 +176,7 @@ def orcid_get_coauthors(full_name):
                 filtered_orcid_list.append(orcid_list[i])
                 filtered_name_list.append(name_list[i])
                 author_group_list.append(doc_group)
+                author_topics.append(idx2topics[doc_group])
 
         # Combination
         if len(filtered_orcid_list) >=2:
@@ -178,6 +185,7 @@ def orcid_get_coauthors(full_name):
         all_orcid += filtered_orcid_list
         all_names += filtered_name_list
         all_group += author_group_list
+        all_topic += author_topics
 
     group_temp = []
     new_group_num = []
@@ -190,6 +198,7 @@ def orcid_get_coauthors(full_name):
     df['orcid'] = all_orcid
     df['name'] = all_names
     df['group'] = new_group_num
+    df['topics'] = all_topic
 
     new_df = df.drop_duplicates(subset = ['orcid'],keep='first', ignore_index=True)
     
@@ -209,9 +218,22 @@ def clean_text(text):
             letter = letter.lower()
             pure_text += letter
             
-    corpus_lst = [wnl.lemmatize(word) for word in pure_text.split() if word not in stop_words]
+    corpus_lst = [ps.stem(word) for word in pure_text.split() if word not in stop_words]
     return corpus_lst
     
+
+def lemmatize_stemming(text):
+    return ps.stem(WordNetLemmatizer().lemmatize(text, pos='v'))
+
+# Tokenize and lemmatize
+def preprocess(text):
+    result=[]
+    for token in gensim.utils.simple_preprocess(text) :
+        if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3:
+            result.append(lemmatize_stemming(token))
+            
+    return result
+
 
 def orcid_lda_cluster(dois):
     
@@ -219,38 +241,47 @@ def orcid_lda_cluster(dois):
     clusters = {}
     works = Works()
     for i in dois:
-        w = works.doi(i)
-        if 'abstract' in w.keys():
-            cleaned_abs_corpus.append(clean_text(w['abstract']))
-        elif 'title' in w.keys() and w['title']:
-            cleaned_abs_corpus.append(clean_text(w['title'][0]))
-        else:
-            cleaned_abs_corpus.append([])
+            w = works.doi(i)
+            if 'abstract' in w.keys():
+                cleaned_abs_corpus.append(preprocess(w['abstract']))
+            elif 'title' in w.keys() and w['title']:
+                cleaned_abs_corpus.append(preprocess(w['title'][0]))
+            else:
+                cleaned_abs_corpus.append([])
 
-    num_topics = 10
-    dictionary = corpora.Dictionary(cleaned_abs_corpus) 
+    dictionary = gensim.corpora.Dictionary(cleaned_abs_corpus) 
     corpus = [dictionary.doc2bow(text) for text in cleaned_abs_corpus]
 
-    passes= 150
-    np.random.seed(1)
+    # np.random.seed(1)
 
-    lda_model = gensim.models.LdaMulticore(corpus=corpus,
-                                           id2word=dictionary,
-                                           num_topics=num_topics,
-                                           chunksize= 4000, 
-                                           batch= True,
-                                           minimum_probability=0.001,
-                                           iterations=350,
-                                           passes=passes)
-    group_num = []
+    # lda_model = gensim.models.LdaMulticore(corpus=corpus,
+    #                                        id2word=dictionary,
+    #                                        num_topics=num_topics,
+    #                                        chunksize= 4000, 
+    #                                        batch= True,
+    #                                        minimum_probability=0.001,
+    #                                        iterations=350,
+    #                                        passes=passes)
+
+    lda_model =  gensim.models.LdaMulticore(corpus, 
+                                   num_topics = 8, 
+                                   id2word = dictionary,                                    
+                                   passes = 10,
+                                   workers = 2)
+    
+    idx2topics = {}
+    for idx, topic in lda_model.print_topics(-1):
+        idx2topics[idx] = topic
+ 
     for i in range(len(cleaned_abs_corpus)):
         scores = []
+        topics = []
         for j1,j2 in lda_model[corpus[i]]:
+            topics.append(j1)
             scores.append(j2)
             clusters[dois[i]] = scores.index(max(scores))
-        group_num.append(scores.index(max(scores)))
         
-    return clusters
+    return clusters, idx2topics
 
 def orcid_network(name, author_df, link):
     
