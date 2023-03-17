@@ -133,7 +133,17 @@ def extract_works_section(orcid_record):
 def extract_doi(work):
     work_summary = work['work-summary'][0]
     title = work_summary['title']['title']['value']
-    dois =  [doi['external-id-value'] for doi in work_summary['external-ids']['external-id'] if doi if doi['external-id-type']=="doi"]
+
+    dois = []
+    if work_summary['external-ids']:
+        if 'external-id' in work_summary['external-ids'].keys():
+            for ws in work_summary['external-ids']['external-id']:
+                if 'external-id-type' in ws.keys() and 'external-id-value' in ws.keys():
+                    if ws['external-id-type']=="doi":
+                        dois.append(ws['external-id-value'])
+
+    # dois =  [doi['external-id-value'] for doi in work_summary['external-ids']['external-id'] if doi if doi['external-id-type']=="doi"]
+    
     # if there is a DOI, we can extract the first one
     doi = dois[0] if dois else None
     doi = str(doi)
