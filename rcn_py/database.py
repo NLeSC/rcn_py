@@ -173,7 +173,8 @@ def build_network_database(name):
     cur = con.cursor()
     clusters, idx2topics = pub_cluster(cur)
     link = fetch_relationships(cur)
-    all_authors = cur.execute("SELECT orcid, name FROM authors")
+    res_all_authors = cur.execute("SELECT orcid, name FROM authors")
+    all_authors = res_all_authors.fetchall()
     group = author_cluster(cur, clusters)
     
     sources = []
