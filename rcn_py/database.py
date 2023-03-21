@@ -10,21 +10,22 @@ from pyvis.network import Network
 
 from rcn_py import orcid
 
-'''
+"""
     author-paper table
     author info table
     publication table
-'''
+"""
+
 
 def insert_database(orcid_id, fullname):
-    if len(orcid_id)==0:
+    if len(orcid_id) == 0:
         orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
     # probably there is null value in every stage, which will occure an error
-    if len(orcid_record['person']['addresses']['address']) > 0:
-        country = orcid_record['person']['addresses']['address'][0]['country']['value']
+    if len(orcid_record["person"]["addresses"]["address"]) > 0:
+        country = orcid_record["person"]["addresses"]["address"][0]["country"]["value"]
     else:
-        country = ''
+        country = ""
 
     docs = orcid.extract_works_section(orcid_record)
 
@@ -45,21 +46,25 @@ def insert_database(orcid_id, fullname):
         # orcid_list, name_list = orcid.get_authors(doi)
 
         if w:
-            if 'abstract' in w.keys():
-                abstract = w['abstract']
+            if "abstract" in w.keys():
+                abstract = w["abstract"]
             else:
-                abstract = ''
+                abstract = ""
         else:
-            abstract = ''
+            abstract = ""
 
         paper_value.append((doi, title, abstract))
 
     # author table (orcid, name, country)
-    cur.execute("INSERT or IGNORE INTO authors VALUES (?, ?, ?)", (orcid_id, fullname, country))
+    cur.execute(
+        "INSERT or IGNORE INTO authors VALUES (?, ?, ?)", (orcid_id, fullname, country)
+    )
     # publication table (doi, title, abstract)
     cur.executemany("INSERT or IGNORE INTO publications VALUES (?, ?, ?)", paper_value)
     # author-paper table (orcid, doi)
-    cur.executemany("INSERT or IGNORE INTO author_publication VALUES (?, ?)", orcid_doi_value)
+    cur.executemany(
+        "INSERT or IGNORE INTO author_publication VALUES (?, ?)", orcid_doi_value
+    )
     con.commit()
     con.close()
 
@@ -96,15 +101,22 @@ def insert_cocoauthors(database):
         for i in range(len(orcid_list[:10])):
             orcid_record = orcid.query_orcid_for_record(orcid_list[i])
             # probably there is null value in every stage, which will occure an error
-            if len(orcid_record['person']['addresses']['address']) > 0:
-                country = orcid_record['person']['addresses']['address'][0]['country']['value']
+            if len(orcid_record["person"]["addresses"]["address"]) > 0:
+                country = orcid_record["person"]["addresses"]["address"][0]["country"][
+                    "value"
+                ]
             else:
-                country = ''
+                country = ""
             orcid_doi_value.append((orcid_list[i], doi))
-            cur.execute("INSERT or IGNORE INTO authors VALUES (?, ?, ?)", (orcid_list[i], name_list[i], country))
+            cur.execute(
+                "INSERT or IGNORE INTO authors VALUES (?, ?, ?)",
+                (orcid_list[i], name_list[i], country),
+            )
 
         # cur.executemany("INSERT or IGNORE INTO authors VALUES (?, ?, ?)", author_info)
-        cur.executemany("INSERT or IGNORE INTO author_publication VALUES (?, ?)", orcid_doi_value)
+        cur.executemany(
+            "INSERT or IGNORE INTO author_publication VALUES (?, ?)", orcid_doi_value
+        )
 
     con.commit()
     con.close()
@@ -118,15 +130,13 @@ def pub_cluster(cur):
     dois = []
     for pub in all_pub:
         dois.append(pub[0])
-        cleaned_corpus.append(orcid.preprocess(pub[1]+' ' +pub[2]))
+        cleaned_corpus.append(orcid.preprocess(pub[1] + " " + pub[2]))
     dictionary = gensim.corpora.Dictionary(cleaned_corpus)
     corpus = [dictionary.doc2bow(text) for text in cleaned_corpus]
 
-    lda_model =  gensim.models.LdaMulticore(corpus,
-                                    num_topics = 8,
-                                    id2word = dictionary,
-                                    passes = 10,
-                                    workers = 2)
+    lda_model = gensim.models.LdaMulticore(
+        corpus, num_topics=8, id2word=dictionary, passes=10, workers=2
+    )
 
     idx2topics = {}
     for idx, topic in lda_model.print_topics(-1):
@@ -136,7 +146,7 @@ def pub_cluster(cur):
     for i in range(len(cleaned_corpus)):
         scores = []
         topics = []
-        for j1,j2 in lda_model[corpus[i]]:
+        for j1, j2 in lda_model[corpus[i]]:
             topics.append(j1)
             scores.append(j2)
             clusters[dois[i]] = scores.index(max(scores))
@@ -144,29 +154,32 @@ def pub_cluster(cur):
 
 
 def fetch_relationships(cur):
-    author_res = cur.execute("SELECT GROUP_CONCAT(orcid, ',') AS orcids FROM author_publication  WHERE doi != 'None' GROUP BY doi HAVING COUNT(*) > 1")
+    author_res = cur.execute(
+        "SELECT GROUP_CONCAT(orcid, ',') AS orcids FROM author_publication  WHERE doi != 'None' GROUP BY doi HAVING COUNT(*) > 1"
+    )
     all_authors = author_res.fetchall()
     coauthor_links = []
     for au in all_authors:
-        au = au[0].strip('(\')')
-        au = au.split(',')
-        coauthor_links = coauthor_links+list(combinations(au, 2))
+        au = au[0].strip("(')")
+        au = au.split(",")
+        coauthor_links = coauthor_links + list(combinations(au, 2))
     return coauthor_links
 
 
 def author_cluster(cur, clusters):
-    author_res = cur.execute("SELECT orcid, GROUP_CONCAT(doi,',') FROM author_publication WHERE doi != 'None' GROUP BY orcid")
+    author_res = cur.execute(
+        "SELECT orcid, GROUP_CONCAT(doi,',') FROM author_publication WHERE doi != 'None' GROUP BY orcid"
+    )
     orc_doi = author_res.fetchall()
     au_group = {}
     for au_pub in orc_doi:
-        pubs = au_pub[1].strip('\'')
-        doi_list = pubs.split(',')
+        pubs = au_pub[1].strip("'")
+        doi_list = pubs.split(",")
         groups = []
         for doi in doi_list:
             groups.append(clusters[doi])
-        au_group[au_pub[0]] = max(groups,key=groups.count)
+        au_group[au_pub[0]] = max(groups, key=groups.count)
     return au_group
-
 
 
 def build_network_database(name):
@@ -207,12 +220,13 @@ def build_network_database(name):
         N.add_node(dst, dst, title=dst, group=group[dst])
         N.add_edge(src, dst, value=w)
 
-
     # add neighbor data to node hover data
     for node in N.nodes:
         node["title"] = node["id"]
-        node["label"] = cur.execute("SELECT name FROM authors WHERE orcid == ?", (node['id'],)).fetchall()[0][0]
+        node["label"] = cur.execute(
+            "SELECT name FROM authors WHERE orcid == ?", (node["id"],)
+        ).fetchall()[0][0]
 
     cur.close()
 
-    N.show(name+".html")
+    N.show(name + ".html")
