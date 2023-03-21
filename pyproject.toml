@@ -27,7 +27,6 @@ dependencies = [
   "pybliometrics",
   "crossrefapi",
   "scholarly",
-
 ]
 dynamic = ["version"]
 
@@ -41,6 +40,7 @@ path = "rcn_py/__about__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
+  "ruff",
   "pytest",
   "pytest-cov",
 ]
