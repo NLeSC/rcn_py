@@ -1,20 +1,22 @@
 import sqlite3
-import gensim
-from itertools import combinations
-from crossref.restful import Works
 import sys
+from itertools import combinations
+
+import gensim
+from crossref.restful import Works
+
 sys.path.append("..")
-from rcn_py import orcid
 from pyvis.network import Network
 
+from rcn_py import orcid
 
-''' 
+'''
     author-paper table
     author info table
     publication table
 '''
 
-def insert_database(orcid_id, fullname): 
+def insert_database(orcid_id, fullname):
     if len(orcid_id)==0:
         orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
@@ -25,7 +27,7 @@ def insert_database(orcid_id, fullname):
         country = ''
 
     docs = orcid.extract_works_section(orcid_record)
-    
+
     con = sqlite3.connect("tutorial.db")
     cur = con.cursor()
     works = Works()
@@ -41,7 +43,7 @@ def insert_database(orcid_id, fullname):
 
         w = works.doi(doi)
         # orcid_list, name_list = orcid.get_authors(doi)
-        
+
         if w:
             if 'abstract' in w.keys():
                 abstract = w['abstract']
@@ -51,7 +53,7 @@ def insert_database(orcid_id, fullname):
             abstract = ''
 
         paper_value.append((doi, title, abstract))
-        
+
     # author table (orcid, name, country)
     cur.execute("INSERT or IGNORE INTO authors VALUES (?, ?, ?)", (orcid_id, fullname, country))
     # publication table (doi, title, abstract)
@@ -62,7 +64,7 @@ def insert_database(orcid_id, fullname):
     con.close()
 
     return "Done"
-    
+
 
 # Retrieve the coauthors for publications of the person
 def insert_coauthors_pub(fullname):
@@ -75,7 +77,7 @@ def insert_coauthors_pub(fullname):
     for doc in docs:
         doi, title = orcid.extract_doi(doc)
         orcid_list, name_list = orcid.get_authors(doi)
-        for i in range(len(orcid_list)): 
+        for i in range(len(orcid_list)):
             insert_database(orcid_list[i], name_list[i])
 
     return "Done!"
@@ -105,7 +107,7 @@ def insert_cocoauthors(database):
         cur.executemany("INSERT or IGNORE INTO author_publication VALUES (?, ?)", orcid_doi_value)
 
     con.commit()
-    con.close()   
+    con.close()
     return "Done"
 
 
@@ -117,19 +119,19 @@ def pub_cluster(cur):
     for pub in all_pub:
         dois.append(pub[0])
         cleaned_corpus.append(orcid.preprocess(pub[1]+' ' +pub[2]))
-    dictionary = gensim.corpora.Dictionary(cleaned_corpus) 
+    dictionary = gensim.corpora.Dictionary(cleaned_corpus)
     corpus = [dictionary.doc2bow(text) for text in cleaned_corpus]
 
-    lda_model =  gensim.models.LdaMulticore(corpus, 
-                                    num_topics = 8, 
-                                    id2word = dictionary,                                    
+    lda_model =  gensim.models.LdaMulticore(corpus,
+                                    num_topics = 8,
+                                    id2word = dictionary,
                                     passes = 10,
                                     workers = 2)
-        
+
     idx2topics = {}
     for idx, topic in lda_model.print_topics(-1):
         idx2topics[idx] = topic
-    
+
     clusters = {}
     for i in range(len(cleaned_corpus)):
         scores = []
@@ -150,7 +152,7 @@ def fetch_relationships(cur):
         au = au.split(',')
         coauthor_links = coauthor_links+list(combinations(au, 2))
     return coauthor_links
-          
+
 
 def author_cluster(cur, clusters):
     author_res = cur.execute("SELECT orcid, GROUP_CONCAT(doi,',') FROM author_publication WHERE doi != 'None' GROUP BY orcid")
@@ -164,7 +166,7 @@ def author_cluster(cur, clusters):
             groups.append(clusters[doi])
         au_group[au_pub[0]] = max(groups,key=groups.count)
     return au_group
-    
+
 
 
 def build_network_database(name):
@@ -175,7 +177,7 @@ def build_network_database(name):
     res_all_authors = cur.execute("SELECT orcid, name FROM authors")
     all_authors = res_all_authors.fetchall()
     group = author_cluster(cur, clusters)
-    
+
     sources = []
     targets = []
     weights = []
@@ -187,8 +189,8 @@ def build_network_database(name):
 
     id2name = {}
     for author in all_authors:
-        id2name[author[0]] = author[1]    
-    
+        id2name[author[0]] = author[1]
+
     # Pyvis network
     N = Network(height=800, width="100%", bgcolor="#222222", font_color="white")
     N.toggle_hide_edges_on_drag(False)

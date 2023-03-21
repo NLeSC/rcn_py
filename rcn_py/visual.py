@@ -1,7 +1,7 @@
-from rcn_py import data_storage
 import networkx as nx
 from pyvis.network import Network
 
+from rcn_py import data_storage
 
 
 # pyvis

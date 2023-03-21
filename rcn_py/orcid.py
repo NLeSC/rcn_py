@@ -1,11 +1,12 @@
-from crossref.restful import Works
-import requests
-import pandas as pd
-import nltk
 import re
+
+import nltk
+import pandas as pd
+import requests
+from crossref.restful import Works
 from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from nltk.stem import PorterStemmer
+from nltk.stem import PorterStemmer, WordNetLemmatizer
+
 nltk.download('omw-1.4')
 nltk.download("stopwords")
 nltk.download('wordnet')
@@ -14,6 +15,7 @@ wnl = WordNetLemmatizer()
 ps = PorterStemmer()
 
 from itertools import combinations
+
 import gensim
 from pyvis.network import Network
 
@@ -23,7 +25,7 @@ headers = {
 }
 def name_to_orcid_id(name):
     orcid_id = None
-    
+
     params = (
         ('q',name),
     )
@@ -38,7 +40,7 @@ def name_to_orcid_id(name):
 def get_authors(doi):
     works = Works()
     metadata = works.doi(doi)
-    # It's possible that the acquired  
+    # It's possible that the acquired
     if (metadata) and ('author' in metadata.keys()):
         authors = metadata['author']
         orcid_list = []
@@ -65,7 +67,7 @@ def get_authors(doi):
 def get_authors_one_country(doi, country_abb):
     works = Works()
     metadata = works.doi(doi)
-    # It's possible that the acquired  
+    # It's possible that the acquired
     if (metadata) and ('author' in metadata.keys()):
         authors = metadata['author']
         orcid_list = []
@@ -82,7 +84,7 @@ def get_authors_one_country(doi, country_abb):
                 if country == country_abb:
                     orcid_list.append(orcid_id_split)
             elif 'given' in i.keys() and 'family' in i.keys():
-                
+
                 orcid_id_by_name = name_to_orcid_id(i['given']+' '+i['family'])
                 orcid_record = query_orcid_for_record(orcid_id_by_name)
                 if orcid_record['person']['addresses']['address']:
@@ -141,7 +143,7 @@ def extract_doi(work):
                         dois.append(ws['external-id-value'])
 
     # dois =  [doi['external-id-value'] for doi in work_summary['external-ids']['external-id'] if doi if doi['external-id-type']=="doi"]
-    
+
     # if there is a DOI, we can extract the first one
     doi = dois[0] if dois else None
     doi = str(doi)
@@ -151,7 +153,7 @@ def orcid_get_coauthors(full_name):
     orcid_id = name_to_orcid_id(full_name)
     orcid_record = query_orcid_for_record(orcid_id)
     docs = extract_works_section(orcid_record)
-    
+
     all_orcid = []
     all_names = []
     all_group = []
@@ -164,12 +166,12 @@ def orcid_get_coauthors(full_name):
         doi, title = extract_doi(doc)
         doi_list.append(doi)
     cluster_dict, idx2topics = orcid_lda_cluster(doi_list)
-        
+
     for doc in docs:
         doi, title = extract_doi(doc)
         doc_group = cluster_dict[doi]
         orcid_list, name_list = get_authors(doi)
-        # Geo-filtering 
+        # Geo-filtering
         filtered_orcid_list = []
         filtered_name_list = []
         author_group_list = []
@@ -201,7 +203,7 @@ def orcid_get_coauthors(full_name):
         if g not in group_temp:
             group_temp.append(g)
         new_group_num.append(group_temp.index(g))
-        
+
     df = pd.DataFrame()
     df['orcid'] = all_orcid
     df['name'] = all_names
@@ -209,15 +211,15 @@ def orcid_get_coauthors(full_name):
     df['topics'] = all_topic
 
     new_df = df.drop_duplicates(subset = ['orcid'],keep='first', ignore_index=True)
-    
+
     return new_df, coauthor_links
 
 def clean_text(text):
-    text = text.replace('\n'," ") 
-    text = re.sub(r"-", " ", text) 
-    text = re.sub(r"\d+/\d+/\d+", "", text) 
-    text = re.sub(r"[0-2]?[0-9]:[0-6][0-9]", "", text) 
-    text = re.sub(r"[\w]+@[\.\w]+", "", text) 
+    text = text.replace('\n'," ")
+    text = re.sub(r"-", " ", text)
+    text = re.sub(r"\d+/\d+/\d+", "", text)
+    text = re.sub(r"[0-2]?[0-9]:[0-6][0-9]", "", text)
+    text = re.sub(r"[\w]+@[\.\w]+", "", text)
     text = re.sub(r"/[a-zA-Z]*[:\//\]*[A-Za-z0-9\-_]+\.+[A-Za-z0-9\.\/%&=\?\-_]+/i", "", text)
     pure_text = ''
     for letter in text:
@@ -225,10 +227,10 @@ def clean_text(text):
         if letter.isalpha() or letter==' ':
             letter = letter.lower()
             pure_text += letter
-            
+
     corpus_lst = [ps.stem(word) for word in pure_text.split() if word not in stop_words]
     return corpus_lst
-    
+
 
 def lemmatize_stemming(text):
     return ps.stem(WordNetLemmatizer().lemmatize(text, pos='v'))
@@ -239,12 +241,12 @@ def preprocess(text):
     for token in gensim.utils.simple_preprocess(text) :
         if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3:
             result.append(lemmatize_stemming(token))
-            
+
     return result
 
 
 def orcid_lda_cluster(dois):
-    
+
     cleaned_abs_corpus = []
     clusters = {}
     works = Works()
@@ -257,7 +259,7 @@ def orcid_lda_cluster(dois):
             else:
                 cleaned_abs_corpus.append([])
 
-    dictionary = gensim.corpora.Dictionary(cleaned_abs_corpus) 
+    dictionary = gensim.corpora.Dictionary(cleaned_abs_corpus)
     corpus = [dictionary.doc2bow(text) for text in cleaned_abs_corpus]
 
     # np.random.seed(1)
@@ -265,22 +267,22 @@ def orcid_lda_cluster(dois):
     # lda_model = gensim.models.LdaMulticore(corpus=corpus,
     #                                        id2word=dictionary,
     #                                        num_topics=num_topics,
-    #                                        chunksize= 4000, 
+    #                                        chunksize= 4000,
     #                                        batch= True,
     #                                        minimum_probability=0.001,
     #                                        iterations=350,
     #                                        passes=passes)
 
-    lda_model =  gensim.models.LdaMulticore(corpus, 
-                                   num_topics = 8, 
-                                   id2word = dictionary,                                    
+    lda_model =  gensim.models.LdaMulticore(corpus,
+                                   num_topics = 8,
+                                   id2word = dictionary,
                                    passes = 10,
                                    workers = 2)
-    
+
     idx2topics = {}
     for idx, topic in lda_model.print_topics(-1):
         idx2topics[idx] = topic
- 
+
     for i in range(len(cleaned_abs_corpus)):
         scores = []
         topics = []
@@ -288,11 +290,11 @@ def orcid_lda_cluster(dois):
             topics.append(j1)
             scores.append(j2)
             clusters[dois[i]] = scores.index(max(scores))
-        
+
     return clusters, idx2topics
 
 def orcid_network(name, author_df, link):
-    
+
     sources = []
     targets = []
     weights = []
@@ -307,7 +309,7 @@ def orcid_network(name, author_df, link):
     for index in range(author_df.shape[0]):
         id2name[author_df['orcid'][index]] = author_df['name'][index]
         id2group[author_df['orcid'][index]] = int(author_df['group'][index])
-    
+
     # Pyvis network
     N = Network(height=800, width="100%", bgcolor="#222222", font_color="white")
     N.toggle_hide_edges_on_drag(False)
@@ -329,6 +331,6 @@ def orcid_network(name, author_df, link):
     for node in N.nodes:
         node["title"] = node["id"]
         node["label"] = id2name[node['id']]
-       
+
 
     N.show(name+".html")

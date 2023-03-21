@@ -1,13 +1,16 @@
-from rcn_py import orcid
-import pandas as pd
-from scholarly import scholarly
-from crossref.restful import Works
 import itertools
+
 import networkx as nx
-from pyvis.network import Network
 import nltk
+import pandas as pd
+from crossref.restful import Works
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
+from pyvis.network import Network
+from scholarly import scholarly
+
+from rcn_py import orcid
+
 nltk.download("stopwords")
 nltk.download('wordnet')
 stop_words = set(stopwords.words("english"))

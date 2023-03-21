@@ -1,8 +1,8 @@
-import pandas as pd
 import itertools
+
+import pandas as pd
 from pyvis.network import Network
 from scholarly import scholarly
-
 
 
 # use scholarly package
@@ -10,17 +10,17 @@ def scholar_search_coauthor(author_fullname):
     # Search author info by their name
     search_query_author = scholarly.search_author(author_fullname)
     author = scholarly.fill(next(search_query_author))
-    
+
     # Get all the publication info of the author
     docs = []
     for i in range(len(author['publications'])):
         docs.append(author['publications'][i]['bib'])
-        
+
     # Filter by year
     # new_docs = []
     # for j in docs:
-    #         new_docs.append(j)       
-        
+    #         new_docs.append(j)
+
     # Search the authors of each publication
     df = pd.DataFrame()
     link = []
@@ -39,12 +39,12 @@ def scholar_search_coauthor(author_fullname):
         id_list = temp_df['id']
         id_list_notnull = [i for i in id_list if i != '']
         link = link+list(itertools.combinations(id_list_notnull, 2))
-        
+
         # Join dfs
-        frames = pd.concat([df, temp_df], ignore_index=True)      
+        frames = pd.concat([df, temp_df], ignore_index=True)
         df_notnull = frames[frames['id'] != '']
         df = df_notnull.drop_duplicates(subset = ['id'],keep='first', ignore_index=True)
-        
+
     return df, link
 
 
@@ -57,7 +57,7 @@ def scholar_pyvis_network(fullname, node, link, au_group):
         sources.append(i[0])
         targets.append(i[1])
         weights.append(link.count(i))
-    
+
     # Pyvis network
     N = Network(height=800, width="100%", bgcolor="#222222", font_color="white")
     N.toggle_hide_edges_on_drag(False)
@@ -82,7 +82,7 @@ def scholar_pyvis_network(fullname, node, link, au_group):
         node["title"] = "Link to the author’s page:\n" + scholarly.search_author_id(node['id'])['url_picture']
         node["value"] = scholarly.search_author_id(node['id'])['citedby']
         node["label"] = scholarly.search_author_id(node['id'])['name']
-       
+
 
     N.show(fullname + ".html")
 
