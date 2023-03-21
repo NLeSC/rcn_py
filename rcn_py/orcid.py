@@ -1,11 +1,14 @@
 import re
+from itertools import combinations
 
+import gensim
 import nltk
 import pandas as pd
 import requests
 from crossref.restful import Works
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, WordNetLemmatizer
+from pyvis.network import Network
 
 nltk.download("omw-1.4")
 nltk.download("stopwords")
@@ -14,10 +17,7 @@ stop_words = set(stopwords.words("english"))
 wnl = WordNetLemmatizer()
 ps = PorterStemmer()
 
-from itertools import combinations
 
-import gensim
-from pyvis.network import Network
 
 # Query ORCID by a fullname
 headers = {
@@ -150,8 +150,7 @@ def extract_doi(work):
                     if ws["external-id-type"] == "doi":
                         dois.append(ws["external-id-value"])
 
-    # dois =  [doi['external-id-value'] for doi in work_summary['external-ids']['external-id'] if doi if doi['external-id-type']=="doi"]
-
+   
     # if there is a DOI, we can extract the first one
     doi = dois[0] if dois else None
     doi = str(doi)
