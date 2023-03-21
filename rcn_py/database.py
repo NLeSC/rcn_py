@@ -68,7 +68,7 @@ def insert_database(orcid_id, fullname):
 def insert_coauthors_pub(fullname):
     orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
-    if orcid_record == False:
+    if orcid_record is False:
         return
     docs = orcid.extract_works_section(orcid_record)
 
@@ -90,7 +90,6 @@ def insert_cocoauthors(database):
         orcid_list, name_list = orcid.get_authors(doi[0])
         if len(orcid_list) <= 1:
             continue
-        country_list = []
         orcid_doi_value = []
         for i in range(len(orcid_list[:10])):
             orcid_record = orcid.query_orcid_for_record(orcid_list[i])

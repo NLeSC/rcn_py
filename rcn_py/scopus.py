@@ -64,7 +64,7 @@ def lda_cluster(docs):
     dictionary = corpora.Dictionary(cleaned_abs_corpus) 
     corpus = [dictionary.doc2bow(text) for text in cleaned_abs_corpus]
 
-    t0= time.time()
+    time.time()
     passes= 150
     np.random.seed(1)
 

@@ -14,9 +14,7 @@ wnl = WordNetLemmatizer()
 ps = PorterStemmer()
 
 from itertools import combinations
-import numpy as np
 import gensim
-from gensim import corpora
 from pyvis.network import Network
 
 # Query ORCID by a fullname

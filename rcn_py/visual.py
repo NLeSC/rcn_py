@@ -9,17 +9,17 @@ def pyvis_network_by_datafile(fullname, folderpath, outputpath):
     node_data = data_storage.assign_group_node(fullname, folderpath)
     edge_data, link = data_storage.get_links_from_csv(fullname, folderpath)
     all_node_in_link = edge_data['source'].values.tolist()+ edge_data['target'].values.tolist()
-    
+
     # getting weights of links
     weights = []
     for i in link:
         weights.append(link.count(i))
     edge_data['weight'] = weights
-    
+
     # getting a group id
     groups = node_data.groupby("group")["orcid"].apply(list).reset_index()
     groups["group"] = groups.index
-    
+
     # finding group id for each node from groups dataframe
     nodes = node_data.merge(groups, how="left", on=["group"])
     nodes["title"] = node_data[["name"]]
@@ -66,25 +66,23 @@ def gephi_network_by_datafile(fullname, folderpath, outputpath):
     node_data = data_storage.assign_group_node(fullname, folderpath)
     edge_data, link = data_storage.get_links_from_csv(fullname, folderpath)
     weights = []
-    
+
     all_node_in_link = edge_data['source'].values.tolist()+ edge_data['target'].values.tolist()
     for i in link:
         weights.append(link.count(i))
     edge_data['weight'] = weights
 
-    edges = zip(edge_data['source'], edge_data['target'], weights)  
-
     # getting a group id
     groups = node_data.groupby("group")["orcid"].apply(list).reset_index()
     groups["group"] = groups.index
-    
+
     # finding group id for each node from groups dataframe
     nodes = node_data.merge(groups, how="left", on=["group"])
     nodes["title"] = node_data[["name"]]
     nodes["label"] = node_data[["name"]]
     nodes = nodes.drop("orcid_y", axis=1).set_index("orcid_x")
 
-    # setting color for each group 
+    # setting color for each group
     colors = ['#1f78b4', '#e08a34', '#643b8a', '#3d7a36', '#a34b43', '#47a68b', 'blue', 'red', 'green', 'black']
     node_color = [colors[n] for n in nodes['group']]
     nodes['color'] = node_color
@@ -94,7 +92,7 @@ def gephi_network_by_datafile(fullname, folderpath, outputpath):
 
     # collecting node attributes for network x
     node_attrs = nodes.to_dict("index")
-    
+
     # creating a network x graph from dataframes
     G = nx.from_pandas_edgelist(edge_data, edge_attr='weight')
     nx.set_node_attributes(G, node_attrs)
@@ -105,5 +103,5 @@ def gephi_network_by_datafile(fullname, folderpath, outputpath):
 
     lastname = fullname.split(' ')[-1]
     out_path = outputpath + '/' + lastname + '.gexf'
-   
+
     nx.write_gexf(G,out_path)

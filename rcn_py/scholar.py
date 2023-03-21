@@ -74,11 +74,10 @@ def scholar_pyvis_network(fullname, node, link, au_group):
         N.add_node(dst, dst, title=dst, group = au_group[dst])
         N.add_edge(src, dst, value=w)
 
-    neighbor_map = N.get_adj_list()
+    N.get_adj_list()
 
     # add neighbor data to node hover data
     for node in N.nodes:
-        neighbors = []
         #node["title"] = " Neighbors: \n" + " \n".join(neighbors)
         node["title"] = "Link to the author’s page:\n" + scholarly.search_author_id(node['id'])['url_picture']
         node["value"] = scholarly.search_author_id(node['id'])['citedby']

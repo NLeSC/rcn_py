@@ -1,6 +1,5 @@
 from rcn_py import orcid
 import pandas as pd
-import requests
 from scholarly import scholarly
 from crossref.restful import Works
 import itertools
@@ -48,7 +47,7 @@ def get_scholar_data(fullname, folderpath):
 def get_crossref_data_by_orcid(orcid_id):
     # Extract author info using ORCID
     orcid_record = orcid.query_orcid_for_record(orcid_id)
-    if orcid_record == False:
+    if orcid_record is False:
         return
     docs = orcid.extract_works_section(orcid_record)
 
@@ -75,7 +74,7 @@ def get_crossref_data_by_orcid(orcid_id):
             abstract.append('')
         coauthor_name.append(name_list)
         coauthor_orcid.append(orcid_list)
-        
+
     pub_df = pd.DataFrame()
     pub_df['title'] = title_list
     pub_df['doi'] = doi_list
@@ -85,16 +84,16 @@ def get_crossref_data_by_orcid(orcid_id):
 
     return pub_df
 
-        
 
-        
+
+
 
 # Store all publication info of one person
 def get_crossref_data_by_name(fullname, folderpath):
     # Extract author info using ORCID
     orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
-    if orcid_record == False:
+    if orcid_record is False:
         return
     docs = orcid.extract_works_section(orcid_record)
 
@@ -121,7 +120,7 @@ def get_crossref_data_by_name(fullname, folderpath):
             abstract.append('')
         coauthor_name.append(name_list)
         coauthor_orcid.append(orcid_list)
-        
+
     pub_df = pd.DataFrame()
     pub_df['title'] = title_list
     pub_df['doi'] = doi_list
@@ -132,7 +131,7 @@ def get_crossref_data_by_name(fullname, folderpath):
     pub_df.to_csv(folderpath+'/'+fullname+"_crossref.csv")
     return pub_df
 
-        
+
 # Get all publications of all coauthors and do de-duplication
 def coauthor_data_from_csv(fullname, folderpath):
     orcid_id = orcid.name_to_orcid_id(fullname)
@@ -160,10 +159,10 @@ def coauthor_data_from_csv(fullname, folderpath):
     new_df2 = new_df.drop_duplicates(subset = ['doi'],keep='first', ignore_index=True)
     new_df2.to_csv(folderpath+'/'+fullname+"_coauthors_allpub.csv")
     return new_df2
-   
-    
-   
-    
+
+
+
+
 
 
 # Read out all co-authorship relationships from stored publication data
@@ -175,7 +174,7 @@ def get_links_from_csv(fullname, folderpath):
         res = coauthors_id.strip('[')
         res = res.strip(']')
         res = res.split(',')
-        
+
         if len(res) >=2:
             link = link+list(itertools.combinations(res, 2))
     edge_data = pd.DataFrame()
@@ -188,7 +187,7 @@ def get_links_from_csv(fullname, folderpath):
     edge_data['target'] = targets
     edge_data.to_csv(folderpath+'/'+fullname+"_coauthors_link.csv")
     return edge_data, link
-    
+
 
 # Group the authors in the stored data, and generate the node dictionary that will be used to build the network
 def assign_group_node(fullname, folderpath):
@@ -209,7 +208,7 @@ def assign_group_node(fullname, folderpath):
         authors_name[i] = authors_name[i].strip('[')
         authors_name[i] = authors_name[i].strip(']')
         authors_name[i] = authors_name[i].split(',')
-        
+
         for j in range(len(authors_orcid[i])):
             temp_orcid = authors_orcid[i][j].strip('\' ')
             temp_name = authors_name[i][j].strip('\' ')
@@ -221,11 +220,11 @@ def assign_group_node(fullname, folderpath):
     node_data['name'] = name
     node_data['group'] = group
     node_data['topics'] = idx2topics[group]
-    
+
     new_node_data = node_data.drop_duplicates(subset = ['orcid'],keep='first', ignore_index=True)
 
     return new_node_data
-    
+
 
 
 def build_network_by_datafile(fullname, folderpath, outputpath):
@@ -235,11 +234,11 @@ def build_network_by_datafile(fullname, folderpath, outputpath):
     for i in link:
         weights.append(link.count(i))
     edge_data['weight'] = weights
-    
+
     # getting a group id
     groups = node_data.groupby("group")["orcid"].apply(list).reset_index()
     groups["group"] = groups.index
-    
+
     # finding group id for each node from groups dataframe
     nodes = node_data.merge(groups, how="left", on=["group"])
     nodes["title"] = node_data[["name"]]
