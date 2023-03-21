@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Don't include sqlite/DB files in git
+*.db
+*.db-journal
+
 # C extensions
 *.so
 
