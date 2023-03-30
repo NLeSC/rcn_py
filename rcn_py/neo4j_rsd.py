@@ -28,13 +28,13 @@ def get_scoous_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028
 
 def request_rsd_data():
     response_project = requests.get(
-        "https://research-software-directory.org/api/v1/project?select=id,title,description"
+        "https://research-software-directory.org/api/v1/project?select=id,title,created_at,description"
         )
     response_author = requests.get(
         "https://research-software-directory.org/api/v1/team_member?select=id,project,orcid,given_names,family_names, affiliation"
         )
     response_software = requests.get(
-        "https://research-software-directory.org/api/v1/software?select=id,concept_doi,brand_name, description"
+        "https://research-software-directory.org/api/v1/software?select=id,concept_doi,brand_name,created_at,description"
         )
     response_contributor = requests.get(
         "https://research-software-directory.org/api/v1/contributor?select=id,software,orcid,given_names,family_names,affiliation"
@@ -72,7 +72,7 @@ def create_person_nodes(tx, author):
                 SET p.orcid= $orcid, 
                     p.name= $person.name,
                     p.affiliation= $affiliation
-                )""",
+                """,
                 scopus_id = author_scopus_id,
                 orcid = author['orcid'],
                 name = preferred_name,
@@ -80,22 +80,94 @@ def create_person_nodes(tx, author):
                 )
         
 
-def create_project_software_nodes():
-    TODO = """
-    Create publication nodes which contains:
-        doi (project do not have doi), 
-        title, 
-        year (There are many different dates in the record, 
-            and there are many "end dates" that are after the current date，
-            it is confusing.),
-        description (or find keywords using topic models)
+def create_project_nodes(tx, project):
 
-    """
+    # Create publication nodes which contains:
+    #     doi (project do not have doi), 
+    #     title, 
+    #     year (There are many different dates in the record, 
+    #         and there are many "end dates" that are after the current date，
+    #         it is confusing.),
+    #     description (or find keywords using topic models)
 
-def create_author_edge():
-    TODO = """
-    Create edges between authors and publications:
-        author_name,
-        title, 
-        year
-    """
+    tx.run("""
+            MERGE (p:Project {project_id: $proj_id})
+            SET p.title = $title,
+                p.year = $year,
+                p.description = $description
+            """,
+            proj_id = project['id'],
+            title = project['title'],
+            year = project['created_at'][0:4],
+            description = project['description']
+            )
+
+def create_software_nodes(tx, software):
+    # Create publication nodes which contains:
+    #     doi (project do not have doi), 
+    #     title, 
+    #     year,
+    #     description (or find keywords using topic models)
+
+    tx.run("""
+            MERGE (s:Software {software_id: $software_id})
+            SET s.doi = $doi
+                s.title = $brand_name,
+                s.year = $year,
+                s.description = $description
+            """,
+            software_id = software['id'],
+            doi = software['concept_doi'],
+            brand_name = software['brand_name'],
+            year = software['created_at'][0:4],
+            description = software['description']
+            )
+
+def create_author_project_edge(tx, author):
+
+    # Create edges between authors and projects:
+    #     author_name,
+    #     title,
+    #     year
+
+    author_scopus_id, preferred_name = get_scoous_info_from_orcid(author['orcid'])
+
+    tx.run("""
+            MATCH 
+                (n:Person {scopus_id: $scopus_id}),
+                (p:Project {project_id: $proj_id})
+            MERGE (n)-[r:IS_AUTHOR_OF]->(p)
+            ON CREATE SET 
+                r.author_name = $author_name,
+                r.title = p.title,
+                r.year = p.year
+            """,
+            scopus_id = author_scopus_id,
+            proj_id = author['project'],
+            author_name = preferred_name
+        )
+
+
+def create_author_project_edge(tx, contributor):
+
+    # Create edges between authors and software:
+    #     author_name,
+    #     brand_name,
+    #     year
+
+    contributor_scopus_id, preferred_name = get_scoous_info_from_orcid(contributor['orcid'])
+
+    tx.run("""
+            MATCH 
+                (n:Person {scopus_id: $scopus_id}),
+                (s:Software {software_id: $software_id})
+            MERGE (n)-[r:IS_AUTHOR_OF]->(s)
+            ON CREATE SET 
+                r.author_name = $author_name,
+                r.title = s.title,
+                r.year = s.year
+            """,
+            scopus_id = contributor_scopus_id,
+            proj_id = contributor['software'],
+            author_name = preferred_name
+        )
