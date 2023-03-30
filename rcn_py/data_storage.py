@@ -168,27 +168,28 @@ def coauthor_data_from_csv(fullname, folderpath):
 def get_links_from_csv(fullname, folderpath):
     all_df = pd.read_csv(folderpath + "/" + fullname + "_coauthors_allpub.csv")
     authors_list = all_df["author_orcid"]
-    link = []
+    links = []
     for coauthors_id in authors_list:
         res = coauthors_id.strip("[")
         res = res.strip("]")
         res = res.split(",")
 
         if len(res) >= 2:
-            link = link + list(itertools.combinations(res, 2))
+            links = links + list(itertools.combinations(res, 2))
     edge_data = pd.DataFrame()
     sources = []
     targets = []
-    for l in link:
-        sources.append(l[0].strip("' "))
-        targets.append(l[1].strip("' "))
+    for link in links:
+        sources.append(link[0].strip("' "))
+        targets.append(link[1].strip("' "))
     edge_data["source"] = sources
     edge_data["target"] = targets
     edge_data.to_csv(folderpath + "/" + fullname + "_coauthors_link.csv")
-    return edge_data, link
+    return edge_data, links
 
 
-# Group the authors in the stored data, and generate the node dictionary that will be used to build the network
+# Group the authors in the stored data, 
+# and generate the node dictionary that will be used to build the network
 def assign_group_node(fullname, folderpath):
     all_df = pd.read_csv(folderpath + "/" + fullname + "_coauthors_allpub.csv")
     dois = all_df["doi"]

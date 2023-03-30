@@ -1,13 +1,9 @@
 import sqlite3
-import sys
 from itertools import combinations
 
 import gensim
 from crossref.restful import Works
-
-sys.path.append("..")
 from pyvis.network import Network
-
 from rcn_py import orcid
 
 """
@@ -17,7 +13,7 @@ from rcn_py import orcid
 """
 
 
-def insert_database(orcid_id, fullname):
+def insert_database(db_path, orcid_id, fullname):
     if len(orcid_id) == 0:
         orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
@@ -29,7 +25,7 @@ def insert_database(orcid_id, fullname):
 
     docs = orcid.extract_works_section(orcid_record)
 
-    con = sqlite3.connect("tutorial.db")
+    con = sqlite3.connect(db_path)
     cur = con.cursor()
     works = Works()
     orcid_doi_value = []
@@ -72,7 +68,7 @@ def insert_database(orcid_id, fullname):
 
 
 # Retrieve the coauthors for publications of the person
-def insert_coauthors_pub(fullname):
+def insert_coauthors_pub(db_path, fullname):
     orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
     if orcid_record is False:
@@ -83,7 +79,7 @@ def insert_coauthors_pub(fullname):
         doi, title = orcid.extract_doi(doc)
         orcid_list, name_list = orcid.get_authors(doi)
         for i in range(len(orcid_list)):
-            insert_database(orcid_list[i], name_list[i])
+            insert_database(db_path, orcid_list[i], name_list[i])
 
     return "Done!"
 
@@ -154,9 +150,13 @@ def pub_cluster(cur):
 
 
 def fetch_relationships(cur):
-    author_res = cur.execute(
-        "SELECT GROUP_CONCAT(orcid, ',') AS orcids FROM author_publication  WHERE doi != 'None' GROUP BY doi HAVING COUNT(*) > 1"
-    )
+    author_res = cur.execute("""
+    SELECT GROUP_CONCAT(orcid, ',') AS orcids 
+    FROM author_publication 
+    WHERE doi != 'None' 
+    GROUP BY doi 
+    HAVING COUNT(*) > 1
+    """)
     all_authors = author_res.fetchall()
     coauthor_links = []
     for au in all_authors:
@@ -167,9 +167,14 @@ def fetch_relationships(cur):
 
 
 def author_cluster(cur, clusters):
-    author_res = cur.execute(
-        "SELECT orcid, GROUP_CONCAT(doi,',') FROM author_publication WHERE doi != 'None' GROUP BY orcid"
-    )
+    author_res = cur.execute("""
+    SELECT orcid
+    GROUP_CONCAT(doi,',') 
+    FROM author_publication 
+    WHERE doi != 'None' 
+    GROUP BY orcid
+    """)
+    
     orc_doi = author_res.fetchall()
     au_group = {}
     for au_pub in orc_doi:
@@ -182,8 +187,8 @@ def author_cluster(cur, clusters):
     return au_group
 
 
-def build_network_database(name):
-    con = sqlite3.connect("tutorial.db")
+def build_network_database(db_path, name):
+    con = sqlite3.connect(db_path)
     cur = con.cursor()
     clusters, idx2topics = pub_cluster(cur)
     link = fetch_relationships(cur)

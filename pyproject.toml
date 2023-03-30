@@ -27,6 +27,15 @@ dependencies = [
   "pybliometrics",
   "crossrefapi",
   "scholarly",
+  "nltk",
+  "gensim",
+  "pyvis",
+  "pandas",
+  "requests",
+  "numpy>=1.20.3",
+  "networkx",
+  "d3graph",
+  "neo4j".
 ]
 dynamic = ["version"]
 
