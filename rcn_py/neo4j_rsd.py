@@ -9,7 +9,7 @@ from rcn_py import orcid
 # This function solves the problem of overlap between the RSD and Scopus databases
 # And also return author's preferred name
 # MYAPIKEY = "3d120b6ddb7d069272dfc2bc68af4028"
-def get_scoous_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
+def get_scopus_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
 
     url = "http://api.elsevier.com/content/search/author?query=ORCID%28"+orcid+"%29"
 
@@ -54,7 +54,7 @@ def request_rsd_data():
 
 def create_person_nodes(tx, author):
     # There is overlapping between RSD "project" and "software"
-    author_scopus_id, preferred_name = get_scoous_info_from_orcid(author['orcid'])
+    author_scopus_id, preferred_name = get_scopus_info_from_orcid(author['orcid'])
     
     if author['affiliation'] is None:
         tx.run("""
@@ -130,7 +130,7 @@ def create_author_project_edge(tx, author):
     #     title,
     #     year
 
-    author_scopus_id, preferred_name = get_scoous_info_from_orcid(author['orcid'])
+    author_scopus_id, preferred_name = get_scopus_info_from_orcid(author['orcid'])
 
     tx.run("""
             MATCH 
@@ -148,14 +148,14 @@ def create_author_project_edge(tx, author):
         )
 
 
-def create_author_project_edge(tx, contributor):
+def create_author_software_edge(tx, contributor):
 
     # Create edges between authors and software:
     #     author_name,
     #     brand_name,
     #     year
 
-    contributor_scopus_id, preferred_name = get_scoous_info_from_orcid(contributor['orcid'])
+    contributor_scopus_id, preferred_name = get_scopus_info_from_orcid(contributor['orcid'])
 
     tx.run("""
             MATCH 
@@ -168,6 +168,6 @@ def create_author_project_edge(tx, contributor):
                 r.year = s.year
             """,
             scopus_id = contributor_scopus_id,
-            proj_id = contributor['software'],
+            software_id = contributor['software'],
             author_name = preferred_name
         )

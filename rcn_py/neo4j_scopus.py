@@ -1,9 +1,7 @@
-import sqlite3
-import sys
-import pandas as pd
-from rcn_py import database
-from neo4j import GraphDatabase
+import os
 
+import pandas as pd
+from neo4j import GraphDatabase
 
 file_subject = [("medicine", "Medicine"),
                 ("bioc", "Biochemistry, Genetics and Molecular Biology"),
@@ -34,6 +32,18 @@ file_subject = [("medicine", "Medicine"),
                 ("dentistry", "Dentistry")
                 ]
 
+# Add constraint for author nodes and publication nodes
+def add_constraint(tx):
+    tx.run("""
+            CREATE CONSTRAINT pub_doi IF NOT EXISTS
+            FOR (p:Publication) REQUIRE p.doi IS UNIQUE
+            """)
+    tx.run("""
+            CREATE CONSTRAINT scopus_id IF NOT EXISTS
+            FOR (n:Person) REQUIRE n.scopus_id IS UNIQUE
+            """)
+
+
 
 def neo4j_create_people(tx, df, subject):
     for i in range(len(df)):
@@ -45,12 +55,28 @@ def neo4j_create_people(tx, df, subject):
         # remove papers with single author
         if len(author_scopus_id) < 2:
             continue
-        year = df.Year[i]
+        year = int(df.Year[i])
         author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]
+
+        # country and affiliation
         author_aff = df['Authors with affiliations'][i].split("; ")[0:len(author_scopus_id)]
-        author_country = [aff.split(", ")[-1] for aff in author_aff]
+        if author_aff[-1] == ".":
+            author_aff = ""
+            author_country = ""
+        else:
+            author_country = [aff.split(", ")[-1] for aff in author_aff]
+        
+        # keywords
         if not isinstance(df['Author Keywords'][i], str):
-            keywords = []
+            if not isinstance(df['Index Keywords'][i], str):
+                keywords = []
+            else: 
+                index_key = df["Index Keywords"][i].split("; ")
+                new_index = []
+                for k in index_key:
+                    if k.count(" ") < 1:
+                        new_index.append(k)
+                keywords = new_index
         else:
             keywords = df["Author Keywords"][i].split("; ")
 
@@ -91,11 +117,19 @@ def neo4j_create_publication(tx, df, subject):
 
         doi = df.DOI[i]
         title = df.Title[i]
-        year = df.Year[i]
+        year = int(df.Year[i])
         cited = df["Cited by"][i]
-        # subject = subject
+        # keywords
         if not isinstance(df['Author Keywords'][i], str):
-            keywords = []
+            if not isinstance(df['Index Keywords'][i], str):
+                keywords = []
+            else: 
+                index_key = df["Index Keywords"][i].split("; ")
+                new_index = []
+                for k in index_key:
+                    if k.count(" ") < 1:
+                        new_index.append(k)
+                keywords = new_index
         else:
             keywords = df["Author Keywords"][i].split("; ")
 
@@ -130,7 +164,7 @@ def neo4j_create_author_pub_edge(tx, df):
             continue     
 
         author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]   
-        year = df.Year[i]
+        year = int(df.Year[i])
         doi = df.DOI[i]
         title = df.Title[i]
         # APOC plugin should be installed in your Neo4j Server
@@ -155,18 +189,23 @@ def neo4j_create_author_pub_edge(tx, df):
             
 
 
-# input the scopus csv filepath, and its main subject
+# Input the scopus csv filepath, and its main subject
 # and Neo4j driver uri, username and password
+
 def execution(filepath, subject, uri, user, password):
-    # Execution
-    df = pd.read_csv(filepath)
     with GraphDatabase.driver(uri, auth=(user, password)) as driver:
         driver.verify_connectivity()
         with driver.session(database="neo4j") as session:
             # Create nodes & edges
-            session.execute_write(neo4j_create_people, df, subject) 
-            session.execute_write(neo4j_create_publication, df, subject)
-            session.execute_write(neo4j_create_author_pub_edge, df)
-             
+            if os.path.exists(filepath):
+            # Skipping bad lines (very rare occurrence): 
+            # Replace the following line: df = pd.read_csv(path, on_bad_lines = 'skip')
+                df = pd.read_csv(filepath)
+                    
+                session.execute_write(neo4j_create_people, df, subject) 
+                session.execute_write(neo4j_create_publication, df, subject)
+                session.execute_write(neo4j_create_author_pub_edge, df)
+                print ("Successfully insert " + subject + " csv file.")  
+            else:
+                print("Filepath doesn't exist!") 
 
-# if __name__ == "__main__":
