@@ -50,7 +50,7 @@
                             <label for="orcid">Or search for authors by ORCID:</label>
                             <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
                             <br>
-                            <button class="btn btn-default" type="submit" id="submit-btn">Search</button>
+                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
                             </div>
                         </form>
                     </li>
@@ -88,71 +88,80 @@
             .linkDistance(50)
             .size([width, height]);
 
+    var svgTranslate = [0, 0];
+
     // Define the SVG canvas
     var svg = d3.select("#graph").append("svg")
             .attr("width", "100%").attr("height", "100%")
             .attr("position", "absolute")
-            .attr("bottom", '0').attr("left", '0')
-            .attr("viewBox", `+200 -200 ${width} ${height}`)
-            // .attr("preserveAspectRatio", "xMinYMin meet")
-            .attr("pointer-events", "all");
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("pointer-events", "all")
+            ;
 
-    // // Define the zoom behavior
-    // const zoom = d3.zoom()
-    //     .extent([[0, 0], [width, height]])
-    //     .scaleExtent([0.1, 4])
-    //     .on("zoom", () => {
-    //         svg.selectAll("g").attr("transform", d3.event.transform);
-    // });
-
-    // // Apply the zoom behavior to the SVGß
-    // svg.call(zoom);
+    // Define the zoom behavior
     var zoom = d3.behavior.zoom()
-        .scaleExtent([0.1, 10]) // set the minimum and maximum zoom levels
-        .on("zoom", zoomed); // attach a zoom event listener
+                .center([0,0])
+                .scaleExtent([0.1, 10])
+                .on("zoomstart", zoomstarted)
+                .on("zoom", zoomed)
+                .on("zoomend", zoomended);
 
+
+    // Define the drag behavior
+    var drag = d3.behavior.drag()
+                .on("dragstart", dragstarted)
+                .on("drag", canvas_dragged)
+                .on("dragend", dragended);
+
+    // Select the SVG element and apply the zoom and drag behaviors
+    svg.call(zoom).call(drag);
+    
+    
+    // Define the behavior for zooming
+    // function zoomstarted(){
+    //     svgTranslate = d3.transform(svg.attr('transform')).translate;
+    // }
+    function zoomstarted(){
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
     function zoomed() {
-        // get the current zoom transform
         var scale = d3.event.scale,
-            translate = d3.event.translate;
+            translate = d3.event.translate,
+            dx = svgTranslate[0] + translate[0],
+            dy = svgTranslate[1] + translate[1];
 
-        // apply the transform to the SVG elements
-        networkGraph.attr("transform", "translate(" + translate + ")scale(" + scale + ")");
+        // Apply the offset to the zoom transform
+        svg.attr("transform", "translate(" + dx + "," + dy + ")scale(" + scale + ")");
+
     }
 
-    svg.call(zoom);
-
-    // Enable dragging of the canvas
-    var mousedown = false;
-    var mousex = 0;
-    var mousey = 0;
-    var translatex = 0;
-    var translatey = 0;
-
+    function zoomended(){
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
     
-    // Define the mouse behavior
+    // Define the behavior for dragging
+    function dragstarted() {
+        d3.event.sourceEvent.stopPropagation();
+        d3.select(this).classed("dragging", true);
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
 
-    svg.on("mousedown", function() {
-        mousedown = true;
-        mousex = d3.event.clientX;
-        mousey = d3.event.clientY;
-        translatex = parseFloat(svg.attr("transform").split(",")[0].split("(")[1]);
-        translatey = parseFloat(svg.attr("transform").split(",")[1].split(")")[0]);
-    });
+    function node_dragged() {
+        var dx = d3.event.dx,
+            dy = d3.event.dy;
+        d3.select(this).attr("transform", "translate(" + dx + "," + dy + ")");
+    }
 
-    svg.on("mouseup", function() {
-        mousedown = false;
-    });
+    function canvas_dragged() {
+        svgTranslate[0] = svgTranslate[0] + d3.event.dx;
+        svgTranslate[1] = svgTranslate[1] + d3.event.dy;
+        svg.attr("transform", "translate(" + svgTranslate[0] + "," + svgTranslate[1] + ")scale(" + zoom.scale() + ")");
+    }
 
-    svg.on("mousemove", function() {
-        if (mousedown) {
-            var dx = d3.event.clientX - mousex;
-            var dy = d3.event.clientY - mousey;
-            svg.attr("transform", "translate(" + (translatex + dx) + "," + (translatey + dy) + ")");
-        }
-    });
-    
-    
+    function dragended() {
+        d3.select(this).classed("dragging", false);
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
 
 
     // ############# Initial network ##############
@@ -175,9 +184,13 @@
         const node = svg.selectAll(".node")
                     .data(graph.nodes).enter()
                     .append("circle")
-                    .attr("class", function (d) { return "node "+d.label })
-                    .attr("r", 5)
-                    .call(force.drag);
+                    .attr("class", function (d) { return "node "+d.label; })
+                    .attr("r", 10)
+                    .call(force.drag()
+                        .on("dragstart", dragstarted)
+                        .on("drag", node_dragged)
+                        .on("dragend", dragended)
+                    );
 
         // html title attribute
         node.append("title")
@@ -187,14 +200,14 @@
         // force feed algo ticks
         force.on("tick", ()=>{
             link
-            .attr("x1", (d) => 0.8*d.source.x)
-            .attr("y1", (d) => 0.8*d.source.y)
-            .attr("x2", (d) => 0.8*d.target.x)
-            .attr("y2", (d) => 0.8*d.target.y);
+            .attr("x1", (d) => d.source.x)
+            .attr("y1", (d) => d.source.y)
+            .attr("x2", (d) => d.target.x)
+            .attr("y2", (d) => d.target.y);
 
             node
-            .attr("cx", (d) => 0.8*d.x)
-            .attr("cy", (d) => 0.8*d.y);
+            .attr("cx", (d) => d.x)
+            .attr("cy", (d) => d.y);
         });
 
         
@@ -205,6 +218,37 @@
 
     // ####################### function #######################
     $(document).ready(function(){
+        // ################### Refresh ####################
+        function refresh(){
+            d3.select("#graph").selectAll("*").remove();
+            svgTranslate = [0, 0];
+            // Define the SVG canvas
+            svg = d3.select("#graph").append("svg")
+                    .attr("width", "100%").attr("height", "100%")
+                    .attr("position", "absolute")
+                    .attr("viewBox", `0 0 ${width} ${height}`)
+                    .attr("pointer-events", "all")
+                    ;
+
+            // Define the zoom behavior
+            zoom = d3.behavior.zoom()
+                        .center([0,0])
+                        .scaleExtent([0.1, 10])
+                        .on("zoomstart", zoomstarted)
+                        .on("zoom", zoomed)
+                        .on("zoomend", zoomended);
+
+
+            // Define the drag behavior
+            drag = d3.behavior.drag()
+                        .on("dragstart", dragstarted)
+                        .on("drag", canvas_dragged)
+                        .on("dragend", dragended);
+
+            // Select the SVG element and apply the zoom and drag behaviors
+            svg.call(zoom).call(drag);
+            return svg;
+        }
 
         // ################### keyword search ###################
         const form = document.getElementById('search');
@@ -220,16 +264,8 @@
             var form = $('#search');
             var year = form.find("input[name='year']").val();
             var keyword = form.find("input[name=keyword]").val();
-                   
-            d3.select("#graph").selectAll("*").remove();
-            var svg = d3.select("#graph").append("svg")
-            .attr("width", "100%").attr("height", "100%")
-            .attr("position", "absolute")
-            .attr("bottom", '0').attr("left", '0')
-            .attr("viewBox", `+200 -200 ${width} ${height}`)
-            // .attr("preserveAspectRatio", "xMinYMin meet")
-            .attr("pointer-events", "all");
-
+            svg = refresh();
+            svgTranslate = [0, 0];
 
             d3.json("/search?keyword=" + encodeURIComponent(keyword) + "&year=" + encodeURIComponent(year),
                 function (error, graph) {
@@ -252,7 +288,11 @@
                                     .append("circle")
                                     .attr("class", function (d) { return "node "+d.label })
                                     .attr("r", 10)
-                                    .call(force.drag);
+                                    .call(force.drag()
+                                        .on("dragstart", dragstarted)
+                                        .on("drag", node_dragged)
+                                        .on("dragend", dragended)
+                                    );
 
                     // html title attribute
                     node.append("title")
@@ -288,15 +328,8 @@
             var form = $('#orcid_search');
             var orcid = form.find("input[name='orcid']").val();
       
-            d3.select("#graph").selectAll("*").remove();
-            var svg = d3.select("#graph").append("svg")
-            .attr("width", "100%").attr("height", "100%")
-            .attr("position", "absolute")
-            .attr("bottom", '0').attr("left", '0')
-            .attr("viewBox", `+200 -200 ${width} ${height}`)
-            // .attr("preserveAspectRatio", "xMinYMin meet")
-            .attr("pointer-events", "all");
-
+            svg = refresh();
+            svgTranslate = [0, 0];
 
             d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid),
                 function (error, graph) {
@@ -316,7 +349,11 @@
                                             return "node "+d.label;
                                         })
                                     .attr("r", 10)
-                                    .call(force.drag);
+                                    .call(force.drag()
+                                        .on("dragstart", dragstarted)
+                                        .on("drag", node_dragged)
+                                        .on("dragend", dragended)
+                                    );
 
                     // html title attribute
                     node.append("title")
