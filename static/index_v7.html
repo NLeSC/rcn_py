@@ -89,106 +89,162 @@
 
 
 <script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-<script src="https://d3js.org/d3.v3.min.js"></script>
-<script src="https://d3js.org/d3-force.v1.min.js"></script>
+<script src="https://d3js.org/d3.v6.min.js"></script>
 
 
 <script type="text/javascript">
     // ####################### initial #######################
-    const width = window.innerWidth, height =  window.innerWidth;
+    const width = window.innerWidth, height =  window.innerHeight;
+    const radius = Math.min(width, height) / 2 - 50;
+    // const width = 960, height =  600;
+    const force = d3.forceSimulation()
+            .force("charge", d3.forceManyBody().strength(-5))
+            .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
+            .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
+            .force("collision", d3.forceCollide().radius(function(d) { return d.r + 5; }).iterations(1));
 
-    const force = d3.layout.force()
-            .charge(-100)
-            .linkDistance(50)
-            .size([width, height]);
-
+    // A temporary translate for the current position
     var svgTranslate = [0, 0];
+    var curTranslate = [0, 0];
+    var zoom_transform = [0, 0];
+    var svgScale = 1;
+    let isDragging = false;
+    let isDragged = false;
+    var dx = 0, dy = 0,
+        zx = 0, zy = 0;
 
     // Define the SVG canvas
     var svg = d3.select("#graph").append("svg")
-            .attr("width", "100%").attr("height", "100%")
+            .attr("width", width).attr("height", height)
             .attr("position", "absolute")
             .attr("viewBox", `0 0 ${width} ${height}`)
             .attr("pointer-events", "all")
-            ;
-
-    // Define the zoom behavior
-    var zoom = d3.behavior.zoom()
-                .center([0,0])
-                .scaleExtent([0.1, 10])
-                .on("zoomstart", zoomstarted)
+            .call(d3.drag()
+                .on("start", canvas_dragstarted)
+                .on("drag", canvas_dragged)
+                .on("end", canvas_dragended))
+            .call(d3.zoom()
+                .on("start", zoomstarted)
                 .on("zoom", zoomed)
-                .on("zoomend", zoomended);
+                .on("end", zoomended))
+            // .append("g")
+            ;
 
 
     // Define the drag behavior
-    var drag = d3.behavior.drag()
-                .on("dragstart", dragstarted)
-                .on("drag", canvas_dragged)
-                .on("dragend", dragended);
+    function zoomstarted(event) {
+        // Get current position of network after drag event
+        svgTranslate[0] = dx;
+        svgTranslate[1] = dy;
+        zoom_transform[0] = event.transform.x;
+        zoom_transform[1] = event.transform.y;
 
-    // Select the SVG element and apply the zoom and drag behaviors
-    svg.call(zoom).call(drag);
+        d3.select(this).attr("zoomstartx", svgTranslate[0]);
+        d3.select(this).attr("zoomstarty", svgTranslate[1]);
+    }
+    function zoomed(event) {
+        if(isDragged) {
+            zx = event.transform.x + svgTranslate[0] - zoom_transform[0];
+            zy = event.transform.y + svgTranslate[1] - zoom_transform[1];
+        }
+        else {
+            zx = event.transform.x + svgTranslate[0];
+            zy = event.transform.y + svgTranslate[1];
+        }
+        svgScale = event.transform.k;
+
+        d3.select(this).attr("aaa", event.transform.x- zoom_transform[0]);
+        d3.select(this).attr("bbb", event.transform.y- zoom_transform[1]);
+        d3.select(this).attr("drag", isDragged);
+        // d3.select(this).attr("scale", svgScale);
+        d3.select(this).attr("zx", zx);
+        d3.select(this).attr("zy", zy);
+
+        svg.attr("transform", `translate(${zx},${zy})  scale(${svgScale})`);
+
+        curTranslate[0] = zx;
+        curTranslate[1] = zy;
+    }
+    function zoomended(event) {
+        isDragged = false;
+        zoom_transform[0] = event.transform.x;
+        zoom_transform[1] = event.transform.y;
+    }
+  
+
+    function canvas_dragstarted(event) {
+        isDragging = true;
+        svgTranslate[0] = event.x;
+        svgTranslate[1] = event.y;
+    }
+    function canvas_dragged(event) {
+        // Calculate the amount of movement
+        // svgTranslate[0] = event.x;
+        // svgTranslate[1] = event.y;
+
+        if(isDragging) {
+            
+            dx = curTranslate[0] + event.x - svgTranslate[0];
+            dy = curTranslate[1] + event.y - svgTranslate[1];
+
+            d3.select(this).attr("dx", dx);
+            d3.select(this).attr("dy", dy);
+            // Update the transform of the canvas
+            svg.attr("transform", `translate(${dx},${dy}) scale(${svgScale})`);
+            
+        }
+    }
+    function canvas_dragended(event){
+        // Update the starting position for the next drag event
+        curTranslate[0] = dx;
+        curTranslate[1] = dy;
+        isDragging = false;
+        isDragged = true;
+    }
+
+
+    function node_dragstarted(event) {
+        if (!event.active) force.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    function node_dragged(event) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
+          
+    function node_dragended(event) {
+        if (!event.active) force.alphaTarget(0);
+        event.subject.fx = null;
+        event.subject.fy = null;
+    }
+
     
-    
-    // Define the behavior for zooming
-    // function zoomstarted(){
-    //     svgTranslate = d3.transform(svg.attr('transform')).translate;
-    // }
-    function zoomstarted(){
-        svgTranslate = d3.transform(svg.attr('transform')).translate;
-    }
-    function zoomed() {
-        var scale = d3.event.scale,
-            translate = d3.event.translate,
-            dx = svgTranslate[0] + translate[0],
-            dy = svgTranslate[1] + translate[1];
-
-        // Apply the offset to the zoom transform
-        svg.attr("transform", "translate(" + dx + "," + dy + ")scale(" + scale + ")");
-
-    }
-    function zoomended(){
-        svgTranslate = d3.transform(svg.attr('transform')).translate;
-    }
-    
-    // Define the behavior for dragging
-    function dragstarted() {
-        d3.event.sourceEvent.stopPropagation();
-        d3.select(this).classed("dragging", true);
-        svgTranslate = d3.transform(svg.attr('transform')).translate;
-    }
-
-    function node_dragged() {
-        var dx = d3.event.dx,
-            dy = d3.event.dy;
-        d3.select(this).attr("transform", "translate(" + dx + "," + dy + ")");
-    }
-
-    function canvas_dragged() {
-        svgTranslate[0] = svgTranslate[0] + d3.event.dx;
-        svgTranslate[1] = svgTranslate[1] + d3.event.dy;
-        svg.attr("transform", "translate(" + svgTranslate[0] + "," + svgTranslate[1] + ")scale(" + zoom.scale() + ")");
-    }
-
-    function dragended() {
-        d3.select(this).classed("dragging", false);
-        svgTranslate = d3.transform(svg.attr('transform')).translate;
-    }
+   
 
 
     // ############# Initial network ##############
-    d3.json("/graph", function(error, graph) {
-        if (error) return;
+    d3.json("/graph").then(function(graph) {
+        
 
         // const force = d3.forceSimulation(node)
         // .force("charge", d3.forceManyBody().strength(-50))
         // .force("link", d3.forceLink(graph.links).distance(100))
         // .force("center", d3.forceCenter(width/2, height/2));
+        var pack = d3.pack()
+                .size([width, height])
+                .padding(1)
+                (d3.hierarchy({children: graph.nodes})
+                .sum(function(d) { return d.size }));
+
+        // update the radius of each node based on the pack layout
+        graph.nodes.forEach(function(d) { d.r = d.size ? pack.r(d) : 5; });
 
         force.nodes(graph.nodes)
-            .links(graph.links)
-            .start();
+            .force("link", d3.forceLink(graph.links))
+
+        
 
         const link = svg.selectAll(".link")
                     .data(graph.links).enter()
@@ -198,29 +254,30 @@
                     .data(graph.nodes).enter()
                     .append("circle")
                     .attr("class", function (d) { return "node "+d.label; })
-                    .attr("r", 10)
-                    .call(force.drag()
-                        .on("dragstart", dragstarted)
+                    .attr("r", 3)
+                    .call(d3.drag()
+                        .on("start", node_dragstarted)
                         .on("drag", node_dragged)
-                        .on("dragend", dragended)
-                    );
+                        .on("end", node_dragended))
+                    ;
 
         // html title attribute
         node.append("title")
-                    .text(function (d) { return d.title; })
+                    .text(function (d) { return d.title; });
 
 
         // force feed algo ticks
-        force.on("tick", ()=>{
-            link
-            .attr("x1", (d) => d.source.x)
-            .attr("y1", (d) => d.source.y)
-            .attr("x2", (d) => d.target.x)
-            .attr("y2", (d) => d.target.y);
-
-            node
-            .attr("cx", (d) => d.x)
-            .attr("cy", (d) => d.y);
+        force.on("tick", function() {
+            svg.selectAll('.link')
+            .attr("x1", function (d) { return d.source.x })
+            .attr("y1", function (d) { return d.source.y })
+            .attr("x2", function (d) { return d.target.x })
+            .attr("y2", function (d) { return d.target.y })
+            
+            svg.selectAll('.node')
+            .attr("cx", function (d) { return d.x })
+            .attr("cy", function (d) { return d.y })
+            
         });
 
         

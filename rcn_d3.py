@@ -44,7 +44,7 @@ def close_db(error):
 
 @app.route("/")
 def get_index():
-    return app.send_static_file("index.html")
+    return app.send_static_file("index_v7.html")
 
 
 def serialize_person(person):
@@ -89,23 +89,34 @@ def get_example_graph():
     results = db.read_transaction(work, 2022, "Deep learning")
     nodes = []
     rels = []
+    records = []
     i = 0
-    year=2022
+    x = 0
     for record in results:
-        nodes.append({"title": record["title"], "label": "publication"})
         target = i
+        nodes.append({"title": record["title"], "label": "publication", "id": target, "group":target})
         i += 1
         for name in record["author"]:
-            author = {"title": name, "label": "author"}
-            try:
-                source = nodes.index(author)
-            except ValueError:
-                nodes.append(author)
+            if records == []:
+                records.append({"title": name, "label": "author"})
                 source = i
+                author = {"title": name, "label": "author", "id": source, "group":target}
+                nodes.append(author)
                 i += 1
+            else:
+                try:
+                    source = records.index({"title": name, "label": "author"})
+                    x += 1
+                except ValueError:
+                    records.append({"title": name, "label": "author"})
+                    source = i
+                    author = {"title": name, "label": "author", "id": source, "group":target}
+                    nodes.append(author)
+                    i += 1
             rels.append({"source": source, "target": target})
     return Response(dumps({"nodes": nodes, "links": rels}),
-                    mimetype="application/json")
+                mimetype="application/json")
+    # return Response(dumps({"s": x}),mimetype="application/json")
 
 # 
 @app.route('/search')
@@ -139,22 +150,25 @@ def get_search_query():
         # )
         nodes = []
         rels = []
+        records = []
         i = 0
         for record in results:
-            nodes.append({"title": record["title"], "label": "publication"})
             target = i
+            nodes.append({"title": record["title"], "label": "publication", "id": target})
             i += 1
             for name in record["author"]:
                 author = {"title": name, "label": "author"}
                 try:
-                    source = nodes.index(author)
+                    source = records.index(author)
                 except ValueError:
-                    nodes.append(author)
+                    records.append(author)
                     source = i
+                    author["id"] = source
+                    nodes.append(author)
                     i += 1
                 rels.append({"source": source, "target": target})
         return Response(dumps({"nodes": nodes, "links": rels}),
-                        mimetype="application/json")
+                    mimetype="application/json")
         
         # return Response(dumps({"year": year, "keyword": keyword, "title": results}),
         #                  mimetype="application/json")

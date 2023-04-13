@@ -36,6 +36,7 @@ dependencies = [
   "networkx",
   "d3graph",
   "neo4j",
+  "flask",
 ]
 dynamic = ["version"]
 
