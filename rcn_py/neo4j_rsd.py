@@ -21,9 +21,18 @@ def get_scopus_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028
         return 
     else:
         scopus_author_id = results['search-results']['entry'][0]['dc:identifier'].split(':')[-1]
+
+        # Get preferred name (instead of initials)
         name = results['search-results']['entry'][0]['preferred-name']
-        preferred_name  = name['surname'] + ' ' + name['initials']
-        return scopus_author_id, preferred_name
+        preferred_name  = name['given-name'] + ' ' + name['surname']
+
+        # Get scopus profile links
+        links = results['search-results']['entry'][0]["link"]
+        for l in links:
+            if l['@ref'] == 'scopus-author':
+                author_link = l['@href']
+
+        return scopus_author_id, preferred_name, author_link
     
 
 def request_rsd_data():
@@ -54,27 +63,31 @@ def request_rsd_data():
 
 def create_person_nodes(tx, author):
     # There is overlapping between RSD "project" and "software"
-    author_scopus_id, preferred_name = get_scopus_info_from_orcid(author['orcid'])
+    author_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(author['orcid'])
     
     if author['affiliation'] is None:
         tx.run("""
                 MERGE (p:Person {scopus_id: $scopus_id})
                 SET p.orcid= $orcid, 
+                    p.scopus_link = $link,
                     p.name= $name
                 )""",
                 scopus_id = author_scopus_id, 
                 orcid = author['orcid'],
+                link = scopus_link,
                 name = preferred_name
                 )
     else:
         tx.run("""
                 MERGE (p:Person {scopus_id: $scopus_id})
                 SET p.orcid= $orcid, 
+                    p.scopus_link = $link,
                     p.name= $person.name,
                     p.affiliation= $affiliation
                 """,
                 scopus_id = author_scopus_id,
                 orcid = author['orcid'],
+                link = scopus_link,
                 name = preferred_name,
                 affiliation = author['affiliation']
                 )

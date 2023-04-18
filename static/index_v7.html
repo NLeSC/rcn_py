@@ -63,16 +63,33 @@
 <div class="row justify-content-end">
     <div class="col-md-3">
         <div class="panel panel-default">
+            <div id="node-details" style="display:none;">
+                <!-- <div class="panel-heading">Node information</div> -->
+                <table id="node_info" class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- <div class="col-md-3">
+        <div class="panel panel-default">
             <div class="panel-heading" id="title">Details</div>
             <div class="row">
                 <div class="col-md-8 col-sm-8">
                     <h6>Node information</h6>
-                    <ul id="info">
+                    <ul id="node_info">
                     </ul>
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 </div>
 
 <style type="text/css">
@@ -89,7 +106,7 @@
 
 
 <script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
 
 
 <script type="text/javascript">
@@ -101,17 +118,25 @@
             .force("charge", d3.forceManyBody().strength(-5))
             .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
             .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
-            .force("collision", d3.forceCollide().radius(function(d) { return d.r + 5; }).iterations(1));
+            .force("collision", d3.forceCollide().radius(function(d) { return d.radius; }).iterations(1))
+            ;
 
     // A temporary translate for the current position
     var svgTranslate = [0, 0];
     var curTranslate = [0, 0];
-    var zoom_transform = [0, 0];
     var svgScale = 1;
     let isDragging = false;
-    let isDragged = false;
     var dx = 0, dy = 0,
         zx = 0, zy = 0;
+    
+    var clicked = {};
+    var lockked = {};
+    var last_clicked_node;
+    var arc = d3.arc().innerRadius(6).outerRadius(16);
+    let maxId = 0;
+
+    var graph_node;
+    var graph_link;
 
     // Define the SVG canvas
     var svg = d3.select("#graph").append("svg")
@@ -127,139 +152,49 @@
                 .on("start", zoomstarted)
                 .on("zoom", zoomed)
                 .on("end", zoomended))
-            // .append("g")
             ;
-
-
-    // Define the drag behavior
-    function zoomstarted(event) {
-        // Get current position of network after drag event
-        svgTranslate[0] = dx;
-        svgTranslate[1] = dy;
-        zoom_transform[0] = event.transform.x;
-        zoom_transform[1] = event.transform.y;
-
-        d3.select(this).attr("zoomstartx", svgTranslate[0]);
-        d3.select(this).attr("zoomstarty", svgTranslate[1]);
-    }
-    function zoomed(event) {
-        if(isDragged) {
-            zx = event.transform.x + svgTranslate[0] - zoom_transform[0];
-            zy = event.transform.y + svgTranslate[1] - zoom_transform[1];
-        }
-        else {
-            zx = event.transform.x + svgTranslate[0];
-            zy = event.transform.y + svgTranslate[1];
-        }
-        svgScale = event.transform.k;
-
-        d3.select(this).attr("aaa", event.transform.x- zoom_transform[0]);
-        d3.select(this).attr("bbb", event.transform.y- zoom_transform[1]);
-        d3.select(this).attr("drag", isDragged);
-        // d3.select(this).attr("scale", svgScale);
-        d3.select(this).attr("zx", zx);
-        d3.select(this).attr("zy", zy);
-
-        svg.attr("transform", `translate(${zx},${zy})  scale(${svgScale})`);
-
-        curTranslate[0] = zx;
-        curTranslate[1] = zy;
-    }
-    function zoomended(event) {
-        isDragged = false;
-        zoom_transform[0] = event.transform.x;
-        zoom_transform[1] = event.transform.y;
-    }
-  
-
-    function canvas_dragstarted(event) {
-        isDragging = true;
-        svgTranslate[0] = event.x;
-        svgTranslate[1] = event.y;
-    }
-    function canvas_dragged(event) {
-        // Calculate the amount of movement
-        // svgTranslate[0] = event.x;
-        // svgTranslate[1] = event.y;
-
-        if(isDragging) {
-            
-            dx = curTranslate[0] + event.x - svgTranslate[0];
-            dy = curTranslate[1] + event.y - svgTranslate[1];
-
-            d3.select(this).attr("dx", dx);
-            d3.select(this).attr("dy", dy);
-            // Update the transform of the canvas
-            svg.attr("transform", `translate(${dx},${dy}) scale(${svgScale})`);
-            
-        }
-    }
-    function canvas_dragended(event){
-        // Update the starting position for the next drag event
-        curTranslate[0] = dx;
-        curTranslate[1] = dy;
-        isDragging = false;
-        isDragged = true;
-    }
-
-
-    function node_dragstarted(event) {
-        if (!event.active) force.alphaTarget(0.3).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-    }
-
-    function node_dragged(event) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-    }
-          
-    function node_dragended(event) {
-        if (!event.active) force.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
-    }
-
     
-   
+    var arcs = svg.selectAll("arcs")
+            .data([
+                { start: 0, end: 1/3, label: "hide", icon: "\uf00d"},
+                { start: 1/3, end: 2/3, label: "link", icon: "\uf31d"},
+                { start: 2/3, end: 1, label: "lock", icon:["\uf023", "\uf3c1"] }
+            ])
+            .enter();
+    
+    function build_new_svg(graph_node, graph_link) {
 
-
-    // ############# Initial network ##############
-    d3.json("/graph").then(function(graph) {
-        
-
-        // const force = d3.forceSimulation(node)
-        // .force("charge", d3.forceManyBody().strength(-50))
-        // .force("link", d3.forceLink(graph.links).distance(100))
-        // .force("center", d3.forceCenter(width/2, height/2));
-        var pack = d3.pack()
-                .size([width, height])
-                .padding(1)
-                (d3.hierarchy({children: graph.nodes})
-                .sum(function(d) { return d.size }));
-
-        // update the radius of each node based on the pack layout
-        graph.nodes.forEach(function(d) { d.r = d.size ? pack.r(d) : 5; });
-
-        force.nodes(graph.nodes)
-            .force("link", d3.forceLink(graph.links))
-
-        
-
+        force_node = graph_node;
+        for (var i = 0; i < force_node.length; i++) {
+            delete force_node[i].fx;
+            delete force_node[i].fy;
+        }
+        force.nodes(force_node)
+            .force("link", d3.forceLink(graph_link).id(function(d) { return d.id; }));
+        // Append the links to the svg
         const link = svg.selectAll(".link")
-                    .data(graph.links).enter()
+                    .data(graph_link).enter()
                     .append("line").attr("class", "link");
-
-        const node = svg.selectAll(".node")
-                    .data(graph.nodes).enter()
+        // Append the nodes to the svg
+        const node = svg.append("g").selectAll(".node")
+                    .data(graph_node).enter()
                     .append("circle")
                     .attr("class", function (d) { return "node "+d.label; })
-                    .attr("r", 3)
+                    .attr("r", 5)
+                    .attr("stroke", "light-grey")
+                    .attr("cursor", "pointer")
                     .call(d3.drag()
                         .on("start", node_dragstarted)
                         .on("drag", node_dragged)
-                        .on("end", node_dragended))
-                    ;
+                        .on("end", node_dragended));
+
+        graph_node.forEach(node => {
+            if (node.id > maxId) {
+                maxId = node.id;
+            }         
+        });  
+                   
+        addOrRemoveTooltip(node);
 
         // html title attribute
         node.append("title")
@@ -277,48 +212,493 @@
             svg.selectAll('.node')
             .attr("cx", function (d) { return d.x })
             .attr("cy", function (d) { return d.y })
+
+        }).alphaDecay(0.05);
+
+        force.alpha(1).restart();
+    }
+   
+
+    // Define the drag behavior
+    function zoomstarted(event) {
+        // Get current position of network after drag event
+        svgTranslate[0] = dx;
+        svgTranslate[1] = dy;
+    }
+    function zoomed(event) {
+        // Get the real-time scale
+        svgScale = event.transform.k;
+        zx = svgTranslate[0];
+        zy = svgTranslate[1];
+        // Update the transform of the network
+        svg.attr("transform", `translate(${zx},${zy})  scale(${svgScale})`);
+    }
+    function zoomended(event) {
+        // Save the current position after zooming
+        curTranslate[0] = zx;
+        curTranslate[1] = zy;
+    }
+  
+
+    function canvas_dragstarted(event) {
+        isDragging = true;
+        // Get the position of canvas at beginning
+        svgTranslate[0] = event.x;
+        svgTranslate[1] = event.y;
+    }
+    function canvas_dragged(event) {
+        if(isDragging) {
+            // "event.x - svgTranslate.x" means (current mouse x) - (previous mouse x)
+            dx = curTranslate[0] + event.x - svgTranslate[0];
+            dy = curTranslate[1] + event.y - svgTranslate[1];
+
+            // Update the transform of the canvas
+            svg.attr("transform", `translate(${dx},${dy}) scale(${svgScale})`);
+        }
+    }
+    function canvas_dragended(event){
+        // Update the starting position for the next drag event
+        curTranslate[0] = dx;
+        curTranslate[1] = dy;
+        isDragging = false;
+    }
+
+
+    function node_dragstarted(event) {
+        if (!event.active) force.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    function node_dragged(event, d) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+        if (clicked[d.id]) {
+            var node_id = d.id;
+            arcs.selectAll("path").remove();
+            arcs.selectAll("image").remove();
+
+            var icons = arcs.data(arcs.data())
+                            .enter().append('text')
+                            .attr('font-family', 'FontAwesome')
+                            .attr('font-size', '20px' )
+                            .text(function(d) { 
+                                if (d.label == 'lock'){
+                                    return d.icon[0];
+                                }
+                                else{
+                                    return d.icon;
+                                } })
+                            .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                            .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                            ; 
+                            
+            // arcs.selectAll("image")
+            //             .data(arcs.data())
+            //             .enter().append("image")
+            //             .attr("xlink:href", function (d) {
+            //                  if (d.label == 'lock'){
+            //                     return d.icon[0];
+            //                  }
+            //                  else{
+            //                     return d.icon;
+            //                  } })
+            //             .attr("width", 20)
+            //             .attr("height",20)
+            //             .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+            //             .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI));
+
+            arcs.append("path")
+                .attr("d", d => arc({
+                            "startAngle": d.start * 2 * Math.PI + 0.01,
+                            "endAngle": d.end * 2 * Math.PI - 0.01
+                        }))    
+                .attr("transform", `translate(${event.x},${event.y})`)
+                .attr("fill", "lightgrey")
+                .style("opacity", 0.5)
+
+                .on("mouseover", function(event, d) {
+                    // change the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.2);
+                })
+                .on("mouseout", function(event, d) {
+                    // restore the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.5);
+                })
+                .on("click", function(event, d){
+                    if (d.label == "hide") {
+                        d3.select(this).style("opacity", 0.5);
+                        hide_node(node_id);
+                    }
+                    if (d.label == "lock") {
+                        d3.select(this).style("opacity", 0.5);
+                        node_lock_unlock(node_id);
+                    }
+                    if (d.label == "link") {
+                        d3.select(this).style("opacity", 0.5);
+                        show_all_link(unique_id, node_label, node_id);
+                    }        
+                });
+        }
+    }
+          
+    function node_dragended(event, d) {
+        if (!event.active) force.alphaTarget(0);
+        if (lockked[d.id] || clicked[d.id]) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;}
+        else{
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+    }
+
+    function handleNodeClick(event, d){
+        d3.selectAll('#node_info tbody tr').remove();
+        
+        if (d.label.indexOf("author") != -1) {
+            // Create a new table row for the node label
+            var labelRow = d3.select('#node_info tbody')
+                .append('tr');
+            labelRow.append('td')
+                .text('Label');
+            labelRow.append('td')
+                .text(d.label);
             
+            var titleRow = d3.select('#node_info tbody')
+                .append('tr');
+            titleRow.append('td')
+                .text('Name');
+            titleRow.append('td')
+                .text(d.title);
+
+            var idRow = d3.select('#node_info tbody')
+                .append('tr');
+            idRow.append('td')
+                .text('Scopus id');
+            idRow.append('td')
+                .text(d.scopus_id);
+
+            // Create a new table row for the node description
+            var countryRow = d3.select('#node_info tbody')
+                .append('tr');
+            countryRow.append('td')
+                .text('Country');
+            countryRow.append('td')
+                .text(d.country);
+
+            var affRow = d3.select('#node_info tbody')
+                .append('tr');
+            affRow.append('td')
+                .text('Affiliation');
+            affRow.append('td')
+                .text(d.affiliation);
+        }
+        if (d.label == "publication") {
+            // Create a new table row for the node label
+            var labelRow = d3.select('#node_info tbody')
+                .append('tr');
+            labelRow.append('td')
+                .text('Label');
+            labelRow.append('td')
+                .text(d.label);
+            
+            var titleRow = d3.select('#node_info tbody')
+                .append('tr');
+            titleRow.append('td')
+                .text('Title');
+            titleRow.append('td')
+                .text(d.title);
+
+            var idRow = d3.select('#node_info tbody')
+                .append('tr');
+            idRow.append('td')
+                .text('DOI');
+            idRow.append('td')
+                .text(d.doi);
+
+            var subjectRow = d3.select('#node_info tbody')
+                .append('tr');
+            subjectRow.append('td')
+                .text('Subject');
+            subjectRow.append('td')
+                .text(d.subject);
+
+            var yearRow = d3.select('#node_info tbody')
+                .append('tr');
+            yearRow.append('td')
+                .text('Year');
+            yearRow.append('td')
+                .text(d.year);
+        }
+        // Show the node details table
+        d3.select('#node-details').style('display', 'block');
+                    
+    }
+
+    // function for the circle tooltips
+    function addOrRemoveTooltip(selection) {
+
+        selection.on("click", function(event, d) {
+            // info presentation
+            handleNodeClick(event, d);
+
+            // Tooltip
+            if (clicked[d.id]) {
+                arcs.selectAll("path").remove();
+                arcs.selectAll("image").remove();
+                clicked[d.id] = false;
+                if(lockked[d.id]){
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+                else {
+                    d.fx = null;
+                    d.fy = null;
+                }
+            } 
+            else {
+                // If click another node, hide the previous one
+                if (last_clicked_node && last_clicked_node != d.id) {
+                    clicked[last_clicked_node] = false;
+                    if(lockked[d.id]){
+                        d.fx = d.x;
+                        d.fy = d.y;
+                    }
+                    else {
+                        d.fx = null;
+                        d.fy = null;
+                    }
+                    arcs.selectAll("path").remove();
+                    arcs.selectAll("image").remove();
+                }
+
+                var node_id = d.id;
+                var node_label = d.label;
+
+                if (node_label == "publication"){
+                    var unique_id = d.doi;
+                }
+                if (node_label.indexOf("author") != -1) {
+                    var unique_id = d.scopus_id;
+                }
+                d.fx = d.x;
+                d.fy = d.y;
+
+                // var icons = arcs.selectAll("image")
+                //             .data(arcs.data())
+                //             .enter().append("image")
+                //             .attr("xlink:href", function (d) {
+                //                 if (d.label == 'lock'){
+                //                     return d.icon[0];
+                //                 }
+                //                 else{
+                //                     return d.icon;
+                //                 } })
+                //             .attr("width", 20)
+                //             .attr("height",20)
+                //             .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                //             .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI));
+                var icons = arcs.selectAll("image")
+                            .data(arcs.data())
+                            .enter().append('text')
+                            .attr('font-family', 'FontAwesome')
+                            .attr('font-size', '20px' )
+                            .text(function(d) { 
+                                if (d.label == 'lock'){
+                                    return d.icon[0];
+                                }
+                                else{
+                                    return d.icon;
+                                } })
+                            .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                            .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                            ; 
+                
+                arcs.append("path")
+                .attr("d", d => arc({
+                            "startAngle": d.start * 2 * Math.PI + 0.01,
+                            "endAngle": d.end * 2 * Math.PI - 0.01
+                        }))    
+                .attr("transform", `translate(${d.x},${d.y})`)
+                .attr("fill", "lightgrey")
+                .style("opacity", 0.5)
+
+                .on("mouseover", function(event, d) {
+                    // change the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.2);
+                })
+                .on("mouseout", function(event, d) {
+                    // restore the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.5);
+                })
+                .on("click", function(event, d){
+                    if (d.label == "hide") {
+                        d3.select(this).style("opacity", 0.5);
+                        hide_node(node_id);
+                    }
+                    if (d.label == "lock") {
+                        d3.select(this).style("opacity", 0.5);
+                        node_lock_unlock(node_id);
+                    }
+                    if (d.label == "link") {
+                        d3.select(this).style("opacity", 0.5);
+                        show_all_link(unique_id, node_label, node_id);
+                    }        
+                });
+                        
+                clicked[d.id] = true;
+                last_clicked_node = d.id;
+            }
+        })
+    }
+    function node_lock_unlock(node_id) {
+        if (lockked[node_id]) {
+            lockked[node_id] = false;
+        }
+        else {
+            lockked[node_id] = true;
+        }
+    }
+    function hide_node(node_id) {
+        // Select the node with the given ID
+        // Select all links with the given node ID as the source or target
+        const filteredNodes = graph_node.filter(node => node.id !== node_id);
+        const filteredLinks = graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
+ 
+        // filter isolated nodes that do not have any links
+        const isolatedNodes = filteredNodes.filter(function(node) {
+            return !filteredLinks.some(function(link) {
+                return link.source === node || link.target === node;
+            });
         });
 
+        // delete the original canvas
+        d3.select("#graph").selectAll(".node").remove();
+        d3.select("#graph").selectAll(".link").remove();
+        maxId = 0;
+
+        // Remove isolated nodes from the nodes array
+        graph_node = filteredNodes.filter(function(node) {
+            return !isolatedNodes.includes(node);
+        });
+        graph_link = filteredLinks;
+        // console.log(graph_node);
+        // build new network
+        build_new_svg(graph_node, graph_link)
+        // remove the tooltip
+        arcs.selectAll("path").remove();
+
+    }
+
+    function show_all_link(unique_id, node_label, node_id) {
+
+        const linksToFilter = svg.selectAll(".link")
+                                .filter(function(d) {
+                                    return d.source.id === node_id || d.target.id === node_id;
+                                });
+        if (node_label == "publication") {
+            var linkList = linksToFilter.data().map(function(d) {
+                return d.scopus_id;
+            });
+        }
+        else {
+            var linkList = linksToFilter.data().map(function(d) {
+                return d.doi;
+            });
+        }
+
+        d3.json("/show_link?unique_id=" + encodeURIComponent(unique_id) 
+        + "&label=" + encodeURIComponent(node_label)
+        + "&node_id=" + encodeURIComponent(node_id)
+        + "&maxId=" + encodeURIComponent(maxId)
+        + "&linkList=" + encodeURIComponent(linkList)
+        )
+        .then(function(links){
+            d3.select("#graph").selectAll(".node").remove();
+            d3.select("#graph").selectAll(".link").remove();
+            maxId = 0;
+            arcs.selectAll("path").remove();
+            
+            graph_node = graph_node.concat(links.nodes);
+            graph_link = graph_link.concat(links.links);
+
+            console.log(graph_node);
+            console.log(graph_link);
+            
+            build_new_svg(graph_node, graph_link);
+            
+        });
+    }
+      
+  
+    // ############# Initial network ##############
+    d3.json("/graph").then(function(graph) {
+
+        graph_node = graph.nodes;
+        graph_link = graph.links;
+
+        build_new_svg(graph_node, graph_link);
         
     });
-        
+    // ########## refresh #############
+    function refresh(){
+            d3.select("#graph").selectAll("*").remove();
+            svgTranslate = [0, 0];
+            curTranslate = [0, 0];
+            svgScale = 1;
+            isDragging = false;
+            dx = 0; 
+            dy = 0;
+            zx = 0; 
+            zy = 0;
+            
+            clicked = {};
+            lockked = {};
+            last_clicked_node = -1;
+            maxId = 0;
+            graph_node = [];
+            graph_link = [];
+            
+
+            // Define the SVG canvas
+            svg = d3.select("#graph").append("svg")
+            .attr("width", width).attr("height", height)
+            .attr("position", "absolute")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("pointer-events", "all")
+            .call(d3.drag()
+                .on("start", canvas_dragstarted)
+                .on("drag", canvas_dragged)
+                .on("end", canvas_dragended))
+            .call(d3.zoom()
+                .on("start", zoomstarted)
+                .on("zoom", zoomed)
+                .on("end", zoomended))
+            ;
+
+            arcs.selectAll("path").remove()
+
+            arcs = svg.selectAll("arcs")
+            .data([
+                { start: 0, end: 1/3, label: "hide" },
+                { start: 1/3, end: 2/3, label: "link" },
+                { start: 2/3, end: 1, label: "lock" }
+            ])
+            .enter();
+      
+    }
 
 
 
     // ####################### function #######################
     $(document).ready(function(){
         // ################### Refresh ####################
-        function refresh(){
-            d3.select("#graph").selectAll("*").remove();
-            svgTranslate = [0, 0];
-            // Define the SVG canvas
-            svg = d3.select("#graph").append("svg")
-                    .attr("width", "100%").attr("height", "100%")
-                    .attr("position", "absolute")
-                    .attr("viewBox", `0 0 ${width} ${height}`)
-                    .attr("pointer-events", "all")
-                    ;
-
-            // Define the zoom behavior
-            zoom = d3.behavior.zoom()
-                        .center([0,0])
-                        .scaleExtent([0.1, 10])
-                        .on("zoomstart", zoomstarted)
-                        .on("zoom", zoomed)
-                        .on("zoomend", zoomended);
-
-
-            // Define the drag behavior
-            drag = d3.behavior.drag()
-                        .on("dragstart", dragstarted)
-                        .on("drag", canvas_dragged)
-                        .on("dragend", dragended);
-
-            // Select the SVG element and apply the zoom and drag behaviors
-            svg.call(zoom).call(drag);
-            return svg;
-        }
+        
 
         // ################### keyword search ###################
         const form = document.getElementById('search');
@@ -334,50 +714,16 @@
             var form = $('#search');
             var year = form.find("input[name='year']").val();
             var keyword = form.find("input[name=keyword]").val();
-            svg = refresh();
-            svgTranslate = [0, 0];
+            refresh();
 
-            d3.json("/search?keyword=" + encodeURIComponent(keyword) + "&year=" + encodeURIComponent(year),
-                function (error, graph) {
-                    if (error) return;
+            d3.json("/search?keyword=" + encodeURIComponent(keyword) + "&year=" + encodeURIComponent(year))
+                .then(function(graph){
                     if (!graph || graph.length == 0) return;
 
-                    // d3.select("#graph").selectAll("*").remove();
-                    // var svg = d3.select("#graph").append("svg")
-                    //         .attr("width", "100%").attr("height", "100%")
-                    //         .attr("pointer-events", "all");
+                    graph_node = graph.nodes;
+                    graph_link = graph.links;
 
-                    force.nodes(graph.nodes).links(graph.links).start();
-
-                    const link = svg.selectAll(".link")
-                                    .data(graph.links).enter()
-                                    .append("line").attr("class", "link");
-
-                    const node = svg.selectAll(".node")
-                                    .data(graph.nodes).enter()
-                                    .append("circle")
-                                    .attr("class", function (d) { return "node "+d.label })
-                                    .attr("r", 10)
-                                    .call(force.drag()
-                                        .on("dragstart", dragstarted)
-                                        .on("drag", node_dragged)
-                                        .on("dragend", dragended)
-                                    );
-
-                    // html title attribute
-                    node.append("title")
-                        .text(function (d) { return d.title; })
-
-                    // force feed algo ticks
-                    force.on("tick", function() {
-                        link.attr("x1", function(d) { return d.source.x; })
-                            .attr("y1", function(d) { return d.source.y; })
-                            .attr("x2", function(d) { return d.target.x; })
-                            .attr("y2", function(d) { return d.target.y; });
-
-                        node.attr("cx", function(d) { return d.x; })
-                            .attr("cy", function(d) { return d.y; });
-                    });
+                    build_new_svg(graph_node,graph_link);
                 });
             return false;
         }
@@ -398,47 +744,14 @@
             var form = $('#orcid_search');
             var orcid = form.find("input[name='orcid']").val();
       
-            svg = refresh();
-            svgTranslate = [0, 0];
+            refresh();
 
-            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid),
-                function (error, graph) {
-                    if (error) return;
-                    if (!graph || graph.length == 0) return;
+            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid))
+                .then(function (graph) {
+                    graph_node = graph.nodes;
+                    graph_link = graph.links;
 
-                    force.nodes(graph.nodes).links(graph.links).start();
-
-                    const link = svg.selectAll(".link")
-                                    .data(graph.links).enter()
-                                    .append("line").attr("class", "link");
-
-                    const node = svg.selectAll(".node")
-                                    .data(graph.nodes).enter()
-                                    .append("circle")
-                                    .attr("class", function (d) {
-                                            return "node "+d.label;
-                                        })
-                                    .attr("r", 10)
-                                    .call(force.drag()
-                                        .on("dragstart", dragstarted)
-                                        .on("drag", node_dragged)
-                                        .on("dragend", dragended)
-                                    );
-
-                    // html title attribute
-                    node.append("title")
-                        .text(function (d) { return d.title; })
-
-                    // force feed algo ticks
-                    force.on("tick", function() {
-                        link.attr("x1", function(d) { return d.source.x; })
-                            .attr("y1", function(d) { return d.source.y; })
-                            .attr("x2", function(d) { return d.target.x; })
-                            .attr("y2", function(d) { return d.target.y; });
-
-                        node.attr("cx", function(d) { return d.x; })
-                            .attr("cy", function(d) { return d.y; });
-                    });
+                    build_new_svg(graph_node,graph_link);
                 });
             return false;
         }

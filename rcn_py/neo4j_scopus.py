@@ -1,36 +1,38 @@
 import os
-
+import requests
 import pandas as pd
 from neo4j import GraphDatabase
 
-file_subject = [("medicine", "Medicine"),
-                ("bioc", "Biochemistry, Genetics and Molecular Biology"),
-                ("social", "Social Sciences"),
-                ("engineer", "Engineering"),
-                ("physics", "Physics and Astronomy"),
-                ("cs", "Computer Science"),
-                ("env", "Environmental Science"),
-                ("agricultural", "Agricultural and Biological Sciences"),
-                ("earth", "Earth and Planetary Sciences"),
-                ("chemistry", "Chemistry"),
-                ("psychology", "Psychology"),
-                ("neuroscience", "Neuroscience"),
-                ("math", "Mathematics"),
-                ("immunology", "Immunology and Microbiology"),
-                ("materials", "Materials Science"),
-                ("multi", "Multidisciplinary"),
-                ("arts", "Arts and Humanities"),
-                ("chemicalEngineering", "Chemical Engineering"),
-                ("pharmacology", "Pharmacology, Toxicology and Pharmaceutics"),
-                ("business", "Business, Management and Accounting"),
-                ("energy", "Energy"),
-                ("nursing", "Nursing"),
-                ("eco", "Economics, Econometrics and Finance"),
-                ("health", "Health Professions"),
-                ("decision", "Decision Sciences"),
-                ("veterinary", "Veterinary"),
-                ("dentistry", "Dentistry")
-                ]
+# As its name
+def get_orcid_from_scopus(scopus_id, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
+
+    url = "http://api.elsevier.com/content/search/author?query=AU-ID%28"+scopus_id+"%29"
+
+    header = {'Accept' : 'application/json', 
+                'X-ELS-APIKey' : MYAPIKEY}
+    resp = requests.get(url, headers=header)
+    results = resp.json()
+
+    if 'service-error' in results.keys():
+        return 
+    else:
+        if "orcid" in results['search-results']['entry'][0].keys():
+            orcid = results["search-results"]["entry"][0]["orcid"]
+        else:
+            orcid = ''
+
+        # Get preferred name (instead of initials)
+        name = results['search-results']['entry'][0]['preferred-name']
+        preferred_name  = name['given-name'] + ' ' + name['surname']
+
+        # Get scopus profile links
+        links = results['search-results']['entry'][0]["link"]
+        for l in links:
+            if l['@ref'] == 'scopus-author':
+                author_link = l['@href']
+
+        return orcid, preferred_name, author_link
+
 
 # Add constraint for author nodes and publication nodes
 def add_constraint(tx):
@@ -56,7 +58,7 @@ def neo4j_create_people(tx, df, subject):
         if len(author_scopus_id) < 2:
             continue
         year = int(df.Year[i])
-        author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]
+        # author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]
 
         # country and affiliation
         author_aff = df['Authors with affiliations'][i].split("; ")[0:len(author_scopus_id)]
@@ -85,9 +87,13 @@ def neo4j_create_people(tx, df, subject):
         for n in range(len(author_scopus_id)):
             # if the person exists, append keywords and year
             # avoid adding duplicate years
+            orcid, prefername,link = get_orcid_from_scopus(author_scopus_id[n])
+            
             tx.run("""
                 MERGE (p:Person {scopus_id: $id})
                 SET p.name = $name,
+                    p.orcid = $orcid,
+                    p.scopus_link = $link,
                     p.affiliation = $affiliation, 
                     p.country = $country,
                     p.keywords = apoc.coll.toSet(coalesce(p.keywords, []) + $keywords),
@@ -95,7 +101,9 @@ def neo4j_create_people(tx, df, subject):
                     p.subject = apoc.coll.toSet(coalesce(p.subject, []) + $subject)
                 """, 
                 id = author_scopus_id[n],
-                name = author_name[n],
+                orcid = orcid,
+                link = link,
+                name = prefername,
                 affiliation = author_aff[n],
                 country = author_country[n],
                 keywords = keywords,
