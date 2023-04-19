@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <title>Neo4j RCN</title>
 </head>
 
@@ -132,6 +133,7 @@
     var clicked = {};
     var lockked = {};
     var last_clicked_node;
+    var last_d;
     var arc = d3.arc().innerRadius(6).outerRadius(16);
     let maxId = 0;
 
@@ -156,9 +158,9 @@
     
     var arcs = svg.selectAll("arcs")
             .data([
-                { start: 0, end: 1/3, label: "hide", icon: "\uf00d"},
-                { start: 1/3, end: 2/3, label: "link", icon: "\uf31d"},
-                { start: 2/3, end: 1, label: "lock", icon:"\uf023" }
+                { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
+                { start: 1/3, end: 2/3, label: "link", icon: '\uf31d'},
+                { start: 2/3, end: 1, label: "lock", icon: '\uf023' }
             ])
             .enter();
     
@@ -278,20 +280,20 @@
             arcs.selectAll("path").remove();
             arcs.selectAll("image").remove();
 
-            var icons = arcs.data(arcs.data())
-                            .enter().append('text')
-                            .attr('font-family', 'FontAwesome')
-                            .attr('font-size', '20px' )
-                            .text(function(d) { 
-                                if (d.label == 'lock'){
-                                    return d.icon;
-                                }
-                                else{
-                                    return d.icon;
-                                } })
-                            .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                            .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
-                            ; 
+            // var icons = arcs.data(arcs.data())
+            //                 .enter().append('text')
+            //                 .attr('font-family', 'FontAwesome')
+            //                 .attr('font-size', '100px' )
+            //                 .attr('unicode', function(d) { 
+            //                     if (d.label == 'lock'){
+            //                         return d.icon;
+            //                     }
+            //                     else{
+            //                         return d.icon;
+            //                     } })
+            //                 .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+            //                 .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+            //                 ; 
                             
             // arcs.selectAll("image")
             //             .data(arcs.data())
@@ -310,8 +312,8 @@
 
             arcs.append("path")
                 .attr("d", d => arc({
-                            "startAngle": d.start * 2 * Math.PI + 0.01,
-                            "endAngle": d.end * 2 * Math.PI - 0.01
+                            "startAngle": d.start * 2 * Math.PI + 0.02,
+                            "endAngle": d.end * 2 * Math.PI - 0.02
                         }))    
                 .attr("transform", `translate(${event.x},${event.y})`)
                 .attr("fill", "lightgrey")
@@ -460,16 +462,19 @@
                 }
             } 
             else {
-                // If click another node, hide the previous one
+                // If click another node, hide the previous tootip
                 if (last_clicked_node && last_clicked_node != d.id) {
                     clicked[last_clicked_node] = false;
-                    if(lockked[d.id]){
-                        d.fx = d.x;
-                        d.fy = d.y;
+                    // ########### One little bug, when I didn't double click the node (the previous tooltip is not removed),
+                    // ########### and then I choose another node, then the previous node' fx/fy cannot be changed.
+
+                    if(lockked[last_clicked_node]){
+                        last_d.fx = last_d.x;
+                        last_d.fy = last_d.y;
                     }
                     else {
-                        d.fx = null;
-                        d.fy = null;
+                        last_d.fx = null;
+                        last_d.fy = null;
                     }
                     arcs.selectAll("path").remove();
                     arcs.selectAll("image").remove();
@@ -486,7 +491,8 @@
                 }
                 d.fx = d.x;
                 d.fy = d.y;
-
+                var node_x = d.x;
+                var node_y = d.y;
                 // var icons = arcs.selectAll("image")
                 //             .data(arcs.data())
                 //             .enter().append("image")
@@ -499,28 +505,40 @@
                 //                 } })
                 //             .attr("width", 20)
                 //             .attr("height",20)
-                //             .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                //             .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI));
-                var icons = arcs.selectAll("image")
-                            .data(arcs.data())
-                            .enter().append('text')
-                            .attr('font-family', 'FontAwesome')
-                            .attr('font-size', '20px' )
-                            .text(function(d) { 
-                                if (d.label == 'lock'){
-                                    return d.icon;
-                                }
-                                else{
-                                    return d.icon;
-                                } })
-                            .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                            .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
-                            ; 
+                //             .attr("x", d=>d.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                //             .attr("y", d=>d.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI));
+                // var icons = arcs.selectAll("image")
+                //             .data(arcs.data())
+                //             .enter().append('text')
+                //             .attr('font-family', 'FontAwesome')
+                //             .attr("text-anchor", "middle")
+                //             .attr('font-size', '100px' )
+                //             .attr('unicode', function(d) { 
+                //                 if (d.label == 'lock'){
+                //                     return d.icon;
+                //                 }
+                //                 else{
+                //                     return d.icon;
+                //                 } })
+                //             .attr("x", d=>d.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                //             .attr("y", d=>d.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                //             ; 
+
+                // var icons = arcs.selectAll("image")
+                //             .data(arcs.data())
+                //             .enter().append('text')
+                //                 .attr("font-family", "FontAwesome")
+                //                 .attr("text-anchor", "middle")
+                //                 .attr("font-size", "50px")
+                //                 .attr("x", d=>node_x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                //                 .attr("y", d=>node_y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                //                 .text("\uf31d")
+                //                 ; 
                 
                 arcs.append("path")
                 .attr("d", d => arc({
-                            "startAngle": d.start * 2 * Math.PI + 0.01,
-                            "endAngle": d.end * 2 * Math.PI - 0.01
+                            "startAngle": d.start * 2 * Math.PI + 0.02,
+                            "endAngle": d.end * 2 * Math.PI - 0.02
                         }))    
                 .attr("transform", `translate(${d.x},${d.y})`)
                 .attr("fill", "lightgrey")
@@ -553,6 +571,7 @@
                         
                 clicked[d.id] = true;
                 last_clicked_node = d.id;
+                last_d = d;
             }
         })
     }
@@ -660,6 +679,7 @@
             clicked = {};
             lockked = {};
             last_clicked_node = -1;
+            last_d = {};
             maxId = 0;
             graph_node = [];
             graph_link = [];

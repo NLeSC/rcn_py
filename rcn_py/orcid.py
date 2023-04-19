@@ -10,11 +10,10 @@ from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from pyvis.network import Network
 
-nltk.download("omw-1.4")
-nltk.download("stopwords")
-nltk.download("wordnet")
-stop_words = set(stopwords.words("english"))
-wnl = WordNetLemmatizer()
+# # nltk.download("omw-1.4")
+# nltk.download("stopwords")
+# # nltk.download("wordnet")
+# stop_words = set(stopwords.words("english"))
 ps = PorterStemmer()
 
 
@@ -224,6 +223,11 @@ def orcid_get_coauthors(full_name):
 
 
 def clean_text(text):
+    # nltk.download("omw-1.4")
+    nltk.download("stopwords")
+    # nltk.download("wordnet")
+    stop_words = set(stopwords.words("english"))
+
     text = text.replace("\n", " ")
     text = re.sub(r"-", " ", text)
     text = re.sub(r"\d+/\d+/\d+", "", text)
