@@ -2,6 +2,7 @@ import os
 import requests
 import pandas as pd
 from neo4j import GraphDatabase
+import time
 
 # As its name
 def get_orcid_from_scopus(scopus_id, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
@@ -15,6 +16,12 @@ def get_orcid_from_scopus(scopus_id, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"
 
     if 'service-error' in results.keys():
         return 
+    elif 'error-response' in results.keys():
+        time.sleep(1)
+        get_orcid_from_scopus(scopus_id)
+
+    elif 'error' in results['search-results']['entry'][0].keys():
+        return '', '', ''
     else:
         if "orcid" in results['search-results']['entry'][0].keys():
             orcid = results["search-results"]["entry"][0]["orcid"]
@@ -58,7 +65,7 @@ def neo4j_create_people(tx, df, subject):
         if len(author_scopus_id) < 2:
             continue
         year = int(df.Year[i])
-        # author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]
+        author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]
 
         # country and affiliation
         author_aff = df['Authors with affiliations'][i].split("; ")[0:len(author_scopus_id)]
@@ -87,13 +94,11 @@ def neo4j_create_people(tx, df, subject):
         for n in range(len(author_scopus_id)):
             # if the person exists, append keywords and year
             # avoid adding duplicate years
-            orcid, prefername,link = get_orcid_from_scopus(author_scopus_id[n])
+            # orcid, prefername,link = get_orcid_from_scopus(author_scopus_id[n])
             
             tx.run("""
                 MERGE (p:Person {scopus_id: $id})
                 SET p.name = $name,
-                    p.orcid = $orcid,
-                    p.scopus_link = $link,
                     p.affiliation = $affiliation, 
                     p.country = $country,
                     p.keywords = apoc.coll.toSet(coalesce(p.keywords, []) + $keywords),
@@ -101,9 +106,7 @@ def neo4j_create_people(tx, df, subject):
                     p.subject = apoc.coll.toSet(coalesce(p.subject, []) + $subject)
                 """, 
                 id = author_scopus_id[n],
-                orcid = orcid,
-                link = link,
-                name = prefername,
+                name = author_name,
                 affiliation = author_aff[n],
                 country = author_country[n],
                 keywords = keywords,

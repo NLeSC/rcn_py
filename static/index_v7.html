@@ -5,50 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
-    <title>Neo4j RCN</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <title>Neo4j RCN</title>    
+    <!-- <style>
+        .navbar-form {
+          display: none;
+        }
+        .navbar-form.active {
+          display: block;
+        }
+      </style> -->
 </head>
 
 <body>
 <div id="graph">
 </div>
+
 <div role="navigation" class="navbar navbar-default navbar-static-top">
     <div class="container">
         <div class="row">
             <div class="col-sm-6 col-md-6">
                 <ul class="nav navbar-nav">
                     <li>
-                        <form class="navbar-form" id="search">
+                        <form class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
                             <div class="form-group">
                             <label for="keyword">Keyword:</label>
-                            <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="20">
+                            <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="30">
                             <br>
                             <label for="year">Year:</label>
-                            <input type="year" name="year" id="year" placeholder=2022 class="form-control">
+                            <input type="text" name="year" id="year" placeholder="2022" class="form-control" />
                             <br>
                             <button class="btn btn-default" type="submit" id="submit-btn">Search</button>
                             </div>
                         </form>
+                        <!-- <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
+                            <div class="form-group">
+                            <label for="orcid">Search for authors by ORCID:</label>
+                            <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
+                            <br>
+                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
+                            </div>
+                        </form> -->
                     </li>
                 </ul>
             </div>
 
             <div class="navbar-header col-sm-6 col-md-6">
-                <!-- <div class="logo-well">
-                    <a href="https://neo4j.com/developer/get-started">
-                    <img src="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/img/logo-white.svg" alt="Neo4j World's Leading Graph Database" id="logo">
-                    </a>
-                </div> -->
                 <div class="navbar-brand">
                     <div class="brand">Research Collaboration Network</div>
                 </div>
             </div>
 
+            <!-- <div class="col-sm-6 col-md-6">
+                <ul class="nav navbar-nav">
+                    <button onclick="showForm('topic-search')">Search by Topic</button>
+                    <button onclick="showForm('author-search')">Search by Author</button>
+
+                </ul>
+              </div> -->
             <div class="col-sm-6 col-md-6">
                 <ul class="nav navbar-nav">
                     <li>
-                        <form class="navbar-form" id="orcid_search">
+                        <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
                             <div class="form-group">
-                            <label for="orcid">Or search for authors by ORCID:</label>
+                            <label for="orcid">Search for authors by ORCID:</label>
                             <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
                             <br>
                             <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
@@ -56,7 +76,7 @@
                         </form>
                     </li>
                 </ul>
-            </div>
+            </div>           
         </div>
     </div>
 </div>
@@ -79,19 +99,53 @@
             </div>
         </div>
     </div>
-    <!-- <div class="col-md-3">
-        <div class="panel panel-default">
-            <div class="panel-heading" id="title">Details</div>
-            <div class="row">
-                <div class="col-md-8 col-sm-8">
-                    <h6>Node information</h6>
-                    <ul id="node_info">
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div> -->
 </div>
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script>
+    // $(function() {
+    //     $('#year').daterangepicker({
+    //         singleDatePicker: false,
+    // showDropdowns: true,
+    // minYear: moment().subtract(10, 'year').format('YYYY'),
+    // maxYear: moment().format('YYYY'),
+    // locale: {
+    //   format: 'YYYY'
+    // },
+    // opens: 'center',
+    // drops: 'down'
+    //     });
+    // });
+    // function showForm(formId) {
+    //   // Get all forms
+    //   const forms = document.querySelectorAll('.navbar-form');
+  
+    //   // Loop through each form
+    //   forms.forEach(form => {
+    //     if (form.id === formId) {
+    //       form.classList.add('active'); // Show selected form
+    //     } else {
+    //       form.classList.remove('active'); // Hide other forms
+    //     }
+    //   });
+    // }
+
+    function resetFields(option) {
+        if (option === 'topic'){
+            document.getElementById("orcid").value = "";
+        }
+        else if (option === 'author') {
+            document.getElementById("keyword").value = "";
+            document.getElementById("year").value = "";
+        }
+    }
+
+  </script>
+
+  
 
 <style type="text/css">
     .node { stroke: #222; stroke-width: 1.5px; }
@@ -106,7 +160,7 @@
 </style>
 
 
-<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
 
 
@@ -134,7 +188,7 @@
     var lockked = {};
     var last_clicked_node;
     var last_d;
-    var arc = d3.arc().innerRadius(6).outerRadius(16);
+    var arc = d3.arc().innerRadius(6).outerRadius(18);
     let maxId = 0;
 
     var graph_node;
@@ -159,8 +213,8 @@
     var arcs = svg.selectAll("arcs")
             .data([
                 { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
-                { start: 1/3, end: 2/3, label: "link", icon: '\uf31d'},
-                { start: 2/3, end: 1, label: "lock", icon: '\uf023' }
+                { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
+                { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
             ])
             .enter();
     
@@ -195,9 +249,9 @@
                 maxId = node.id;
             }         
         });  
-                   
+                  
         addOrRemoveTooltip(node);
-
+        
         // html title attribute
         node.append("title")
                     .text(function (d) { return d.title; });
@@ -218,6 +272,75 @@
         }).alphaDecay(0.05);
 
         force.alpha(1).restart();
+    }
+
+    function show_new_tooltip(node_id, unique_id, node_label,node_x, node_y){
+        arcs.selectAll("path").remove();
+        arcs.selectAll("text").remove();
+
+                      
+        var icons = arcs.append('text')
+                                .attr("font-family", "FontAwesome")
+                                .attr("text-anchor", "middle")
+                                .attr("font-size", "10px")
+                                .attr("x", d=>node_x + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                                .attr("y", d=>node_y+3 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                                .text(function(d) { 
+                                    if (d.label == 'lock'){
+                                        if (lockked[node_id])
+                                            return d.icon[1];
+                                        else 
+                                            return d.icon[0];
+                                    }
+                                    else{
+                                        return d.icon;
+                                    } })
+                                ; 
+
+        arcs.append("path")
+                .attr("d", d => arc({
+                            "startAngle": d.start * 2 * Math.PI + 0.02,
+                            "endAngle": d.end * 2 * Math.PI - 0.02
+                        }))    
+                .attr("transform", `translate(${node_x},${node_y})`)
+                .attr("fill", "lightgrey")
+                .style("opacity", 0.5)
+
+                .on("mouseover", function(event, d) {
+                    // change the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.2);
+                })
+                .on("mouseout", function(event, d) {
+                    // restore the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.5);
+                })
+                .on("click", function(event, d){
+                    if (d.label == "hide") {
+                        d3.select(this).style("opacity", 0.5);
+                        hide_node(node_id);
+                    }
+                    if (d.label == "lock") {
+                        d3.select(this).style("opacity", 0.5);
+                        node_lock_unlock(node_id);
+                        icons.text(function(d) { 
+                                    if (d.label == 'lock'){
+                                        if (lockked[node_id])
+                                            return d.icon[1];
+                                        else 
+                                            return d.icon[0];
+                                    }
+                                    else{
+                                        return d.icon;
+                                    } })
+                                ; 
+                    }
+                    if (d.label == "link") {
+                        d3.select(this).style("opacity", 0.5);
+                        show_all_link(unique_id, node_label, node_id);
+                    }        
+                });
     }
    
 
@@ -277,72 +400,15 @@
         event.subject.fy = event.y;
         if (clicked[d.id]) {
             var node_id = d.id;
-            arcs.selectAll("path").remove();
-            arcs.selectAll("image").remove();
-
-            // var icons = arcs.data(arcs.data())
-            //                 .enter().append('text')
-            //                 .attr('font-family', 'FontAwesome')
-            //                 .attr('font-size', '100px' )
-            //                 .attr('unicode', function(d) { 
-            //                     if (d.label == 'lock'){
-            //                         return d.icon;
-            //                     }
-            //                     else{
-            //                         return d.icon;
-            //                     } })
-            //                 .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-            //                 .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
-            //                 ; 
-                            
-            // arcs.selectAll("image")
-            //             .data(arcs.data())
-            //             .enter().append("image")
-            //             .attr("xlink:href", function (d) {
-            //                  if (d.label == 'lock'){
-            //                     return d.icon[0];
-            //                  }
-            //                  else{
-            //                     return d.icon;
-            //                  } })
-            //             .attr("width", 20)
-            //             .attr("height",20)
-            //             .attr("x", d=>event.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-            //             .attr("y", d=>event.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI));
-
-            arcs.append("path")
-                .attr("d", d => arc({
-                            "startAngle": d.start * 2 * Math.PI + 0.02,
-                            "endAngle": d.end * 2 * Math.PI - 0.02
-                        }))    
-                .attr("transform", `translate(${event.x},${event.y})`)
-                .attr("fill", "lightgrey")
-                .style("opacity", 0.5)
-
-                .on("mouseover", function(event, d) {
-                    // change the style of the button
-                    d3.select(this)
-                    .style("opacity", 0.2);
-                })
-                .on("mouseout", function(event, d) {
-                    // restore the style of the button
-                    d3.select(this)
-                    .style("opacity", 0.5);
-                })
-                .on("click", function(event, d){
-                    if (d.label == "hide") {
-                        d3.select(this).style("opacity", 0.5);
-                        hide_node(node_id);
-                    }
-                    if (d.label == "lock") {
-                        d3.select(this).style("opacity", 0.5);
-                        node_lock_unlock(node_id);
-                    }
-                    if (d.label == "link") {
-                        d3.select(this).style("opacity", 0.5);
-                        show_all_link(unique_id, node_label, node_id);
-                    }        
-                });
+            var node_label = d.label;
+            if (node_label == "publication"){
+                var unique_id = d.doi;
+            }
+            if (node_label.indexOf("author") != -1) {
+                var unique_id = d.scopus_id;
+            }
+            // If a node is moving, its tooltip and icons will move along with it     
+            show_new_tooltip(node_id, unique_id, node_label,event.x, event.y);
         }
     }
           
@@ -450,7 +516,7 @@
             // Tooltip
             if (clicked[d.id]) {
                 arcs.selectAll("path").remove();
-                arcs.selectAll("image").remove();
+                arcs.selectAll("text").remove();
                 clicked[d.id] = false;
                 if(lockked[d.id]){
                     d.fx = d.x;
@@ -477,97 +543,29 @@
                         last_d.fy = null;
                     }
                     arcs.selectAll("path").remove();
-                    arcs.selectAll("image").remove();
+                    arcs.selectAll("text").remove();
                 }
 
                 var node_id = d.id;
                 var node_label = d.label;
 
+                // get unique_id for Database Selecting function 
                 if (node_label == "publication"){
                     var unique_id = d.doi;
                 }
                 if (node_label.indexOf("author") != -1) {
                     var unique_id = d.scopus_id;
                 }
+
+                // lock node
                 d.fx = d.x;
                 d.fy = d.y;
+
                 var node_x = d.x;
                 var node_y = d.y;
-                // var icons = arcs.selectAll("image")
-                //             .data(arcs.data())
-                //             .enter().append("image")
-                //             .attr("xlink:href", function (d) {
-                //                 if (d.label == 'lock'){
-                //                     return d.icon[0];
-                //                 }
-                //                 else{
-                //                     return d.icon;
-                //                 } })
-                //             .attr("width", 20)
-                //             .attr("height",20)
-                //             .attr("x", d=>d.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                //             .attr("y", d=>d.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI));
-                // var icons = arcs.selectAll("image")
-                //             .data(arcs.data())
-                //             .enter().append('text')
-                //             .attr('font-family', 'FontAwesome')
-                //             .attr("text-anchor", "middle")
-                //             .attr('font-size', '100px' )
-                //             .attr('unicode', function(d) { 
-                //                 if (d.label == 'lock'){
-                //                     return d.icon;
-                //                 }
-                //                 else{
-                //                     return d.icon;
-                //                 } })
-                //             .attr("x", d=>d.x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                //             .attr("y", d=>d.y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
-                //             ; 
 
-                // var icons = arcs.selectAll("image")
-                //             .data(arcs.data())
-                //             .enter().append('text')
-                //                 .attr("font-family", "FontAwesome")
-                //                 .attr("text-anchor", "middle")
-                //                 .attr("font-size", "50px")
-                //                 .attr("x", d=>node_x-5 + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                //                 .attr("y", d=>node_y-5 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
-                //                 .text("\uf31d")
-                //                 ; 
-                
-                arcs.append("path")
-                .attr("d", d => arc({
-                            "startAngle": d.start * 2 * Math.PI + 0.02,
-                            "endAngle": d.end * 2 * Math.PI - 0.02
-                        }))    
-                .attr("transform", `translate(${d.x},${d.y})`)
-                .attr("fill", "lightgrey")
-                .style("opacity", 0.5)
-
-                .on("mouseover", function(event, d) {
-                    // change the style of the button
-                    d3.select(this)
-                    .style("opacity", 0.2);
-                })
-                .on("mouseout", function(event, d) {
-                    // restore the style of the button
-                    d3.select(this)
-                    .style("opacity", 0.5);
-                })
-                .on("click", function(event, d){
-                    if (d.label == "hide") {
-                        d3.select(this).style("opacity", 0.5);
-                        hide_node(node_id);
-                    }
-                    if (d.label == "lock") {
-                        d3.select(this).style("opacity", 0.5);
-                        node_lock_unlock(node_id);
-                    }
-                    if (d.label == "link") {
-                        d3.select(this).style("opacity", 0.5);
-                        show_all_link(unique_id, node_label, node_id);
-                    }        
-                });
+                // present the tooltip of this node
+                show_new_tooltip(node_id, unique_id, node_label, node_x, node_y);
                         
                 clicked[d.id] = true;
                 last_clicked_node = d.id;
@@ -582,6 +580,7 @@
         else {
             lockked[node_id] = true;
         }
+
     }
     function hide_node(node_id) {
         // Select the node with the given ID
@@ -611,6 +610,7 @@
         build_new_svg(graph_node, graph_link)
         // remove the tooltip
         arcs.selectAll("path").remove();
+        arcs.selectAll("text").remove();
 
     }
 
@@ -642,6 +642,7 @@
             d3.select("#graph").selectAll(".link").remove();
             maxId = 0;
             arcs.selectAll("path").remove();
+            arcs.selectAll("text").remove();
             
             graph_node = graph_node.concat(links.nodes);
             graph_link = graph_link.concat(links.links);
@@ -705,9 +706,9 @@
 
             arcs = svg.selectAll("arcs")
             .data([
-                { start: 0, end: 1/3, label: "hide" },
-                { start: 1/3, end: 2/3, label: "link" },
-                { start: 2/3, end: 1, label: "lock" }
+                { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
+                { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
+                { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
             ])
             .enter();
       
@@ -717,11 +718,9 @@
 
     // ####################### function #######################
     $(document).ready(function(){
-        // ################### Refresh ####################
-        
 
         // ################### keyword search ###################
-        const form = document.getElementById('search');
+        const form = document.getElementById('topic-search');
         form.addEventListener('submit', function(event) {
             // prevent the form from submitting and refreshing the page
             event.preventDefault(); 
@@ -731,7 +730,7 @@
 
         function field_search(){
 
-            var form = $('#search');
+            var form = $('#topic-search');
             var year = form.find("input[name='year']").val();
             var keyword = form.find("input[name=keyword]").val();
             refresh();
@@ -751,7 +750,7 @@
 
 
         // ################### ORCID search ######################
-        const form_orcid = document.getElementById('orcid_search');
+        const form_orcid = document.getElementById('author-search');
         form_orcid.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             // call your function here
@@ -761,7 +760,7 @@
         function orcid_search(){
             // Prevent default form submission action
             // event.preventDefault();   
-            var form = $('#orcid_search');
+            var form = $('#author-search');
             var orcid = form.find("input[name='orcid']").val();
       
             refresh();

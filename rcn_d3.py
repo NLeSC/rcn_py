@@ -94,7 +94,7 @@ def get_example_graph():
         ))
     
     db = get_db()
-    results = db.read_transaction(work, 2022, "Deep learning")
+    results = db.execute_read(work, 2022, "Deep learning")
     nodes = []
     rels = []
     node_records = []
@@ -164,7 +164,7 @@ def get_search_query():
     else:
         db = get_db()
         query = keyword.replace("+", " ")
-        results = db.read_transaction(work, year, query)
+        results = db.execute_read(work, year, query)
         # results = db.read_transaction(work, q)
         # return Response(
         #     dumps([serialize_movie(record["movie"]) for record in results]),
@@ -260,7 +260,7 @@ def get_orcid_search():
     else:
         db = get_db()
         scopus_id = neo4j_rsd.get_scopus_info_from_orcid(orcid)[0]
-        results = db.read_transaction(first_coauthor, scopus_id)
+        results = db.execute_read(first_coauthor, scopus_id)
         # second_results = db.read_transaction(second_coauthor, scopus_id)
         # results = db.read_transaction(work, q)
         # return Response(
@@ -288,7 +288,7 @@ def get_orcid_search():
             i += 1
             for id in record["author_scopus_id"]:
                 # Get coauthor info from DB
-                co_author_results = db.read_transaction(get_coauthor_info, id)
+                co_author_results = db.execute_read(get_coauthor_info, id)
                 name = co_author_results[0]["name"]
                 country = co_author_results[0]["country"]
                 aff = co_author_results[0]["aff"]
@@ -366,7 +366,7 @@ def show_link():
 
         db = get_db()
         if node_label == "publication":
-            results = db.read_transaction(pub_node, unique_id)
+            results = db.execute_read(pub_node, unique_id)
             for record in results:
                 if record['scopus_id'] not in link_list:
                     max_id += 1
@@ -380,7 +380,7 @@ def show_link():
                     rels.append({"source": max_id, "target": node_id, "doi": unique_id, "scopus_id": record['scopus_id']})
 
         else:
-            results = db.read_transaction(person_node, unique_id)
+            results = db.execute_read(person_node, unique_id)
             for record in results:
                 if record['doi'] not in link_list:
                     if math.isnan(record["cited"]):

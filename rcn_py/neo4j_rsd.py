@@ -91,9 +91,12 @@ def create_person_nodes(tx, authors, scopus_id_dict, preferred_name_dict, author
     # There is overlapping between RSD "project" and "software"
     for author in authors:
         if author['orcid']:
-            author_scopus_id = scopus_id_dict[author['orcid']]
-            preferred_name = preferred_name_dict[author['orcid']] 
-            scopus_link = author_link_dict[author['orcid']]
+            if author['orcid'] in scopus_id_dict:
+                author_scopus_id = scopus_id_dict[author['orcid']]
+                preferred_name = preferred_name_dict[author['orcid']] 
+                scopus_link = author_link_dict[author['orcid']]
+            else:
+                author_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(author['orcid'])
         
             if len(preferred_name) == 0:
                 preferred_name = author['name']
@@ -202,8 +205,11 @@ def create_author_project_edge(tx, authors, scopus_id_dict, preferred_name_dict,
     #     title,
     #     year
     for author in authors:
-        author_scopus_id = scopus_id_dict[author['orcid']]
-        preferred_name = preferred_name_dict[author['orcid']] 
+        if author['orcid'] in scopus_id_dict:
+            author_scopus_id = scopus_id_dict[author['orcid']]
+            preferred_name = preferred_name_dict[author['orcid']] 
+        else:
+            author_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(author['orcid'])
         # scopus_link = author_link_dict[author['orcid']]
 
         if len(preferred_name) == 0:
@@ -248,8 +254,11 @@ def create_author_software_edge(tx, contributors, scopus_id_dict, preferred_name
     #     brand_name,
     #     year
     for contributor in contributors:
-        contributor_scopus_id = scopus_id_dict[contributor['orcid']]
-        preferred_name = preferred_name_dict[contributor['orcid']] 
+        if contributor['orcid'] in scopus_id_dict:
+            contributor_scopus_id = scopus_id_dict[contributor['orcid']]
+            preferred_name = preferred_name_dict[contributor['orcid']] 
+        else:
+            contributor_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(contributor['orcid'])
         # scopus_link = author_link_dict[contributor['orcid']]
               
         if len(preferred_name) == 0:
