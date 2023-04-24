@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
+    <title>Neo4j RCN</title>
+</head>
+
+<body>
+<div id="graph">
+</div>
+<div role="navigation" class="navbar navbar-default navbar-static-top">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6 col-md-6">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <form class="navbar-form" id="search">
+                            <div class="form-group">
+                            <label for="keyword">Keyword:</label>
+                            <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="20">
+                            <br>
+                            <label for="year">Year:</label>
+                            <input type="year" name="year" id="year" placeholder=2022 class="form-control">
+                            <br>
+                            <button class="btn btn-default" type="submit" id="submit-btn">Search</button>
+                            </div>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="navbar-header col-sm-6 col-md-6">
+                <!-- <div class="logo-well">
+                    <a href="https://neo4j.com/developer/get-started">
+                    <img src="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/img/logo-white.svg" alt="Neo4j World's Leading Graph Database" id="logo">
+                    </a>
+                </div> -->
+                <div class="navbar-brand">
+                    <div class="brand">Research Collaboration Network</div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-md-6">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <form class="navbar-form" id="orcid_search">
+                            <div class="form-group">
+                            <label for="orcid">Or search for authors by ORCID:</label>
+                            <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
+                            <br>
+                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
+                            </div>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-end">
+    <div class="col-md-3">
+        <div class="panel panel-default">
+            <div class="panel-heading" id="title">Details</div>
+            <div class="row">
+                <div class="col-md-8 col-sm-8">
+                    <h6>Node information</h6>
+                    <ul id="info">
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+    .node { stroke: #222; stroke-width: 1.5px; }
+    .node.author { fill: #BBB; }
+    .node.publication { fill: #788cc0; }
+    .node.author_highlight { fill: #ee977c; }
+    .node.first_coauthor { fill: #ffca7f; }
+    .node.second_coauthor { fill: #fff493; }
+    .node.first_pub { fill: #8ac7ffe1; }
+    .node.second_pub { fill: #98979a; }
+    .link { stroke: #999; stroke-opacity: .6; stroke-width: 1px; }
+</style>
+
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/d3-force.v1.min.js"></script>
+
+
+<script type="text/javascript">
+    // ####################### initial #######################
+    const width = window.innerWidth, height =  window.innerWidth;
+
+    const force = d3.layout.force()
+            .charge(-100)
+            .linkDistance(50)
+            .size([width, height]);
+
+    var svgTranslate = [0, 0];
+
+    // Define the SVG canvas
+    var svg = d3.select("#graph").append("svg")
+            .attr("width", "100%").attr("height", "100%")
+            .attr("position", "absolute")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("pointer-events", "all")
+            ;
+
+    // Define the zoom behavior
+    var zoom = d3.behavior.zoom()
+                .center([0,0])
+                .scaleExtent([0.1, 10])
+                .on("zoomstart", zoomstarted)
+                .on("zoom", zoomed)
+                .on("zoomend", zoomended);
+
+
+    // Define the drag behavior
+    var drag = d3.behavior.drag()
+                .on("dragstart", dragstarted)
+                .on("drag", canvas_dragged)
+                .on("dragend", dragended);
+
+    // Select the SVG element and apply the zoom and drag behaviors
+    svg.call(zoom).call(drag);
+    
+    
+    // Define the behavior for zooming
+    // function zoomstarted(){
+    //     svgTranslate = d3.transform(svg.attr('transform')).translate;
+    // }
+    function zoomstarted(){
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
+    function zoomed() {
+        var scale = d3.event.scale,
+            translate = d3.event.translate,
+            dx = svgTranslate[0] + translate[0],
+            dy = svgTranslate[1] + translate[1];
+
+        // Apply the offset to the zoom transform
+        svg.attr("transform", "translate(" + dx + "," + dy + ")scale(" + scale + ")");
+
+    }
+    function zoomended(){
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
+    
+    // Define the behavior for dragging
+    function dragstarted() {
+        d3.event.sourceEvent.stopPropagation();
+        d3.select(this).classed("dragging", true);
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
+
+    function node_dragged() {
+        var dx = d3.event.dx,
+            dy = d3.event.dy;
+        d3.select(this).attr("transform", "translate(" + dx + "," + dy + ")");
+    }
+
+    function canvas_dragged() {
+        svgTranslate[0] = svgTranslate[0] + d3.event.dx;
+        svgTranslate[1] = svgTranslate[1] + d3.event.dy;
+        svg.attr("transform", "translate(" + svgTranslate[0] + "," + svgTranslate[1] + ")scale(" + zoom.scale() + ")");
+    }
+
+    function dragended() {
+        d3.select(this).classed("dragging", false);
+        svgTranslate = d3.transform(svg.attr('transform')).translate;
+    }
+
+
+    // ############# Initial network ##############
+    d3.json("/graph", function(error, graph) {
+        if (error) return;
+
+        // const force = d3.forceSimulation(node)
+        // .force("charge", d3.forceManyBody().strength(-50))
+        // .force("link", d3.forceLink(graph.links).distance(100))
+        // .force("center", d3.forceCenter(width/2, height/2));
+
+        force.nodes(graph.nodes)
+            .links(graph.links)
+            .start();
+
+        const link = svg.selectAll(".link")
+                    .data(graph.links).enter()
+                    .append("line").attr("class", "link");
+
+        const node = svg.selectAll(".node")
+                    .data(graph.nodes).enter()
+                    .append("circle")
+                    .attr("class", function (d) { return "node "+d.label; })
+                    .attr("r", 10)
+                    .call(force.drag()
+                        .on("dragstart", dragstarted)
+                        .on("drag", node_dragged)
+                        .on("dragend", dragended)
+                    );
+
+        // html title attribute
+        node.append("title")
+                    .text(function (d) { return d.title; })
+
+
+        // force feed algo ticks
+        force.on("tick", ()=>{
+            link
+            .attr("x1", (d) => d.source.x)
+            .attr("y1", (d) => d.source.y)
+            .attr("x2", (d) => d.target.x)
+            .attr("y2", (d) => d.target.y);
+
+            node
+            .attr("cx", (d) => d.x)
+            .attr("cy", (d) => d.y);
+        });
+
+        
+    });
+        
+
+
+
+    // ####################### function #######################
+    $(document).ready(function(){
+        // ################### Refresh ####################
+        function refresh(){
+            d3.select("#graph").selectAll("*").remove();
+            svgTranslate = [0, 0];
+            // Define the SVG canvas
+            svg = d3.select("#graph").append("svg")
+                    .attr("width", "100%").attr("height", "100%")
+                    .attr("position", "absolute")
+                    .attr("viewBox", `0 0 ${width} ${height}`)
+                    .attr("pointer-events", "all")
+                    ;
+
+            // Define the zoom behavior
+            zoom = d3.behavior.zoom()
+                        .center([0,0])
+                        .scaleExtent([0.1, 10])
+                        .on("zoomstart", zoomstarted)
+                        .on("zoom", zoomed)
+                        .on("zoomend", zoomended);
+
+
+            // Define the drag behavior
+            drag = d3.behavior.drag()
+                        .on("dragstart", dragstarted)
+                        .on("drag", canvas_dragged)
+                        .on("dragend", dragended);
+
+            // Select the SVG element and apply the zoom and drag behaviors
+            svg.call(zoom).call(drag);
+            return svg;
+        }
+
+        // ################### keyword search ###################
+        const form = document.getElementById('search');
+        form.addEventListener('submit', function(event) {
+            // prevent the form from submitting and refreshing the page
+            event.preventDefault(); 
+            // call your function here
+            field_search();
+        });
+
+        function field_search(){
+
+            var form = $('#search');
+            var year = form.find("input[name='year']").val();
+            var keyword = form.find("input[name=keyword]").val();
+            svg = refresh();
+            svgTranslate = [0, 0];
+
+            d3.json("/search?keyword=" + encodeURIComponent(keyword) + "&year=" + encodeURIComponent(year),
+                function (error, graph) {
+                    if (error) return;
+                    if (!graph || graph.length == 0) return;
+
+                    // d3.select("#graph").selectAll("*").remove();
+                    // var svg = d3.select("#graph").append("svg")
+                    //         .attr("width", "100%").attr("height", "100%")
+                    //         .attr("pointer-events", "all");
+
+                    force.nodes(graph.nodes).links(graph.links).start();
+
+                    const link = svg.selectAll(".link")
+                                    .data(graph.links).enter()
+                                    .append("line").attr("class", "link");
+
+                    const node = svg.selectAll(".node")
+                                    .data(graph.nodes).enter()
+                                    .append("circle")
+                                    .attr("class", function (d) { return "node "+d.label })
+                                    .attr("r", 10)
+                                    .call(force.drag()
+                                        .on("dragstart", dragstarted)
+                                        .on("drag", node_dragged)
+                                        .on("dragend", dragended)
+                                    );
+
+                    // html title attribute
+                    node.append("title")
+                        .text(function (d) { return d.title; })
+
+                    // force feed algo ticks
+                    force.on("tick", function() {
+                        link.attr("x1", function(d) { return d.source.x; })
+                            .attr("y1", function(d) { return d.source.y; })
+                            .attr("x2", function(d) { return d.target.x; })
+                            .attr("y2", function(d) { return d.target.y; });
+
+                        node.attr("cx", function(d) { return d.x; })
+                            .attr("cy", function(d) { return d.y; });
+                    });
+                });
+            return false;
+        }
+        
+
+
+        // ################### ORCID search ######################
+        const form_orcid = document.getElementById('orcid_search');
+        form_orcid.addEventListener('submit', function(event) {
+            event.preventDefault(); // prevent the form from submitting and refreshing the page
+            // call your function here
+            orcid_search();
+        });
+
+        function orcid_search(){
+            // Prevent default form submission action
+            // event.preventDefault();   
+            var form = $('#orcid_search');
+            var orcid = form.find("input[name='orcid']").val();
+      
+            svg = refresh();
+            svgTranslate = [0, 0];
+
+            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid),
+                function (error, graph) {
+                    if (error) return;
+                    if (!graph || graph.length == 0) return;
+
+                    force.nodes(graph.nodes).links(graph.links).start();
+
+                    const link = svg.selectAll(".link")
+                                    .data(graph.links).enter()
+                                    .append("line").attr("class", "link");
+
+                    const node = svg.selectAll(".node")
+                                    .data(graph.nodes).enter()
+                                    .append("circle")
+                                    .attr("class", function (d) {
+                                            return "node "+d.label;
+                                        })
+                                    .attr("r", 10)
+                                    .call(force.drag()
+                                        .on("dragstart", dragstarted)
+                                        .on("drag", node_dragged)
+                                        .on("dragend", dragended)
+                                    );
+
+                    // html title attribute
+                    node.append("title")
+                        .text(function (d) { return d.title; })
+
+                    // force feed algo ticks
+                    force.on("tick", function() {
+                        link.attr("x1", function(d) { return d.source.x; })
+                            .attr("y1", function(d) { return d.source.y; })
+                            .attr("x2", function(d) { return d.target.x; })
+                            .attr("y2", function(d) { return d.target.y; });
+
+                        node.attr("cx", function(d) { return d.x; })
+                            .attr("cy", function(d) { return d.y; });
+                    });
+                });
+            return false;
+        }
+    })
+    
+</script>
+
+</body>
+</html>

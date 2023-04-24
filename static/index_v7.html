@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <title>Neo4j RCN</title>    
+    <!-- <style>
+        .navbar-form {
+          display: none;
+        }
+        .navbar-form.active {
+          display: block;
+        }
+      </style> -->
+</head>
+
+<body>
+<div id="graph">
+</div>
+
+<div role="navigation" class="navbar navbar-default navbar-static-top">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6 col-md-6">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <form class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
+                            <div class="form-group">
+                            <label for="keyword">Keyword:</label>
+                            <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="30">
+                            <br>
+                            <label for="year">Year:</label>
+                            <input type="text" name="year" id="year" placeholder="2022" class="form-control" />
+                            <br>
+                            <button class="btn btn-default" type="submit" id="submit-btn">Search</button>
+                            </div>
+                        </form>
+                        <!-- <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
+                            <div class="form-group">
+                            <label for="orcid">Search for authors by ORCID:</label>
+                            <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
+                            <br>
+                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
+                            </div>
+                        </form> -->
+                    </li>
+                </ul>
+            </div>
+
+            <div class="navbar-header col-sm-6 col-md-6">
+                <div class="navbar-brand">
+                    <div class="brand">Research Collaboration Network</div>
+                </div>
+            </div>
+
+            <!-- <div class="col-sm-6 col-md-6">
+                <ul class="nav navbar-nav">
+                    <button onclick="showForm('topic-search')">Search by Topic</button>
+                    <button onclick="showForm('author-search')">Search by Author</button>
+
+                </ul>
+              </div> -->
+            <div class="col-sm-6 col-md-6">
+                <ul class="nav navbar-nav">
+                    <li>
+                        <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
+                            <div class="form-group">
+                            <label for="orcid">Search for authors by ORCID:</label>
+                            <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
+                            <br>
+                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
+                            </div>
+                        </form>
+                    </li>
+                </ul>
+            </div>           
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-end">
+    <div class="col-md-3">
+        <div class="panel panel-default">
+            <div id="node-details" style="display:none;">
+                <!-- <div class="panel-heading">Node information</div> -->
+                <table id="node_info" class="table table-striped table-hover">
+                    <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Value</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script>
+    // $(function() {
+    //     $('#year').daterangepicker({
+    //         singleDatePicker: false,
+    // showDropdowns: true,
+    // minYear: moment().subtract(10, 'year').format('YYYY'),
+    // maxYear: moment().format('YYYY'),
+    // locale: {
+    //   format: 'YYYY'
+    // },
+    // opens: 'center',
+    // drops: 'down'
+    //     });
+    // });
+    // function showForm(formId) {
+    //   // Get all forms
+    //   const forms = document.querySelectorAll('.navbar-form');
+  
+    //   // Loop through each form
+    //   forms.forEach(form => {
+    //     if (form.id === formId) {
+    //       form.classList.add('active'); // Show selected form
+    //     } else {
+    //       form.classList.remove('active'); // Hide other forms
+    //     }
+    //   });
+    // }
+
+    function resetFields(option) {
+        if (option === 'topic'){
+            document.getElementById("orcid").value = "";
+        }
+        else if (option === 'author') {
+            document.getElementById("keyword").value = "";
+            document.getElementById("year").value = "";
+        }
+    }
+
+  </script>
+
+  
+
+<style type="text/css">
+    .node { stroke: #222; stroke-width: 1.5px; }
+    .node.author { fill: #BBB; }
+    .node.publication { fill: #788cc0; }
+    .node.author_highlight { fill: #ee977c; }
+    .node.first_coauthor { fill: #ffca7f; }
+    .node.second_coauthor { fill: #fff493; }
+    .node.first_pub { fill: #8ac7ffe1; }
+    .node.second_pub { fill: #98979a; }
+    .link { stroke: #999; stroke-opacity: .6; stroke-width: 1px; }
+</style>
+
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
+
+
+<script type="text/javascript">
+    // ####################### initial #######################
+    const width = window.innerWidth, height =  window.innerHeight;
+    const radius = Math.min(width, height) / 2 - 50;
+    // const width = 960, height =  600;
+    const force = d3.forceSimulation()
+            .force("charge", d3.forceManyBody().strength(-5))
+            .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
+            .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
+            .force("collision", d3.forceCollide().radius(function(d) { return d.radius; }).iterations(1))
+            ;
+
+    // A temporary translate for the current position
+    var svgTranslate = [0, 0];
+    var curTranslate = [0, 0];
+    var svgScale = 1;
+    let isDragging = false;
+    var dx = 0, dy = 0,
+        zx = 0, zy = 0;
+    
+    var clicked = {};
+    var lockked = {};
+    var last_clicked_node;
+    var last_d;
+    var arc = d3.arc().innerRadius(6).outerRadius(18);
+    let maxId = 0;
+
+    var graph_node;
+    var graph_link;
+
+    // Define the SVG canvas
+    var svg = d3.select("#graph").append("svg")
+            .attr("width", width).attr("height", height)
+            .attr("position", "absolute")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("pointer-events", "all")
+            .call(d3.drag()
+                .on("start", canvas_dragstarted)
+                .on("drag", canvas_dragged)
+                .on("end", canvas_dragended))
+            .call(d3.zoom()
+                .on("start", zoomstarted)
+                .on("zoom", zoomed)
+                .on("end", zoomended))
+            ;
+    
+    var arcs = svg.selectAll("arcs")
+            .data([
+                { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
+                { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
+                { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
+            ])
+            .enter();
+    
+    function build_new_svg(graph_node, graph_link) {
+
+        force_node = graph_node;
+        for (var i = 0; i < force_node.length; i++) {
+            delete force_node[i].fx;
+            delete force_node[i].fy;
+        }
+        force.nodes(force_node)
+            .force("link", d3.forceLink(graph_link).id(function(d) { return d.id; }));
+        // Append the links to the svg
+        const link = svg.selectAll(".link")
+                    .data(graph_link).enter()
+                    .append("line").attr("class", "link");
+        // Append the nodes to the svg
+        const node = svg.append("g").selectAll(".node")
+                    .data(graph_node).enter()
+                    .append("circle")
+                    .attr("class", function (d) { return "node "+d.label; })
+                    .attr("r", 5)
+                    .attr("stroke", "light-grey")
+                    .attr("cursor", "pointer")
+                    .call(d3.drag()
+                        .on("start", node_dragstarted)
+                        .on("drag", node_dragged)
+                        .on("end", node_dragended));
+
+        graph_node.forEach(node => {
+            if (node.id > maxId) {
+                maxId = node.id;
+            }         
+        });  
+                  
+        addOrRemoveTooltip(node);
+        
+        // html title attribute
+        node.append("title")
+                    .text(function (d) { return d.title; });
+
+
+        // force feed algo ticks
+        force.on("tick", function() {
+            svg.selectAll('.link')
+            .attr("x1", function (d) { return d.source.x })
+            .attr("y1", function (d) { return d.source.y })
+            .attr("x2", function (d) { return d.target.x })
+            .attr("y2", function (d) { return d.target.y })
+            
+            svg.selectAll('.node')
+            .attr("cx", function (d) { return d.x })
+            .attr("cy", function (d) { return d.y })
+
+        }).alphaDecay(0.05);
+
+        force.alpha(1).restart();
+    }
+
+    function show_new_tooltip(node_id, unique_id, node_label,node_x, node_y){
+        arcs.selectAll("path").remove();
+        arcs.selectAll("text").remove();
+
+                      
+        var icons = arcs.append('text')
+                                .attr("font-family", "FontAwesome")
+                                .attr("text-anchor", "middle")
+                                .attr("font-size", "10px")
+                                .attr("x", d=>node_x + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
+                                .attr("y", d=>node_y+3 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                                .text(function(d) { 
+                                    if (d.label == 'lock'){
+                                        if (lockked[node_id])
+                                            return d.icon[1];
+                                        else 
+                                            return d.icon[0];
+                                    }
+                                    else{
+                                        return d.icon;
+                                    } })
+                                ; 
+
+        arcs.append("path")
+                .attr("d", d => arc({
+                            "startAngle": d.start * 2 * Math.PI + 0.02,
+                            "endAngle": d.end * 2 * Math.PI - 0.02
+                        }))    
+                .attr("transform", `translate(${node_x},${node_y})`)
+                .attr("fill", "lightgrey")
+                .style("opacity", 0.5)
+
+                .on("mouseover", function(event, d) {
+                    // change the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.2);
+                })
+                .on("mouseout", function(event, d) {
+                    // restore the style of the button
+                    d3.select(this)
+                    .style("opacity", 0.5);
+                })
+                .on("click", function(event, d){
+                    if (d.label == "hide") {
+                        d3.select(this).style("opacity", 0.5);
+                        hide_node(node_id);
+                    }
+                    if (d.label == "lock") {
+                        d3.select(this).style("opacity", 0.5);
+                        node_lock_unlock(node_id);
+                        icons.text(function(d) { 
+                                    if (d.label == 'lock'){
+                                        if (lockked[node_id])
+                                            return d.icon[1];
+                                        else 
+                                            return d.icon[0];
+                                    }
+                                    else{
+                                        return d.icon;
+                                    } })
+                                ; 
+                    }
+                    if (d.label == "link") {
+                        d3.select(this).style("opacity", 0.5);
+                        show_all_link(unique_id, node_label, node_id);
+                    }        
+                });
+    }
+   
+
+    // Define the drag behavior
+    function zoomstarted(event) {
+        // Get current position of network after drag event
+        svgTranslate[0] = dx;
+        svgTranslate[1] = dy;
+    }
+    function zoomed(event) {
+        // Get the real-time scale
+        svgScale = event.transform.k;
+        zx = svgTranslate[0];
+        zy = svgTranslate[1];
+        // Update the transform of the network
+        svg.attr("transform", `translate(${zx},${zy})  scale(${svgScale})`);
+    }
+    function zoomended(event) {
+        // Save the current position after zooming
+        curTranslate[0] = zx;
+        curTranslate[1] = zy;
+    }
+  
+
+    function canvas_dragstarted(event) {
+        isDragging = true;
+        // Get the position of canvas at beginning
+        svgTranslate[0] = event.x;
+        svgTranslate[1] = event.y;
+    }
+    function canvas_dragged(event) {
+        if(isDragging) {
+            // "event.x - svgTranslate.x" means (current mouse x) - (previous mouse x)
+            dx = curTranslate[0] + event.x - svgTranslate[0];
+            dy = curTranslate[1] + event.y - svgTranslate[1];
+
+            // Update the transform of the canvas
+            svg.attr("transform", `translate(${dx},${dy}) scale(${svgScale})`);
+        }
+    }
+    function canvas_dragended(event){
+        // Update the starting position for the next drag event
+        curTranslate[0] = dx;
+        curTranslate[1] = dy;
+        isDragging = false;
+    }
+
+
+    function node_dragstarted(event) {
+        if (!event.active) force.alphaTarget(0.3).restart();
+        event.subject.fx = event.subject.x;
+        event.subject.fy = event.subject.y;
+    }
+
+    function node_dragged(event, d) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+        if (clicked[d.id]) {
+            var node_id = d.id;
+            var node_label = d.label;
+            if (node_label == "publication"){
+                var unique_id = d.doi;
+            }
+            if (node_label.indexOf("author") != -1) {
+                var unique_id = d.scopus_id;
+            }
+            // If a node is moving, its tooltip and icons will move along with it     
+            show_new_tooltip(node_id, unique_id, node_label,event.x, event.y);
+        }
+    }
+          
+    function node_dragended(event, d) {
+        if (!event.active) force.alphaTarget(0);
+        if (lockked[d.id] || clicked[d.id]) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;}
+        else{
+            event.subject.fx = null;
+            event.subject.fy = null;
+        }
+    }
+
+    function handleNodeClick(event, d){
+        d3.selectAll('#node_info tbody tr').remove();
+        
+        if (d.label.indexOf("author") != -1) {
+            // Create a new table row for the node label
+            var labelRow = d3.select('#node_info tbody')
+                .append('tr');
+            labelRow.append('td')
+                .text('Label');
+            labelRow.append('td')
+                .text(d.label);
+            
+            var titleRow = d3.select('#node_info tbody')
+                .append('tr');
+            titleRow.append('td')
+                .text('Name');
+            titleRow.append('td')
+                .text(d.title);
+
+            var idRow = d3.select('#node_info tbody')
+                .append('tr');
+            idRow.append('td')
+                .text('Scopus id');
+            idRow.append('td')
+                .text(d.scopus_id);
+
+            // Create a new table row for the node description
+            var countryRow = d3.select('#node_info tbody')
+                .append('tr');
+            countryRow.append('td')
+                .text('Country');
+            countryRow.append('td')
+                .text(d.country);
+
+            var affRow = d3.select('#node_info tbody')
+                .append('tr');
+            affRow.append('td')
+                .text('Affiliation');
+            affRow.append('td')
+                .text(d.affiliation);
+        }
+        if (d.label == "publication") {
+            // Create a new table row for the node label
+            var labelRow = d3.select('#node_info tbody')
+                .append('tr');
+            labelRow.append('td')
+                .text('Label');
+            labelRow.append('td')
+                .text(d.label);
+            
+            var titleRow = d3.select('#node_info tbody')
+                .append('tr');
+            titleRow.append('td')
+                .text('Title');
+            titleRow.append('td')
+                .text(d.title);
+
+            var idRow = d3.select('#node_info tbody')
+                .append('tr');
+            idRow.append('td')
+                .text('DOI');
+            idRow.append('td')
+                .text(d.doi);
+
+            var subjectRow = d3.select('#node_info tbody')
+                .append('tr');
+            subjectRow.append('td')
+                .text('Subject');
+            subjectRow.append('td')
+                .text(d.subject);
+
+            var yearRow = d3.select('#node_info tbody')
+                .append('tr');
+            yearRow.append('td')
+                .text('Year');
+            yearRow.append('td')
+                .text(d.year);
+        }
+        // Show the node details table
+        d3.select('#node-details').style('display', 'block');
+                    
+    }
+
+    // function for the circle tooltips
+    function addOrRemoveTooltip(selection) {
+
+        selection.on("click", function(event, d) {
+            // info presentation
+            handleNodeClick(event, d);
+
+            // Tooltip
+            if (clicked[d.id]) {
+                arcs.selectAll("path").remove();
+                arcs.selectAll("text").remove();
+                clicked[d.id] = false;
+                if(lockked[d.id]){
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+                else {
+                    d.fx = null;
+                    d.fy = null;
+                }
+            } 
+            else {
+                // If click another node, hide the previous tootip
+                if (last_clicked_node && last_clicked_node != d.id) {
+                    clicked[last_clicked_node] = false;
+                    // ########### One little bug, when I didn't double click the node (the previous tooltip is not removed),
+                    // ########### and then I choose another node, then the previous node' fx/fy cannot be changed.
+
+                    if(lockked[last_clicked_node]){
+                        last_d.fx = last_d.x;
+                        last_d.fy = last_d.y;
+                    }
+                    else {
+                        last_d.fx = null;
+                        last_d.fy = null;
+                    }
+                    arcs.selectAll("path").remove();
+                    arcs.selectAll("text").remove();
+                }
+
+                var node_id = d.id;
+                var node_label = d.label;
+
+                // get unique_id for Database Selecting function 
+                if (node_label == "publication"){
+                    var unique_id = d.doi;
+                }
+                if (node_label.indexOf("author") != -1) {
+                    var unique_id = d.scopus_id;
+                }
+
+                // lock node
+                d.fx = d.x;
+                d.fy = d.y;
+
+                var node_x = d.x;
+                var node_y = d.y;
+
+                // present the tooltip of this node
+                show_new_tooltip(node_id, unique_id, node_label, node_x, node_y);
+                        
+                clicked[d.id] = true;
+                last_clicked_node = d.id;
+                last_d = d;
+            }
+        })
+    }
+    function node_lock_unlock(node_id) {
+        if (lockked[node_id]) {
+            lockked[node_id] = false;
+        }
+        else {
+            lockked[node_id] = true;
+        }
+
+    }
+    function hide_node(node_id) {
+        // Select the node with the given ID
+        // Select all links with the given node ID as the source or target
+        const filteredNodes = graph_node.filter(node => node.id !== node_id);
+        const filteredLinks = graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
+ 
+        // filter isolated nodes that do not have any links
+        const isolatedNodes = filteredNodes.filter(function(node) {
+            return !filteredLinks.some(function(link) {
+                return link.source === node || link.target === node;
+            });
+        });
+
+        // delete the original canvas
+        d3.select("#graph").selectAll(".node").remove();
+        d3.select("#graph").selectAll(".link").remove();
+        maxId = 0;
+
+        // Remove isolated nodes from the nodes array
+        graph_node = filteredNodes.filter(function(node) {
+            return !isolatedNodes.includes(node);
+        });
+        graph_link = filteredLinks;
+        // console.log(graph_node);
+        // build new network
+        build_new_svg(graph_node, graph_link)
+        // remove the tooltip
+        arcs.selectAll("path").remove();
+        arcs.selectAll("text").remove();
+
+    }
+
+    function show_all_link(unique_id, node_label, node_id) {
+
+        const linksToFilter = svg.selectAll(".link")
+                                .filter(function(d) {
+                                    return d.source.id === node_id || d.target.id === node_id;
+                                });
+        if (node_label == "publication") {
+            var linkList = linksToFilter.data().map(function(d) {
+                return d.scopus_id;
+            });
+        }
+        else {
+            var linkList = linksToFilter.data().map(function(d) {
+                return d.doi;
+            });
+        }
+
+        d3.json("/show_link?unique_id=" + encodeURIComponent(unique_id) 
+        + "&label=" + encodeURIComponent(node_label)
+        + "&node_id=" + encodeURIComponent(node_id)
+        + "&maxId=" + encodeURIComponent(maxId)
+        + "&linkList=" + encodeURIComponent(linkList)
+        )
+        .then(function(links){
+            d3.select("#graph").selectAll(".node").remove();
+            d3.select("#graph").selectAll(".link").remove();
+            maxId = 0;
+            arcs.selectAll("path").remove();
+            arcs.selectAll("text").remove();
+            
+            graph_node = graph_node.concat(links.nodes);
+            graph_link = graph_link.concat(links.links);
+
+            console.log(graph_node);
+            console.log(graph_link);
+            
+            build_new_svg(graph_node, graph_link);
+            
+        });
+    }
+      
+  
+    // ############# Initial network ##############
+    d3.json("/graph").then(function(graph) {
+
+        graph_node = graph.nodes;
+        graph_link = graph.links;
+
+        build_new_svg(graph_node, graph_link);
+        
+    });
+    // ########## refresh #############
+    function refresh(){
+            d3.select("#graph").selectAll("*").remove();
+            svgTranslate = [0, 0];
+            curTranslate = [0, 0];
+            svgScale = 1;
+            isDragging = false;
+            dx = 0; 
+            dy = 0;
+            zx = 0; 
+            zy = 0;
+            
+            clicked = {};
+            lockked = {};
+            last_clicked_node = -1;
+            last_d = {};
+            maxId = 0;
+            graph_node = [];
+            graph_link = [];
+            
+
+            // Define the SVG canvas
+            svg = d3.select("#graph").append("svg")
+            .attr("width", width).attr("height", height)
+            .attr("position", "absolute")
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("pointer-events", "all")
+            .call(d3.drag()
+                .on("start", canvas_dragstarted)
+                .on("drag", canvas_dragged)
+                .on("end", canvas_dragended))
+            .call(d3.zoom()
+                .on("start", zoomstarted)
+                .on("zoom", zoomed)
+                .on("end", zoomended))
+            ;
+
+            arcs.selectAll("path").remove()
+
+            arcs = svg.selectAll("arcs")
+            .data([
+                { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
+                { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
+                { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
+            ])
+            .enter();
+      
+    }
+
+
+
+    // ####################### function #######################
+    $(document).ready(function(){
+
+        // ################### keyword search ###################
+        const form = document.getElementById('topic-search');
+        form.addEventListener('submit', function(event) {
+            // prevent the form from submitting and refreshing the page
+            event.preventDefault(); 
+            // call your function here
+            field_search();
+        });
+
+        function field_search(){
+
+            var form = $('#topic-search');
+            var year = form.find("input[name='year']").val();
+            var keyword = form.find("input[name=keyword]").val();
+            refresh();
+
+            d3.json("/search?keyword=" + encodeURIComponent(keyword) + "&year=" + encodeURIComponent(year))
+                .then(function(graph){
+                    if (!graph || graph.length == 0) return;
+
+                    graph_node = graph.nodes;
+                    graph_link = graph.links;
+
+                    build_new_svg(graph_node,graph_link);
+                });
+            return false;
+        }
+        
+
+
+        // ################### ORCID search ######################
+        const form_orcid = document.getElementById('author-search');
+        form_orcid.addEventListener('submit', function(event) {
+            event.preventDefault(); // prevent the form from submitting and refreshing the page
+            // call your function here
+            orcid_search();
+        });
+
+        function orcid_search(){
+            // Prevent default form submission action
+            // event.preventDefault();   
+            var form = $('#author-search');
+            var orcid = form.find("input[name='orcid']").val();
+      
+            refresh();
+
+            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid))
+                .then(function (graph) {
+                    graph_node = graph.nodes;
+                    graph_link = graph.links;
+
+                    build_new_svg(graph_node,graph_link);
+                });
+            return false;
+        }
+    })
+    
+</script>
+
+</body>
+</html>
