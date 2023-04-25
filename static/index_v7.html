@@ -6,15 +6,25 @@
     <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet" href="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.min.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css" />
+
+
     <title>Neo4j RCN</title>    
-    <!-- <style>
+    <style>
         .navbar-form {
           display: none;
         }
         .navbar-form.active {
           display: block;
         }
-      </style> -->
+        svg {
+            position: absolute;
+            left: -50%;
+            top: -50%;
+        }
+      </style>
 </head>
 
 <body>
@@ -32,20 +42,59 @@
                             <label for="keyword">Keyword:</label>
                             <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="30">
                             <br>
-                            <label for="year">Year:</label>
-                            <input type="text" name="year" id="year" placeholder="2022" class="form-control" />
+                            <br>
+                            <label for="year">
+                                Year:
+                            </label>
+                            <select name="year" id="year" multiple="multiple">
+                                <option value="2013">2013</option>
+                                <option value="2014">2014</option>
+                                <option value="2015">2015</option>
+                                <option value="2016">2016</option>
+                                <option value="2017">2017</option>
+                                <option value="2018">2018</option>
+                                <option value="2019">2019</option>
+                                <option value="2020">2020</option>
+                                <option value="2021">2021</option>
+                                <option value="2022" selected>2022</option>
+                            </select>
+                            <br>
                             <br>
                             <button class="btn btn-default" type="submit" id="submit-btn">Search</button>
                             </div>
                         </form>
-                        <!-- <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
+
+                        <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
                             <div class="form-group">
-                            <label for="orcid">Search for authors by ORCID:</label>
-                            <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
-                            <br>
-                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
+                            <div>
+                                <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')" checked>
+                                <label for="search-by-name">Search by author name:</label>
+                                <br>
+                                <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control">
+                                <br>
+                                <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control">
                             </div>
-                        </form> -->
+
+                            <div>
+                                <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')">
+                                <label for="search-by-orcid">Search by ORCID:</label>
+                                <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]" style="display:none">
+                            </div>
+
+                            <br>
+                            <button class="btn btn-default" type="submit" id="author-submit-btn">Search</button>
+                            </div>
+                        </form>
+
+                        <form class="navbar-form" id="pub-search", onsubmit="resetFields('publication')">
+                            <div class="form-group">
+                            <label for="publication">Search publication:</label>
+                            <br>
+                            <input type="text" name="doi" id="doi" placeholder="10.1117/12.2602737" class="form-control" required>
+                            <br>
+                            <button class="btn btn-default" type="submit" id="pub-submit-btn">Search</button>
+                            </div>
+                        </form>
                     </li>
                 </ul>
             </div>
@@ -56,27 +105,14 @@
                 </div>
             </div>
 
-            <!-- <div class="col-sm-6 col-md-6">
+            <div class="col-sm-6 col-md-6">
                 <ul class="nav navbar-nav">
                     <button onclick="showForm('topic-search')">Search by Topic</button>
                     <button onclick="showForm('author-search')">Search by Author</button>
-
+                    <button onclick="showForm('pub-search')">Search by Publication</button>
                 </ul>
-              </div> -->
-            <div class="col-sm-6 col-md-6">
-                <ul class="nav navbar-nav">
-                    <li>
-                        <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
-                            <div class="form-group">
-                            <label for="orcid">Search for authors by ORCID:</label>
-                            <input type="text" name="orcid" id="orcid" placeholder="0000-0002-5025-7862" class="form-control" minlength="19" maxlength="19">
-                            <br>
-                            <button class="btn btn-default" type="submit" id="orcid-submit-btn">Search</button>
-                            </div>
-                        </form>
-                    </li>
-                </ul>
-            </div>           
+            </div>
+            
         </div>
     </div>
 </div>
@@ -101,48 +137,64 @@
     </div>
 </div>
 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
 <script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
+
+
+
 <script>
-    // $(function() {
-    //     $('#year').daterangepicker({
-    //         singleDatePicker: false,
-    // showDropdowns: true,
-    // minYear: moment().subtract(10, 'year').format('YYYY'),
-    // maxYear: moment().format('YYYY'),
-    // locale: {
-    //   format: 'YYYY'
-    // },
-    // opens: 'center',
-    // drops: 'down'
-    //     });
-    // });
-    // function showForm(formId) {
-    //   // Get all forms
-    //   const forms = document.querySelectorAll('.navbar-form');
+    $(function() {
+        $('select[multiple]').multiselect()
+    });
+    
+    function showForm(formId) {
+      // Get all forms
+      const forms = document.querySelectorAll('.navbar-form');
   
-    //   // Loop through each form
-    //   forms.forEach(form => {
-    //     if (form.id === formId) {
-    //       form.classList.add('active'); // Show selected form
-    //     } else {
-    //       form.classList.remove('active'); // Hide other forms
-    //     }
-    //   });
-    // }
+      // Loop through each form
+      forms.forEach(form => {
+        if (form.id === formId) {
+          form.classList.add('active'); // Show selected form
+        } else {
+          form.classList.remove('active'); // Hide other forms
+        }
+      });
+    }
+    function toggleSearchInput(inputName) {
+        var authorSurNameInput = document.getElementById("surname");
+        var authorFirstNameInput = document.getElementById("firstname");
+        var orcidInput = document.getElementById("orcid");
+        
+        if (inputName === "author-name") {
+          authorSurNameInput.style.display = "block";
+          authorFirstNameInput.style.display = "block";
+          orcidInput.style.display = "none";
+        } else {
+          authorSurNameInput.style.display = "none";
+          authorFirstNameInput.style.display = "none";
+          orcidInput.style.display = "block";
+        }
+      }
+
 
     function resetFields(option) {
         if (option === 'topic'){
             document.getElementById("orcid").value = "";
+
         }
         else if (option === 'author') {
-            document.getElementById("keyword").value = "";
-            document.getElementById("year").value = "";
+            var formElement = document.getElementById("topic-search");
+            formElement.reset();
         }
     }
 
+    showForm('topic-search');
   </script>
 
   
@@ -161,19 +213,15 @@
 
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
-
-
 <script type="text/javascript">
     // ####################### initial #######################
-    const width = window.innerWidth, height =  window.innerHeight;
-    const radius = Math.min(width, height) / 2 - 50;
+    const width = window.innerWidth*2, height =  window.innerHeight*2;
     // const width = 960, height =  600;
     const force = d3.forceSimulation()
-            .force("charge", d3.forceManyBody().strength(-5))
+            .force("charge", d3.forceManyBody().strength(-8))
             .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
             .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
-            .force("collision", d3.forceCollide().radius(function(d) { return d.radius; }).iterations(1))
+            .force("collision", d3.forceCollide().radius(function(d) { return 10; }).iterations(1))
             ;
 
     // A temporary translate for the current position
@@ -188,7 +236,6 @@
     var lockked = {};
     var last_clicked_node;
     var last_d;
-    var arc = d3.arc().innerRadius(6).outerRadius(18);
     let maxId = 0;
 
     var graph_node;
@@ -209,15 +256,18 @@
                 .on("zoom", zoomed)
                 .on("end", zoomended))
             ;
+
+    var network = svg.append('g').attr('class', 'type1');
     
-    var arcs = svg.selectAll("arcs")
+    var arcs = svg.append('g').attr('class', 'type2')
+            .selectAll("arcs")
             .data([
                 { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
                 { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
                 { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
             ])
             .enter();
-    
+
     function build_new_svg(graph_node, graph_link) {
 
         force_node = graph_node;
@@ -228,29 +278,58 @@
         force.nodes(force_node)
             .force("link", d3.forceLink(graph_link).id(function(d) { return d.id; }));
         // Append the links to the svg
-        const link = svg.selectAll(".link")
+        const link = network.selectAll(".link")
                     .data(graph_link).enter()
                     .append("line").attr("class", "link");
         // Append the nodes to the svg
-        const node = svg.append("g").selectAll(".node")
+        const node = network.selectAll(".node")
                     .data(graph_node).enter()
                     .append("circle")
-                    .attr("class", function (d) { return "node "+d.label; })
-                    .attr("r", 5)
+                    .attr("class", function (d) { return "node "+d.color; })
+                    .attr("r", function (d) { 
+                        // if(d.label == "publication") {
+                        //     if (d.citation_count != 0) {
+                        //     return 6 + Math.log(d.citation_count);}
+                        //     else {return 6;}}
+                        // else if (d.label == "author") {
+                        //     return 5 + Math.log(d.link_num);
+                        // }
+                        // else { return 5; }
+                        return d.radius;
+                     })
                     .attr("stroke", "light-grey")
                     .attr("cursor", "pointer")
+                    .style("opacity", 0.8)
                     .call(d3.drag()
                         .on("start", node_dragstarted)
                         .on("drag", node_dragged)
                         .on("end", node_dragended));
 
+        const text = network.selectAll("text")
+                    .data(graph_node).enter()
+                    .append('text')
+                    .text(function(d){
+                        if (d.label == "author") {
+                            return d.title;
+                        }
+                    })
+                    .style('font-size', d => `${d.radius / 2}px`)
+                    .attr('text-anchor', 'middle')
+                    .attr('alignment-baseline', 'middle')
+                    .call(d3.drag()
+                        .on("start", node_dragstarted)
+                        .on("drag", node_dragged)
+                        .on("end", node_dragended));
+
+        // Get current max node ID (for node expand button)
         graph_node.forEach(node => {
             if (node.id > maxId) {
                 maxId = node.id;
-            }         
+            } 
         });  
                   
         addOrRemoveTooltip(node);
+        addOrRemoveTooltip(text);
         
         // html title attribute
         node.append("title")
@@ -259,32 +338,34 @@
 
         // force feed algo ticks
         force.on("tick", function() {
-            svg.selectAll('.link')
+            network.selectAll('.link')
             .attr("x1", function (d) { return d.source.x })
             .attr("y1", function (d) { return d.source.y })
             .attr("x2", function (d) { return d.target.x })
             .attr("y2", function (d) { return d.target.y })
             
-            svg.selectAll('.node')
+            network.selectAll('.node')
             .attr("cx", function (d) { return d.x })
             .attr("cy", function (d) { return d.y })
+
+            network.selectAll('text')
+            .attr('x', d => d.x).attr('y', d => d.y);
 
         }).alphaDecay(0.05);
 
         force.alpha(1).restart();
     }
 
-    function show_new_tooltip(node_id, unique_id, node_label,node_x, node_y){
+    function show_new_tooltip(node_id, unique_id, node_label,node_x, node_y, node_radius){
         arcs.selectAll("path").remove();
         arcs.selectAll("text").remove();
 
-                      
         var icons = arcs.append('text')
                                 .attr("font-family", "FontAwesome")
                                 .attr("text-anchor", "middle")
                                 .attr("font-size", "10px")
-                                .attr("x", d=>node_x + 12 * Math.cos((d.start + d.end-1/2) * Math.PI))
-                                .attr("y", d=>node_y+3 + 12 * Math.sin((d.start + d.end-1/2) * Math.PI))
+                                .attr("x", d=>node_x + (node_radius+7) * Math.cos((d.start + d.end-1/2) * Math.PI))
+                                .attr("y", d=>node_y+3 + (node_radius+7) * Math.sin((d.start + d.end-1/2) * Math.PI))
                                 .text(function(d) { 
                                     if (d.label == 'lock'){
                                         if (lockked[node_id])
@@ -296,7 +377,8 @@
                                         return d.icon;
                                     } })
                                 ; 
-
+        var arc = d3.arc()
+                .innerRadius(node_radius+1).outerRadius(node_radius+14);
         arcs.append("path")
                 .attr("d", d => arc({
                             "startAngle": d.start * 2 * Math.PI + 0.02,
@@ -390,7 +472,7 @@
 
 
     function node_dragstarted(event) {
-        if (!event.active) force.alphaTarget(0.3).restart();
+        if (!event.active) force.alphaTarget(0.05).restart();
         event.subject.fx = event.subject.x;
         event.subject.fy = event.subject.y;
     }
@@ -401,14 +483,28 @@
         if (clicked[d.id]) {
             var node_id = d.id;
             var node_label = d.label;
+            var node_radius = d.radius;
             if (node_label == "publication"){
                 var unique_id = d.doi;
+                // if (d.citation_count != 0) {
+                //     node_radius =  6 + Math.log(d.citation_count);
+                // }
+                // else { node_radius = 6;}
             }
-            if (node_label.indexOf("author") != -1) {
+            else if (node_label == "author") {
                 var unique_id = d.scopus_id;
+                // node_radius = 5 + Math.log(d.link_num);;
+            }
+            else if (node_label == "software"){
+                var unique_id = d.software_id;
+                // node_radius = 5;
+            }
+            else {
+                var unique_id = d.project_id;
+                // node_radius = 5;
             }
             // If a node is moving, its tooltip and icons will move along with it     
-            show_new_tooltip(node_id, unique_id, node_label,event.x, event.y);
+            show_new_tooltip(node_id, unique_id, node_label, event.x, event.y, node_radius);
         }
     }
           
@@ -421,6 +517,7 @@
             event.subject.fx = null;
             event.subject.fy = null;
         }
+        force.alphaTarget(0.0).restart();
     }
 
     function handleNodeClick(event, d){
@@ -548,13 +645,26 @@
 
                 var node_id = d.id;
                 var node_label = d.label;
-
+                var node_radius = d.radius;
                 // get unique_id for Database Selecting function 
-                if (node_label == "publication"){
+                if (node_label == "publication" ){
                     var unique_id = d.doi;
+                    // if (d.citation_count != 0) {
+                    //     node_radius =  6 + Math.log(d.citation_count);
+                    // }
+                    // else {node_radius = 6;}
                 }
-                if (node_label.indexOf("author") != -1) {
+                else if (node_label == "author") {
                     var unique_id = d.scopus_id;
+                    // node_radius = 5 + Math.log(d.link_num);;
+                }
+                else if (node_label == "software"){
+                    var unique_id = d.software_id;
+                    // node_radius = 5;
+                }
+                else {
+                    var unique_id = d.project_id;
+                    // node_radius = 5;
                 }
 
                 // lock node
@@ -565,7 +675,7 @@
                 var node_y = d.y;
 
                 // present the tooltip of this node
-                show_new_tooltip(node_id, unique_id, node_label, node_x, node_y);
+                show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
                         
                 clicked[d.id] = true;
                 last_clicked_node = d.id;
@@ -596,8 +706,9 @@
         });
 
         // delete the original canvas
-        d3.select("#graph").selectAll(".node").remove();
-        d3.select("#graph").selectAll(".link").remove();
+        network.selectAll(".node").remove();
+        network.selectAll(".link").remove();
+        network.selectAll("text").remove();
         maxId = 0;
 
         // Remove isolated nodes from the nodes array
@@ -638,8 +749,9 @@
         + "&linkList=" + encodeURIComponent(linkList)
         )
         .then(function(links){
-            d3.select("#graph").selectAll(".node").remove();
-            d3.select("#graph").selectAll(".link").remove();
+            network.selectAll(".node").remove();
+            network.selectAll(".link").remove();
+            network.selectAll("text").remove();
             maxId = 0;
             arcs.selectAll("path").remove();
             arcs.selectAll("text").remove();
@@ -685,33 +797,32 @@
             graph_node = [];
             graph_link = [];
             
-
             // Define the SVG canvas
             svg = d3.select("#graph").append("svg")
-            .attr("width", width).attr("height", height)
-            .attr("position", "absolute")
-            .attr("viewBox", `0 0 ${width} ${height}`)
-            .attr("pointer-events", "all")
-            .call(d3.drag()
-                .on("start", canvas_dragstarted)
-                .on("drag", canvas_dragged)
-                .on("end", canvas_dragended))
-            .call(d3.zoom()
-                .on("start", zoomstarted)
-                .on("zoom", zoomed)
-                .on("end", zoomended))
-            ;
+                    .attr("width", width).attr("height", height)
+                    .attr("position", "absolute")
+                    .attr("viewBox", `0 0 ${width} ${height}`)
+                    .attr("pointer-events", "all")
+                    .call(d3.drag()
+                        .on("start", canvas_dragstarted)
+                        .on("drag", canvas_dragged)
+                        .on("end", canvas_dragended))
+                    .call(d3.zoom()
+                        .on("start", zoomstarted)
+                        .on("zoom", zoomed)
+                        .on("end", zoomended))
+                    ;
 
-            arcs.selectAll("path").remove()
-
-            arcs = svg.selectAll("arcs")
-            .data([
-                { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
-                { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
-                { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
-            ])
-            .enter();
-      
+            network = svg.append('g').attr('class', 'type1');
+            
+            arcs = svg.append('g').attr('class', 'type2')
+                    .selectAll("arcs")
+                    .data([
+                        { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
+                        { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
+                        { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
+                    ])
+                    .enter();
     }
 
 
@@ -731,7 +842,7 @@
         function field_search(){
 
             var form = $('#topic-search');
-            var year = form.find("input[name='year']").val();
+            var year = form.find("select[name='year']").val();
             var keyword = form.find("input[name=keyword]").val();
             refresh();
 
@@ -754,18 +865,47 @@
         form_orcid.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             // call your function here
-            orcid_search();
+            author_search();
         });
 
-        function orcid_search(){
+        function author_search(){
             // Prevent default form submission action
             // event.preventDefault();   
             var form = $('#author-search');
             var orcid = form.find("input[name='orcid']").val();
+            var firstname = form.find("input[name='firstname']").val();
+            var surname = form.find("input[name='surname']").val();
       
             refresh();
 
-            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid))
+            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid)+ 
+                    "&firstname=" + encodeURIComponent(firstname) + 
+                    "&surname=" + encodeURIComponent(surname))
+                .then(function (graph) {
+                    graph_node = graph.nodes;
+                    graph_link = graph.links;
+
+                    build_new_svg(graph_node,graph_link);
+                });
+            return false;
+        }
+
+
+        // ################### DOI search ######################
+        const form_pub = document.getElementById('pub-search');
+        form_pub.addEventListener('submit', function(event) {
+            event.preventDefault(); // prevent the form from submitting and refreshing the page
+            // call your function here
+            pub_search();
+        });
+
+        function pub_search(){
+            var form = $('#pub-search');
+            var doi = form.find("input[name='doi']").val();
+      
+            refresh();
+
+            d3.json("/pub_search?doi=" + encodeURIComponent(doi))
                 .then(function (graph) {
                     graph_node = graph.nodes;
                     graph_link = graph.links;

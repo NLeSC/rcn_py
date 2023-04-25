@@ -106,7 +106,7 @@ def neo4j_create_people(tx, df, subject):
                     p.subject = apoc.coll.toSet(coalesce(p.subject, []) + $subject)
                 """, 
                 id = author_scopus_id[n],
-                name = author_name,
+                name = author_name[n],
                 affiliation = author_aff[n],
                 country = author_country[n],
                 keywords = keywords,

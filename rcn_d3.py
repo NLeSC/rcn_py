@@ -69,6 +69,14 @@ def serialize_publication(pub):
         "cited": pub["cited"]
     }
 
+def get_link_count_of_author(author_nodes, rel_id_record):
+    for author in author_nodes:
+        link_num = rel_id_record.count(author["id"])
+        author["link_num"] = link_num
+        if link_num != 0:
+            author["radius"] = 5 + math.log(link_num)
+    return author_nodes
+
 
 # example network: get pub-author relationships (default: 2022, "Deep learning")
 @app.route("/graph")
@@ -76,7 +84,7 @@ def get_example_graph():
     def work(tx, year, search_query):
         return list(tx.run("""
             MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication {year: $year}) 
-            WHERE  $keyword in p.keywords
+            WHERE   $keyword in p.keywords
             RETURN  collect(n.scopus_id) AS author_scopus_id,
                     collect(n.name) AS name,
                     collect(n.country) AS country,
@@ -98,23 +106,28 @@ def get_example_graph():
     nodes = []
     rels = []
     node_records = []
+    nodes_id_in_rel = []
     i = 0
     for record in results:
         target = i
         if math.isnan(record["cited"]):
             citation_count = 0
+            pub_radius = 6
         else:
             citation_count = record["cited"]
+            pub_radius = 6 + math.log(citation_count)
         nodes.append({"title": record["title"], 
                       "citation_count": citation_count,
                       "doi": record["doi"],
                       "subject": record["subject"],
                       "year": record["year"],
                       "label": "publication", 
-                      "id": target})
+                      "id": target,
+                      "color": "publication",
+                      "radius": pub_radius
+                      })
         i += 1
         for a in range(len(record["author_scopus_id"])):
-            
             try:
                 source = node_records.index(record["name"][a])
             except ValueError:
@@ -125,10 +138,15 @@ def get_example_graph():
                         "country": record["country"][a],
                         "affiliation": record["affiliation"][a],
                         "label": "author",
-                        "id": source}
+                        "id": source,
+                        "color": "author"}
                 nodes.append(author)
                 i += 1
+            nodes_id_in_rel.append(source)
             rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": record["author_scopus_id"][a]})
+
+    nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
+
     return Response(dumps({"nodes": nodes, "links": rels}),
                 mimetype="application/json")
     # return Response(dumps({"s": x}),mimetype="application/json")
@@ -138,8 +156,9 @@ def get_example_graph():
 def get_search_query():
     def work(tx, year, search_query):
         return list(tx.run("""
-            MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication {year: $year}) 
-            WHERE  $keyword in p.keywords
+            MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication) 
+            WHERE   $keyword in p.keywords 
+                AND p.year in $year
             RETURN  collect(n.scopus_id) AS author_scopus_id,
                     collect(n.name) AS name,
                     collect(n.country) AS country,
@@ -157,12 +176,13 @@ def get_search_query():
         ))
 
     try:
-        year = int(request.args["year"])
+        year = request.args["year"]
         keyword = request.args["keyword"]
     except KeyError:
         return []
     else:
         db = get_db()
+        year = list(map(int, year.split(",")))
         query = keyword.replace("+", " ")
         results = db.execute_read(work, year, query)
         # results = db.read_transaction(work, q)
@@ -173,6 +193,7 @@ def get_search_query():
         nodes = []
         rels = []
         node_records = []
+        nodes_id_in_rel = []
         i = 0
         for record in results:
             target = i
@@ -180,15 +201,20 @@ def get_search_query():
 
             if math.isnan(record["cited"]):
                 citation_count = 0
+                pub_radius = 6
             else:
                 citation_count = record["cited"]
+                pub_radius = 6 + math.log(citation_count)
             nodes.append({"title": record["title"], 
                         "citation_count": citation_count,
                         "doi": record["doi"],
                         "subject": record["subject"],
                         "year": record["year"],
                         "label": "publication", 
-                        "id": target})
+                        "id": target,
+                        "color": "publication",
+                        "radius": pub_radius
+                        })
             i += 1
             for a in range(len(record["author_scopus_id"])):
                 
@@ -202,17 +228,21 @@ def get_search_query():
                             "country": record["country"][a],
                             "affiliation": record["affiliation"][a],
                             "label": "author",
-                            "id": source}
+                            "id": source,
+                            "color": "author"}
                     nodes.append(author)
                     i += 1
+                nodes_id_in_rel.append(source)
                 rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": record["author_scopus_id"][a]})
+        nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
         return Response(dumps({"nodes": nodes, "links": rels}),
                     mimetype="application/json")
+       
 
 
 @app.route('/orcid_search')
 def get_orcid_search():
-    def first_coauthor(tx, scopus_id):
+    def first_coauthor_byID(tx, scopus_id):
         return list(tx.run("""
             MATCH (n:Person {scopus_id: $scopus_id})-[:IS_AUTHOR_OF]->(p:Publication)
                     <-[:IS_AUTHOR_OF]-(m:Person)
@@ -226,6 +256,22 @@ def get_orcid_search():
             """,
             scopus_id = scopus_id
         ))
+    
+    def get_author_byName(tx, name_list):
+        return list(tx.run("""
+            MATCH (n:Person {scopus_id: $scopus_id})-[:IS_AUTHOR_OF]->(p:Publication)
+                    <-[:IS_AUTHOR_OF]-(m:Person)
+            RETURN  
+                    apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS author_scopus_id,
+                    p.title AS title,
+                    p.cited AS cited,
+                    p.doi AS doi,
+                    p.subject AS subject,
+                    p.year AS year
+            """,
+            scopus_id = scopus_id
+        ))
+    
     def get_coauthor_info(tx, scopus_id):
         return list(tx.run("""
             MATCH (n:Person {scopus_id: $scopus_id})
@@ -255,12 +301,14 @@ def get_orcid_search():
     
     try:
         orcid = request.args["orcid"]
+        firstname = request.args["firstname"]
+        surname = request.args["surname"]
     except KeyError:
         return []
     else:
         db = get_db()
         scopus_id = neo4j_rsd.get_scopus_info_from_orcid(orcid)[0]
-        results = db.execute_read(first_coauthor, scopus_id)
+        results = db.execute_read(first_coauthor_byID, scopus_id)
         # second_results = db.read_transaction(second_coauthor, scopus_id)
         # results = db.read_transaction(work, q)
         # return Response(
@@ -270,21 +318,27 @@ def get_orcid_search():
         nodes = []
         rels = []
         node_records = []
+        nodes_id_in_rel = []
         i = 0
         for record in results:
             target = i
             node_records.append(record['doi'])
             if math.isnan(record["cited"]):
                 citation_count = 0
+                pub_radius = 6 
             else:
                 citation_count = record["cited"]
+                pub_radius = 6 + math.log(citation_count)
             nodes.append({"title": record["title"], 
                         "citation_count": citation_count,
                         "doi": record["doi"],
                         "subject": record["subject"],
                         "year": record["year"],
                         "label": "publication", 
-                        "id": target})
+                        "id": target,
+                        "color": "publication",
+                        "radius": pub_radius
+                        })
             i += 1
             for id in record["author_scopus_id"]:
                 # Get coauthor info from DB
@@ -307,15 +361,86 @@ def get_orcid_search():
                             "scopus_id": id,
                             "country": country,
                             "affiliation": aff,
-                            "label": author_label,
-                            "id": source}
+                            "label": "author",
+                            "id": source,
+                            "color": author_label}
                     nodes.append(author)
                     i += 1
-                        
+                nodes_id_in_rel.append(source)
                 rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": id})
+        nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
         return Response(dumps({"nodes": nodes, "links": rels}),
                     mimetype="application/json")
       
+
+
+
+@app.route('/pub_search')
+def get_pub_search():
+    def doi_search(tx, doi):
+        return list(tx.run("""
+            MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication {doi: $doi})
+            RETURN  
+                    collect(n.scopus_id) AS author_scopus_id,
+                    collect(n.name) AS name,
+                    collect(n.country) AS country,
+                    collect(n.affiliation) AS affiliation,
+                    p.title AS title,
+                    p.cited AS cited,
+                    p.subject AS subject,
+                    p.year AS year
+            """,
+            doi = doi
+        ))
+    
+    try:
+        doi = request.args["doi"]
+    except KeyError:
+        return []
+    else:
+        db = get_db()
+        # doi = doi.replace("%2F", "/")
+        results = db.execute_read(doi_search, doi)
+        nodes = []
+        rels = []
+        i = 0
+
+        record = results[0]
+        target = i
+        if math.isnan(record["cited"]):
+            citation_count = 0
+            pub_radius = 6
+        else:
+            citation_count = record["cited"]
+            pub_radius = 6 + math.log(citation_count)
+
+        nodes.append({"title": record["title"], 
+                        "citation_count": citation_count,
+                        "doi": doi,
+                        "subject": record["subject"],
+                        "year": record["year"],
+                        "label": "publication", 
+                        "id": target,
+                        "color": "publication",
+                        "radius": pub_radius})
+        i += 1
+        for a in range(len(record["author_scopus_id"])):
+            source = i
+            author = {"title": record["name"][a],
+                            "scopus_id": record["author_scopus_id"][a],
+                            "country": record["country"][a],
+                            "affiliation": record["affiliation"][a],
+                            "label": "author",
+                            "id": source,
+                            "color": "author",
+                            "radius": 5
+                            }
+            nodes.append(author)
+            i += 1
+            rels.append({"source": source, "target": target, "doi":doi, "scopus_id": record["author_scopus_id"][a]})
+    return Response(dumps({"nodes": nodes, "links": rels}),
+                mimetype="application/json")
+
 
 @app.route('/show_link')
 def show_link():
@@ -375,7 +500,10 @@ def show_link():
                             "country": record['country'],
                             "affiliation": record['affiliation'],
                             "label": "author",
-                            "id": max_id}
+                            "id": max_id,
+                            "color": "author",
+                            "link_num": 1,
+                            "radius": 5}
                     nodes.append(author)
                     rels.append({"source": max_id, "target": node_id, "doi": unique_id, "scopus_id": record['scopus_id']})
 
@@ -385,8 +513,10 @@ def show_link():
                 if record['doi'] not in link_list:
                     if math.isnan(record["cited"]):
                         citation_count = 0
+                        pub_radius = 6
                     else:
                         citation_count = record["cited"]
+                        pub_radius = 6 + math.log(citation_count)
                     max_id += 1
                     nodes.append({"title": record["title"], 
                         "citation_count": citation_count,
@@ -394,7 +524,9 @@ def show_link():
                         "subject": record["subject"],
                         "year": record["year"],
                         "label": "publication", 
-                        "id": max_id})
+                        "id": max_id,
+                        "color": "publication",
+                        "radius": pub_radius})
                     rels.append({"source": node_id, "target": max_id, "doi": record["doi"], "scopus_id": unique_id})
     
         return Response(dumps({"nodes": nodes, "links": rels}),
