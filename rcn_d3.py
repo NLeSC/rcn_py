@@ -242,9 +242,54 @@ def get_search_query():
 
 @app.route('/orcid_search')
 def get_orcid_search():
-    def first_coauthor_byID(tx, scopus_id):
+    def get_coauthor_byID(tx, scopus_id, orcid):
         return list(tx.run("""
-            MATCH (n:Person {scopus_id: $scopus_id})-[:IS_AUTHOR_OF]->(p:Publication)
+            MATCH (n:Person)-[:IS_AUTHOR_OF]->(p)
+                    <-[:IS_AUTHOR_OF]-(m:Person)
+            WHERE labels(p) IN [['Publication'], ['Project'], ['Software']] AND
+                    (n.orcid = $orcid OR n.scopus_id = $scopus_id)
+            RETURN  
+                    apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS author_scopus_id,
+                    apoc.coll.toSet(collect(n.orcid)+collect(m.orcid)) AS author_orcid,
+                    p.title AS title,
+                    p.cited AS cited,
+                    p.doi AS doi,
+                    p.subject AS subject,
+                    p.year AS year,
+                    CASE 
+                        WHEN labels(p) = ['Project'] THEN  'project'
+                        WHEN labels(p) = ['Software'] THEN 'software'
+                        WHEN labels(p) = ['Publication'] THEN 'publication'
+                        ELSE '' 
+                    END AS label
+            """,
+            scopus_id = scopus_id,
+            orcid = orcid
+        ))
+    
+    # def first_coauthor_byORCID(tx, orcid):
+    #     return list(tx.run("""
+    #         MATCH (n:Person {orcid: $orcid})-[:IS_AUTHOR_OF]->(item)<-[:IS_AUTHOR_OF]-(m:Person)
+    #         RETURN  apoc.coll.toSet(collect(n.orcid)+collect(m.orcid)) AS orcid,
+    #                 apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS scopus_id,
+    #                 item.title AS title,
+    #                 item.cited AS cited,
+    #                 item.year AS year,
+    #                 item.subject AS subject,
+    #                 item.doi AS doi,
+    #             CASE 
+    #                 WHEN labels(item) = ['Project'] THEN  'project'
+    #                 WHEN labels(item) = ['Software'] THEN 'software'
+    #                 WHEN labels(item) = ['Publication'] THEN 'publication'
+    #                 ELSE '' 
+    #             END AS label
+    #         """,
+    #         orcid = orcid
+    #     ))
+    
+    def get_author_byName(tx, name):
+        return list(tx.run("""
+            MATCH (n:Person {name: $name})-[:IS_AUTHOR_OF]->(p:Publication)
                     <-[:IS_AUTHOR_OF]-(m:Person)
             RETURN  
                     apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS author_scopus_id,
@@ -254,25 +299,10 @@ def get_orcid_search():
                     p.subject AS subject,
                     p.year AS year
             """,
-            scopus_id = scopus_id
+            name = name
         ))
     
-    def get_author_byName(tx, name_list):
-        return list(tx.run("""
-            MATCH (n:Person {scopus_id: $scopus_id})-[:IS_AUTHOR_OF]->(p:Publication)
-                    <-[:IS_AUTHOR_OF]-(m:Person)
-            RETURN  
-                    apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS author_scopus_id,
-                    p.title AS title,
-                    p.cited AS cited,
-                    p.doi AS doi,
-                    p.subject AS subject,
-                    p.year AS year
-            """,
-            scopus_id = scopus_id
-        ))
-    
-    def get_coauthor_info(tx, scopus_id):
+    def get_coauthor_info_scopus(tx, scopus_id):
         return list(tx.run("""
             MATCH (n:Person {scopus_id: $scopus_id})
             RETURN  
@@ -281,6 +311,15 @@ def get_orcid_search():
                     n.affiliation AS aff
             """,
             scopus_id = scopus_id
+        ))
+    def get_coauthor_info_rsd(tx, orcid):
+         return list(tx.run("""
+            MATCH (n:Person {orcid: $orcid})
+            RETURN  
+                    n.name AS name,
+                    n.affiliation AS aff
+            """,
+            orcid = orcid
         ))
     #
     # def second_coauthor(tx, scopus_id):
@@ -308,7 +347,8 @@ def get_orcid_search():
     else:
         db = get_db()
         scopus_id = neo4j_rsd.get_scopus_info_from_orcid(orcid)[0]
-        results = db.execute_read(first_coauthor_byID, scopus_id)
+        results = db.execute_read(get_coauthor_byID, scopus_id, orcid)
+        
         # second_results = db.read_transaction(second_coauthor, scopus_id)
         # results = db.read_transaction(work, q)
         # return Response(
@@ -323,51 +363,90 @@ def get_orcid_search():
         for record in results:
             target = i
             node_records.append(record['doi'])
-            if math.isnan(record["cited"]):
+            # Citation Count
+            if not record["cited"]:
+                citation_count = 0
+                pub_radius = 6 
+            elif math.isnan(record["cited"]):
                 citation_count = 0
                 pub_radius = 6 
             else:
                 citation_count = record["cited"]
                 pub_radius = 6 + math.log(citation_count)
+
             nodes.append({"title": record["title"], 
                         "citation_count": citation_count,
                         "doi": record["doi"],
                         "subject": record["subject"],
                         "year": record["year"],
-                        "label": "publication", 
+                        "label": record["label"], 
                         "id": target,
-                        "color": "publication",
+                        "color": record["label"],
                         "radius": pub_radius
                         })
             i += 1
-            for id in record["author_scopus_id"]:
-                # Get coauthor info from DB
-                co_author_results = db.execute_read(get_coauthor_info, id)
-                name = co_author_results[0]["name"]
-                country = co_author_results[0]["country"]
-                aff = co_author_results[0]["aff"]
+            if record["label"] == "publication":
+                for id in record["author_scopus_id"]:
+                    # Get coauthor info from DB
+                    co_author_results = db.execute_read(get_coauthor_info_scopus, id)
+                    name = co_author_results[0]["name"]
+                    country = co_author_results[0]["country"]
+                    aff = co_author_results[0]["aff"]
 
-                if id == scopus_id:
-                    author_label = "author_highlight"
-                else:
-                    author_label = "first_coauthor"
+                    if id == scopus_id:
+                        author_color = "author_highlight"
+                    else:
+                        author_color = "first_coauthor"
 
-                try:
-                    source = node_records.index(id)
-                except ValueError:
-                    node_records.append(id)
-                    source = i
-                    author = {"title": name,
-                            "scopus_id": id,
-                            "country": country,
-                            "affiliation": aff,
-                            "label": "author",
-                            "id": source,
-                            "color": author_label}
-                    nodes.append(author)
-                    i += 1
-                nodes_id_in_rel.append(source)
-                rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": id})
+                    try:
+                        if (id == scopus_id) and (orcid in node_records):
+                            source = node_records.index(orcid) 
+                        else:
+                            source = node_records.index(id)
+                    except ValueError:
+                        node_records.append(id)
+                        source = i
+                        author = {"title": name,
+                                "scopus_id": id,
+                                "country": country,
+                                "affiliation": aff,
+                                "label": "author",
+                                "id": source,
+                                "color": author_color}
+                        nodes.append(author)
+                        i += 1
+                    nodes_id_in_rel.append(source)
+                    rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": id})
+            else:
+                for id in record["author_orcid"]:
+                    # Get coauthor info from DB
+                    co_author_results = db.execute_read(get_coauthor_info_rsd, id)
+                    name = co_author_results[0]["name"]
+                    aff = co_author_results[0]["aff"]
+
+                    if id == orcid:
+                        author_color = "author_highlight"
+                    else:
+                        author_color = "first_coauthor"
+
+                    try:
+                        if (id == orcid) and (scopus_id in node_records):
+                            source = node_records.index(scopus_id) 
+                        else:
+                            source = node_records.index(id)
+                    except ValueError:
+                        node_records.append(id)
+                        source = i
+                        author = {"title": name,
+                                "orcid": id,
+                                "affiliation": aff,
+                                "label": "author",
+                                "id": source,
+                                "color": author_color}
+                        nodes.append(author)
+                        i += 1
+                    nodes_id_in_rel.append(source)
+                    rels.append({"source": source, "target": target, "doi":record["doi"], "orcid": id})
         nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
         return Response(dumps({"nodes": nodes, "links": rels}),
                     mimetype="application/json")
@@ -445,17 +524,26 @@ def get_pub_search():
 @app.route('/show_link')
 def show_link():
 
-    def person_node(tx, scopus_id):
+    def person_node(tx, unique_id):
         return list(tx.run("""
-            MATCH (n:Person {scopus_id: $scopus_id})-[r]->(p) 
+            MATCH (n:Person)-[r]->(p) 
+            WHERE labels(p) IN [['Publication'], ['Project'], ['Software']] AND
+                    (n.orcid = $orcid OR n.scopus_id = $scopus_id)
             RETURN  p.title AS title,
                     p.cited AS cited,
                     p.doi AS doi,
                     p.subject AS subject,
-                    p.year AS year
+                    p.year AS year,
+                    CASE 
+                        WHEN labels(p) = ['Project'] THEN  'project'
+                        WHEN labels(p) = ['Software'] THEN 'software'
+                        WHEN labels(p) = ['Publication'] THEN 'publication'
+                        ELSE '' 
+                    END AS label
             LIMIT $limit
             """,
-            scopus_id = scopus_id,
+            scopus_id = unique_id,
+            orcid = unique_id,
             limit = 50
         ))
     def pub_node(tx, doi):
@@ -507,7 +595,7 @@ def show_link():
                     nodes.append(author)
                     rels.append({"source": max_id, "target": node_id, "doi": unique_id, "scopus_id": record['scopus_id']})
 
-        else:
+        if node_label == "author":
             results = db.execute_read(person_node, unique_id)
             for record in results:
                 if record['doi'] not in link_list:
@@ -523,14 +611,16 @@ def show_link():
                         "doi": record["doi"],
                         "subject": record["subject"],
                         "year": record["year"],
-                        "label": "publication", 
+                        "label": record['label'], 
                         "id": max_id,
-                        "color": "publication",
+                        "color": record['label'],
                         "radius": pub_radius})
                     rels.append({"source": node_id, "target": max_id, "doi": record["doi"], "scopus_id": unique_id})
     
         return Response(dumps({"nodes": nodes, "links": rels}),
                     mimetype="application/json")
+    
+
 
 if __name__ == "__main__":
     # uri = "bolt://localhost:7687"

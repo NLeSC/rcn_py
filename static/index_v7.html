@@ -70,9 +70,8 @@
                                 <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')" checked>
                                 <label for="search-by-name">Search by author name:</label>
                                 <br>
-                                <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control">
-                                <br>
                                 <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control">
+                                <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control">
                             </div>
 
                             <div>
@@ -91,6 +90,7 @@
                             <label for="publication">Search publication:</label>
                             <br>
                             <input type="text" name="doi" id="doi" placeholder="10.1117/12.2602737" class="form-control" required>
+                            <br>
                             <br>
                             <button class="btn btn-default" type="submit" id="pub-submit-btn">Search</button>
                             </div>
@@ -201,13 +201,15 @@
 
 <style type="text/css">
     .node { stroke: #222; stroke-width: 1.5px; }
-    .node.author { fill: #BBB; }
-    .node.publication { fill: #788cc0; }
-    .node.author_highlight { fill: #ee977c; }
-    .node.first_coauthor { fill: #ffca7f; }
-    .node.second_coauthor { fill: #fff493; }
-    .node.first_pub { fill: #8ac7ffe1; }
-    .node.second_pub { fill: #98979a; }
+    .node.author { fill: #BBB; stroke: #9c9c9c; }
+    .node.publication { fill: #8398cd; stroke: #6379b2;}
+    .node.project { fill: #94bf91; stroke: #71ac6e;}
+    .node.software { fill: #c093bd; stroke: #b07bae;}
+    .node.author_highlight { fill: #e97c66; stroke: #cc6753;}
+    .node.first_coauthor { fill: #e3b7c8; stroke: #c092a4;}
+    .node.second_coauthor { fill: #fff493; stroke: #9c9c9c;}
+    .node.first_pub { fill: #8398cd; stroke: #6379b2;}
+    .node.second_pub { fill: #BBB; stroke: #9c9c9c;}
     .link { stroke: #999; stroke-opacity: .6; stroke-width: 1px; }
 </style>
 
@@ -256,6 +258,26 @@
                 .on("zoom", zoomed)
                 .on("end", zoomended))
             ;
+            
+    
+    var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width*7/10},${height*3/5})`)
+                ;
+
+    legend.append("circle").attr("cx",10).attr("cy",10).attr("r", 6).style("fill", "#BBB");
+    legend.append("circle").attr("cx",10).attr("cy",40).attr("r", 6).style("fill", "#e97c66");
+    legend.append("circle").attr("cx",10).attr("cy",70).attr("r", 6).style("fill", "#e3b7c8");
+    legend.append("circle").attr("cx",10).attr("cy",100).attr("r", 6).style("fill", "#8398cd");
+    legend.append("circle").attr("cx",10).attr("cy",130).attr("r", 6).style("fill", "#94bf91");
+    legend.append("circle").attr("cx",10).attr("cy",160).attr("r", 6).style("fill", "#c093bd");
+
+    legend.append("text").attr("x", 22).attr("y", 10).text("Author").style("font-size", "15px").attr("alignment-baseline","middle");
+    legend.append("text").attr("x", 22).attr("y", 40).text("Selected author").style("font-size", "15px").attr("alignment-baseline","middle");
+    legend.append("text").attr("x", 22).attr("y", 70).text("Co-author").style("font-size", "15px").attr("alignment-baseline","middle");
+    legend.append("text").attr("x", 22).attr("y", 100).text("Publication").style("font-size", "15px").attr("alignment-baseline","middle");
+    legend.append("text").attr("x", 22).attr("y", 130).text("Project").style("font-size", "15px").attr("alignment-baseline","middle");
+    legend.append("text").attr("x", 22).attr("y", 160).text("Software").style("font-size", "15px").attr("alignment-baseline","middle");
 
     var network = svg.append('g').attr('class', 'type1');
     
@@ -297,7 +319,7 @@
                         // else { return 5; }
                         return d.radius;
                      })
-                    .attr("stroke", "light-grey")
+                    // .attr("stroke", "light-grey")
                     .attr("cursor", "pointer")
                     .style("opacity", 0.8)
                     .call(d3.drag()
@@ -314,6 +336,8 @@
                         }
                     })
                     .style('font-size', d => `${d.radius / 2}px`)
+                    .style('fill', '#3F3F3F')
+                    .attr("cursor", "pointer")
                     .attr('text-anchor', 'middle')
                     .attr('alignment-baseline', 'middle')
                     .call(d3.drag()
@@ -492,9 +516,16 @@
                 // else { node_radius = 6;}
             }
             else if (node_label == "author") {
-                var unique_id = d.scopus_id;
+                if (d.scopus_id) {
+                    var unique_id = d.scopus_id; }
+                else {
+                    var unique_id = d.orcid; }
                 // node_radius = 5 + Math.log(d.link_num);;
             }
+            // else if (node_label == "rsd_author") {
+            //     var unique_id = d.orcid;
+            //     // node_radius = 5 + Math.log(d.link_num);;
+            // }
             else if (node_label == "software"){
                 var unique_id = d.software_id;
                 // node_radius = 5;
@@ -546,6 +577,13 @@
             idRow.append('td')
                 .text(d.scopus_id);
 
+            var orcidRow = d3.select('#node_info tbody')
+                .append('tr');
+            orcidRow.append('td')
+                .text('ORCID');
+            orcidRow.append('td')
+                .text(d.orcid);
+
             // Create a new table row for the node description
             var countryRow = d3.select('#node_info tbody')
                 .append('tr');
@@ -590,6 +628,59 @@
                 .text('Subject');
             subjectRow.append('td')
                 .text(d.subject);
+
+            var yearRow = d3.select('#node_info tbody')
+                .append('tr');
+            yearRow.append('td')
+                .text('Year');
+            yearRow.append('td')
+                .text(d.year);
+        }
+        if (d.label == "project") {
+            // Create a new table row for the node label
+            var labelRow = d3.select('#node_info tbody')
+                .append('tr');
+            labelRow.append('td')
+                .text('Label');
+            labelRow.append('td')
+                .text(d.label);
+            
+            var titleRow = d3.select('#node_info tbody')
+                .append('tr');
+            titleRow.append('td')
+                .text('Title');
+            titleRow.append('td')
+                .text(d.title);
+
+            var yearRow = d3.select('#node_info tbody')
+                .append('tr');
+            yearRow.append('td')
+                .text('Year');
+            yearRow.append('td')
+                .text(d.year);
+        }
+        if (d.label == "software") {
+            // Create a new table row for the node label
+            var labelRow = d3.select('#node_info tbody')
+                .append('tr');
+            labelRow.append('td')
+                .text('Label');
+            labelRow.append('td')
+                .text(d.label);
+            
+            var titleRow = d3.select('#node_info tbody')
+                .append('tr');
+            titleRow.append('td')
+                .text('Title');
+            titleRow.append('td')
+                .text(d.title);
+
+            var idRow = d3.select('#node_info tbody')
+                .append('tr');
+            idRow.append('td')
+                .text('DOI');
+            idRow.append('td')
+                .text(d.doi);
 
             var yearRow = d3.select('#node_info tbody')
                 .append('tr');
@@ -655,14 +746,19 @@
                     // else {node_radius = 6;}
                 }
                 else if (node_label == "author") {
-                    var unique_id = d.scopus_id;
+                    if (d.scopus_id) {
+                        var unique_id = d.scopus_id; }
+                    else {
+                        var unique_id = d.orcid;
+                    }
+
                     // node_radius = 5 + Math.log(d.link_num);;
                 }
                 else if (node_label == "software"){
                     var unique_id = d.software_id;
                     // node_radius = 5;
                 }
-                else {
+                else if (node_label == "project") {
                     var unique_id = d.project_id;
                     // node_radius = 5;
                 }
@@ -813,6 +909,24 @@
                         .on("end", zoomended))
                     ;
 
+            legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", `translate(${width*7/10},${height*3/5})`);
+    
+            legend.append("circle").attr("cx",10).attr("cy",10).attr("r", 6).style("fill", "#BBB")
+            legend.append("circle").attr("cx",10).attr("cy",40).attr("r", 6).style("fill", "#e97c66")
+            legend.append("circle").attr("cx",10).attr("cy",70).attr("r", 6).style("fill", "#e3b7c8")
+            legend.append("circle").attr("cx",10).attr("cy",100).attr("r", 6).style("fill", "#8398cd")
+            legend.append("circle").attr("cx",10).attr("cy",130).attr("r", 6).style("fill", "#94bf91")
+            legend.append("circle").attr("cx",10).attr("cy",160).attr("r", 6).style("fill", "#c093bd")
+
+            legend.append("text").attr("x", 22).attr("y", 10).text("Author").style("font-size", "15px").attr("alignment-baseline","middle")
+            legend.append("text").attr("x", 22).attr("y", 40).text("Selected author").style("font-size", "15px").attr("alignment-baseline","middle")
+            legend.append("text").attr("x", 22).attr("y", 70).text("Co-author").style("font-size", "15px").attr("alignment-baseline","middle")
+            legend.append("text").attr("x", 22).attr("y", 100).text("Publication").style("font-size", "15px").attr("alignment-baseline","middle")
+            legend.append("text").attr("x", 22).attr("y", 130).text("Project").style("font-size", "15px").attr("alignment-baseline","middle")
+            legend.append("text").attr("x", 22).attr("y", 160).text("Software").style("font-size", "15px").attr("alignment-baseline","middle")
+
             network = svg.append('g').attr('class', 'type1');
             
             arcs = svg.append('g').attr('class', 'type2')
@@ -914,6 +1028,8 @@
                 });
             return false;
         }
+
+        
     })
     
 </script>
