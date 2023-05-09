@@ -8,33 +8,212 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.min.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/css/bootstrap-multiselect.css" />
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" />
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" />
 
     <title>Neo4j RCN</title>    
     <style>
+        .brand-lg {
+            font-size: 18px;
+        }
+        .nav-lg {
+            font-size: 16px;
+        }
+        .nav-sm {
+            font-size: 14px;
+        }
+        .nav-link {
+            padding-top: 0;
+            padding-left: 500px;
+        }
+        .nav-item {
+            padding-right: 16px;
+        }
         .navbar-form {
           display: none;
+          align-items: center;
+          margin-bottom: 20px;
         }
         .navbar-form.active {
           display: block;
+          align-items: center;
+          margin-bottom: 20px;
         }
+        .navbar {
+            height: 100px;
+        }
+        .navbar-expand-lg {
+            height: 100px;
+        }
+        .navbar-brand {
+            margin-top: 30px;
+            /* padding-top: 0; */
+        }
+
         svg {
             position: absolute;
             left: -50%;
             top: -50%;
         }
+        .button {
+            background-color: #75a0c1;
+            border: none;
+            color: white;
+            /* padding: 0px 0px; */
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 8px;
+            border-radius: 8px;
+            margin: 4px ;
+            cursor: pointer;
+            transition-duration: 0.3s;
+            
+        }
+        .button1 {
+            background-color: white; 
+            color: black; 
+            border: 2px solid #75a0c1;
+        }
+        .button1:hover {
+            background-color: #75a0c1;
+            color: white;
+        }
+        .button2 {
+            background-color: white; 
+            color: black; 
+            font-size: 14px;
+            border: 2px solid #d68b81;
+        }
+        .button2:hover {
+            background-color: #d68b81;
+            color: white;
+        }
+        #sidebar {
+            background-color: #f1f1f1;
+            height: 100%;
+            position: fixed;
+            top: 100px;
+            left: 0;
+            width: 250px;
+            padding: 20px;
+            border-right: 1px solid #ccc;
+        }
+		#graph {
+            margin-left: 150px;
+            /* padding: 20px; */
+        }
       </style>
 </head>
 
 <body>
-<div id="graph">
+
+    <div id="graph">
+    </div>
+
+    <nav class="navbar navbar-expand-lg  bg-light">
+        <a class="navbar-brand brand-lg" href="#">Research Collaboration Network</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+                  
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link nav-lg" href="#">Home <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-lg" id="escience" data-menu="escience">eScience</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-lg" id="scopus" data-menu="scopus">Scopus</a>
+                    </li>
+                </ul>
+            </div>
+    </nav>
+
+
+
+<div id="sidebar">
+    <div class="sidebar-header" id="scopus-search-button">
+        <div class="button-group">
+            <button class="button button1" onclick="showForm('topic-search')">Topic</button>
+            <button class="button button1" onclick="showForm('author-search')">Author</button>
+            <button class="button button1" onclick="showForm('pub-search')">Publication</button>
+        </div>
+    </div>
+   
+    <form>
+        <div class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
+            <label for="keyword">Keyword:</label>
+            <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="30">
+            <br>
+            <br>
+            <label for="year">
+                Year:
+            </label>
+            <select name="year" id="year" multiple>
+                <option value="2013">2013</option>
+                <option value="2014">2014</option>
+                <option value="2015">2015</option>
+                <option value="2016">2016</option>
+                <option value="2017">2017</option>
+                <option value="2018">2018</option>
+                <option value="2019">2019</option>
+                <option value="2020">2020</option>
+                <option value="2021">2021</option>
+                <option value="2022" selected>2022</option>
+            </select>
+            <br>
+            <br>
+            <button class="button button2" type="submit" id="submit-btn">Search</button>
+        </div>
+    </form>
+    <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
+        <div class="form-group">
+        <div>
+            <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')" checked>
+            <label for="search-by-name">Search by author name:</label>
+            <br>
+            <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control">
+            <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control">
+        </div>
+
+        <div>
+            <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')">
+            <label for="search-by-orcid">Search by ORCID:</label>
+            <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]" style="display:none">
+        </div>
+
+        <br>
+        <button class="button button2" type="submit" id="author-submit-btn">Search</button>
+        </div>
+    </form>
+
+    <form class="navbar-form" id="pub-search", onsubmit="resetFields('publication')">
+        <div class="form-group">
+        <label for="publication">Search publication:</label>
+        <br>
+        <input type="text" name="doi" id="doi" placeholder="10.1117/12.2602737" class="form-control" required>
+        <br>
+        <br>
+        <button class="button button2" type="submit" id="pub-submit-btn">Search</button>
+        </div>
+    </form>
+
+    <input type="checkbox" id="show_pub" name="show_pub" value="show_pub" checked>
+    <label for="show_pub">Show research output nodes</label><br>
 </div>
 
-<div role="navigation" class="navbar navbar-default navbar-static-top">
+
+
+
+
+<!-- <div role="navigation" class="navbar navbar-expand-md navbar-default navbar-static-top">
     <div class="container">
-        <div class="row">
-            <div class="col-sm-6 col-md-6">
+        <div class="row"> -->
+            <!-- <div class="col-sm-6 col-md-6">
                 <ul class="nav navbar-nav">
                     <li>
                         <form class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
@@ -97,32 +276,61 @@
                         </form>
                     </li>
                 </ul>
-            </div>
+            </div> -->
 
-            <div class="navbar-header col-sm-6 col-md-6">
+            <!-- <div class="navbar-header col-sm-6 col-md-6">
                 <div class="navbar-brand">
                     <div class="brand">Research Collaboration Network</div>
                 </div>
-            </div>
+            </div> -->
 
+
+
+      
+            <!-- <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                  <li class="nav-item">
+                    <a class="nav-link" href="escience">eScience</a>
+                  </li>
+                  <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Scopus
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
+                      <a class="dropdown-item" href="#topic-search">Topic</a>
+                      <a class="dropdown-item" href="#author-search">Author</a>
+                      <a class="dropdown-item" href="#pub-search">Publication</a>
+                    </div>
+                  </li>
+                </ul>
+              </div> -->
+<!-- 
             <div class="col-sm-6 col-md-6">
                 <ul class="nav navbar-nav">
                     <button onclick="showForm('topic-search')">Search by Topic</button>
                     <button onclick="showForm('author-search')">Search by Author</button>
                     <button onclick="showForm('pub-search')">Search by Publication</button>
                 </ul>
-            </div>
-            
+            </div> -->
+<!--             
         </div>
     </div>
-</div>
+</div> -->
+
+
 
 <div class="row justify-content-end">
-    <div class="col-md-3">
+    <!-- <div class="col-md-3"> -->
         <div class="panel panel-default">
             <div id="node-details" style="display:none;">
                 <!-- <div class="panel-heading">Node information</div> -->
-                <table id="node_info" class="table table-striped table-hover">
+                <table id="node_info" class="table table-striped table-hover"
+                            style="width: 0;
+                                    position: fixed;
+                                    z-index: 1;
+                                    right: 0;
+                                    top: 100px;
+                                    background-color: #e8e8e8;">
                     <thead>
                     <tr>
                         <th>Property</th>
@@ -134,8 +342,21 @@
                 </table>
             </div>
         </div>
-    </div>
+    <!-- </div> -->
 </div>
+
+<div style="position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px;">
+    <!-- <h4>Color Legend</h4> -->
+    <ul style="list-style:none; padding:0;">
+        <li style="margin-bottom:5px;"><span style="background-color:#BBB; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#e97c66; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Selected author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#e3b7c8; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Co-author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#8398cd; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Publication</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#94bf91; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Project</li>
+        <li><span style="background-color:#c093bd; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Software</li>
+    </ul>
+</div>
+
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
 <script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
@@ -149,6 +370,8 @@
 
 
 <script>
+  
+
     $(function() {
         $('select[multiple]').multiselect()
     });
@@ -196,7 +419,6 @@
 
     showForm('topic-search');
   </script>
-
   
 
 <style type="text/css">
@@ -227,6 +449,7 @@
             ;
 
     // A temporary translate for the current position
+    var escience = false;
     var svgTranslate = [0, 0];
     var curTranslate = [0, 0];
     var svgScale = 1;
@@ -260,24 +483,6 @@
             ;
             
     
-    var legend = svg.append("g")
-                .attr("class", "legend")
-                .attr("transform", `translate(${width*7/10},${height*3/5})`)
-                ;
-
-    legend.append("circle").attr("cx",10).attr("cy",10).attr("r", 6).style("fill", "#BBB");
-    legend.append("circle").attr("cx",10).attr("cy",40).attr("r", 6).style("fill", "#e97c66");
-    legend.append("circle").attr("cx",10).attr("cy",70).attr("r", 6).style("fill", "#e3b7c8");
-    legend.append("circle").attr("cx",10).attr("cy",100).attr("r", 6).style("fill", "#8398cd");
-    legend.append("circle").attr("cx",10).attr("cy",130).attr("r", 6).style("fill", "#94bf91");
-    legend.append("circle").attr("cx",10).attr("cy",160).attr("r", 6).style("fill", "#c093bd");
-
-    legend.append("text").attr("x", 22).attr("y", 10).text("Author").style("font-size", "15px").attr("alignment-baseline","middle");
-    legend.append("text").attr("x", 22).attr("y", 40).text("Selected author").style("font-size", "15px").attr("alignment-baseline","middle");
-    legend.append("text").attr("x", 22).attr("y", 70).text("Co-author").style("font-size", "15px").attr("alignment-baseline","middle");
-    legend.append("text").attr("x", 22).attr("y", 100).text("Publication").style("font-size", "15px").attr("alignment-baseline","middle");
-    legend.append("text").attr("x", 22).attr("y", 130).text("Project").style("font-size", "15px").attr("alignment-baseline","middle");
-    legend.append("text").attr("x", 22).attr("y", 160).text("Software").style("font-size", "15px").attr("alignment-baseline","middle");
 
     var network = svg.append('g').attr('class', 'type1');
     
@@ -289,6 +494,13 @@
                 { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
             ])
             .enter();
+
+
+    // Just a test
+    function legend_dragged(event, d) {
+        event.subject.fx = event.x;
+        event.subject.fy = event.y;
+    }
 
     function build_new_svg(graph_node, graph_link) {
 
@@ -530,7 +742,7 @@
                 var unique_id = d.software_id;
                 // node_radius = 5;
             }
-            else {
+            else if (node_label == "project"){
                 var unique_id = d.project_id;
                 // node_radius = 5;
             }
@@ -714,13 +926,12 @@
                     d.fx = null;
                     d.fy = null;
                 }
+                d3.select('#node-details').style('display', 'none');
             } 
             else {
                 // If click another node, hide the previous tootip
                 if (last_clicked_node && last_clicked_node != d.id) {
                     clicked[last_clicked_node] = false;
-                    // ########### One little bug, when I didn't double click the node (the previous tooltip is not removed),
-                    // ########### and then I choose another node, then the previous node' fx/fy cannot be changed.
 
                     if(lockked[last_clicked_node]){
                         last_d.fx = last_d.x;
@@ -832,9 +1043,14 @@
                 return d.scopus_id;
             });
         }
-        else {
+        else if (node_label == "author") {
             var linkList = linksToFilter.data().map(function(d) {
                 return d.doi;
+            });
+        }
+        else {
+            var linkList = linksToFilter.data().map(function(d) {
+                return d.orcid;
             });
         }
 
@@ -909,24 +1125,6 @@
                         .on("end", zoomended))
                     ;
 
-            legend = svg.append("g")
-                .attr("class", "legend")
-                .attr("transform", `translate(${width*7/10},${height*3/5})`);
-    
-            legend.append("circle").attr("cx",10).attr("cy",10).attr("r", 6).style("fill", "#BBB")
-            legend.append("circle").attr("cx",10).attr("cy",40).attr("r", 6).style("fill", "#e97c66")
-            legend.append("circle").attr("cx",10).attr("cy",70).attr("r", 6).style("fill", "#e3b7c8")
-            legend.append("circle").attr("cx",10).attr("cy",100).attr("r", 6).style("fill", "#8398cd")
-            legend.append("circle").attr("cx",10).attr("cy",130).attr("r", 6).style("fill", "#94bf91")
-            legend.append("circle").attr("cx",10).attr("cy",160).attr("r", 6).style("fill", "#c093bd")
-
-            legend.append("text").attr("x", 22).attr("y", 10).text("Author").style("font-size", "15px").attr("alignment-baseline","middle")
-            legend.append("text").attr("x", 22).attr("y", 40).text("Selected author").style("font-size", "15px").attr("alignment-baseline","middle")
-            legend.append("text").attr("x", 22).attr("y", 70).text("Co-author").style("font-size", "15px").attr("alignment-baseline","middle")
-            legend.append("text").attr("x", 22).attr("y", 100).text("Publication").style("font-size", "15px").attr("alignment-baseline","middle")
-            legend.append("text").attr("x", 22).attr("y", 130).text("Project").style("font-size", "15px").attr("alignment-baseline","middle")
-            legend.append("text").attr("x", 22).attr("y", 160).text("Software").style("font-size", "15px").attr("alignment-baseline","middle")
-
             network = svg.append('g').attr('class', 'type1');
             
             arcs = svg.append('g').attr('class', 'type2')
@@ -994,7 +1192,8 @@
 
             d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid)+ 
                     "&firstname=" + encodeURIComponent(firstname) + 
-                    "&surname=" + encodeURIComponent(surname))
+                    "&surname=" + encodeURIComponent(surname) + 
+                    "&escience=" + escience)
                 .then(function (graph) {
                     graph_node = graph.nodes;
                     graph_link = graph.links;
@@ -1031,7 +1230,42 @@
 
         
     })
-    
+
+
+    // ################### eScience ###################
+    document.getElementById('escience').addEventListener('click', function() {
+        refresh();
+        escience = true;
+        showForm('author-search');
+        // document.getElementById("button-group").style.display = "none";
+        d3.select('#scopus-search-button').style('display', 'none');
+
+        d3.json("/escience").then(function(graph) {
+            graph_node = graph.nodes;
+            graph_link = graph.links;
+
+            build_new_svg(graph_node, graph_link);
+            });
+
+    });
+
+
+    document.getElementById('scopus').addEventListener('click', function() {
+        refresh();
+        
+        d3.select('#scopus-search-button').style('display', 'block');
+        showForm('topic-search');
+
+        d3.json("/graph").then(function(graph) {
+
+            graph_node = graph.nodes;
+            graph_link = graph.links;
+
+            build_new_svg(graph_node, graph_link);
+
+        });
+
+    });
 </script>
 
 </body>

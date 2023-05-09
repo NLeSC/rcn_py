@@ -12,10 +12,10 @@ from nltk.stem import WordNetLemmatizer
 from pybliometrics.scopus import AuthorRetrieval, AuthorSearch
 from pyvis.network import Network
 
-nltk.download("stopwords")
-nltk.download("wordnet")
-stop_words = set(stopwords.words("english"))
-wnl = WordNetLemmatizer()
+# nltk.download("stopwords")
+# nltk.download("wordnet")
+# stop_words = set(stopwords.words("english"))
+# wnl = WordNetLemmatizer()
 
 
 def get_hindex(au_id):
@@ -35,6 +35,10 @@ def filter_country(author_list, country_code):
 
 
 def clean_text(text):
+    nltk.download("stopwords")
+    nltk.download("wordnet")
+    stop_words = set(stopwords.words("english"))
+    wnl = WordNetLemmatizer()
     text = text.replace("\n", " ")
     text = re.sub(r"-", " ", text)
     text = re.sub(r"\d+/\d+/\d+", "", text)

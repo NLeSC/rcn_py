@@ -22,10 +22,11 @@ def get_scopus_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028
 
     if 'service-error' in results.keys():
         return '', '', ''
+    elif 'search-results' not in results.keys():
+        return '', '', ''
     elif 'error-response' in results.keys():
         time.sleep(1)
         get_scopus_info_from_orcid(orcid)
-
     elif 'error' in results['search-results']['entry'][0].keys():
         return '', '', ''
     else:
