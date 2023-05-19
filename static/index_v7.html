@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.min.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
@@ -23,13 +23,13 @@
         .nav-sm {
             font-size: 14px;
         }
-        .nav-link {
+        /* .nav-link {
             padding-top: 0;
             padding-left: 500px;
         }
         .nav-item {
             padding-right: 16px;
-        }
+        } */
         .navbar-form {
           display: none;
           align-items: center;
@@ -40,17 +40,15 @@
           align-items: center;
           margin-bottom: 20px;
         }
-        .navbar {
+        /* .navbar {
             height: 100px;
         }
         .navbar-expand-lg {
             height: 100px;
-        }
+        } */
         .navbar-brand {
-            margin-top: 30px;
-            /* padding-top: 0; */
+            margin-top: 25px;
         }
-
         svg {
             position: absolute;
             left: -50%;
@@ -94,16 +92,95 @@
             background-color: #f1f1f1;
             height: 100%;
             position: fixed;
-            top: 100px;
+            top: 50px;
             left: 0;
             width: 250px;
             padding: 20px;
+            padding-top: 50px;
             border-right: 1px solid #ccc;
+            z-index: 3;
         }
 		#graph {
+            top: 50px;
             margin-left: 150px;
-            /* padding: 20px; */
+            padding: 20px;
+            position: fixed;
+            z-index: 1;
         }
+        #menu {
+            top: 0;
+            height: 50px;
+            width: 100%;
+            padding: 20px;
+            border-bottom: 1px solid #ccc;
+            position: fixed;
+            z-index: 4;
+        }
+        #profile {
+            background-color: #f1f1f1;
+            padding-left: 260px;
+            padding-top: 10px;
+            padding-right: 0;
+            top: 50px;
+            height: 150px;
+            width: 100%;
+            border-bottom: 1px solid #ccc;
+            position: fixed;
+            z-index: 2;
+            visibility: hidden;
+        }
+        #name-title {
+            position: relative;
+        }
+
+        
+        .metrics {
+            position: absolute;
+            top: 5px;
+            right: 60px;
+        }
+        .info-icon {
+            position: absolute;
+            right: 10px;
+            top: 0;
+            font-size: 2em;
+        }
+        #polarchart {
+            position: fixed;
+            right: 250px;
+        }
+        .personal-work {
+            position: absolute;
+            top: 15px;
+            right: 450px;
+        }
+        canvas {
+            background-color: #f1f1f1;
+	    }
+        .table {
+            display: table;
+            max-width: 200px;
+            margin-top: 10px;
+            border: none;
+            border: 1px solid #ddd;
+            }
+        .row {
+            display: table-row;
+        }
+        .cell {
+            display: table-cell;
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        .row:first-child {
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
+        #tbody {
+            overflow:scroll;
+        }
+
       </style>
 </head>
 
@@ -112,26 +189,114 @@
     <div id="graph">
     </div>
 
-    <nav class="navbar navbar-expand-lg  bg-light">
-        <a class="navbar-brand brand-lg" href="#">Research Collaboration Network</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-                  
+    <nav class="navbar navbar-expand-lg  bg-light" id="menu">
+            <a class="navbar-brand brand-lg" href="#">Research Collaboration Network</a>
+                <!-- <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button> -->
+                    
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item active">
-                        <a class="nav-link nav-lg" href="#">Home <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-lg" id="escience" data-menu="escience">eScience</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link nav-lg" id="scopus" data-menu="scopus">Scopus</a>
-                    </li>
-                </ul>
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item active">
+                            <a class="nav-link nav-lg" href="#">Home <span class="sr-only">(current)</span></a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-lg" id="escience" data-menu="escience">eScience</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-lg" id="scopus" data-menu="scopus">Scopus</a>
+                        </li>
+                    </ul>
             </div>
     </nav>
+
+
+    <div id="profile">
+        <div class="container">
+            <div class="person-vcard-wrapper">
+                
+                    <section class="profile" aria-label="persons information">
+                        <div class="information">
+                            <div class="header person-details">
+                                <h1 id="name-title" style="max-width: 500px;">
+                                </h1>
+                                
+                                <div class="rendering rendering_person rendering_personorcidrendererportal rendering_person_personorcidrendererportal" id="person_profile" style="display: none;">
+                                    <a href="" target="_blank" class="orcid" aria-label="Orcid" title="Orcid" id="orcid1">
+                                        <i class="fa-brands fa-orcid" style="color: #aecc54; width: 15px;"></i>
+                                    </a>
+                                    <a href="" target="_blank" class="orcid" aria-label="Orcid" title="Orcid" id="orcid2">
+                                        <span id="orcid3"></span>
+                                    </a>
+                                    <br>
+                                    <a href="" target="_blank" class="ror" aria-label="ror" title="ror" id="ror">
+                                        <i class="fa-solid fa-building-columns" style="color: #5ea090;"></i>
+                                    </a>
+                                    <span id="affiliation"></span>
+
+                                </div> 
+
+                                <div class="rendering rendering_person rendering_personorcidrendererportal rendering_person_personorcidrendererportal" id="pub_profile" style="display: none;">
+                                    <a href="" target="_blank" class="doi" aria-label="DOI" title="DOI" id="doi1">
+                                        <i class="fa-brands fa-orcid" style="color: #aecc54; width: 15px;"></i>
+                                    </a>
+                                    <a href="" target="_blank" class="doi" aria-label="DOI" title="DOI" id="doi2">
+                                        <span id="doi3"></span>
+                                    </a>
+                                    <br>
+                                    
+                                    <div id="pub_authors"></div>
+
+                                </div> 
+
+                            </div>     
+                        </div>
+                    </section>
+
+                    <section class="personal-work">
+                        <div class="table" id="person_table" style="display: none;">
+                            <div class="row">
+                            <div class="cell">H-Index</div>
+                            <div class="cell">Citation Count</div>
+                            <div class="cell">Work Count</div>
+                            </div>
+                            <div class="row">
+                            <div class="cell" id="h-index-value">0</div>
+                            <div class="cell" id="citation-count-value">0</div>
+                            <div class="cell" id="work-count-value">0</div>
+                            </div>
+                        </div>
+
+                        <div class="table" id="pub_table" style="display: none;">
+                            <div class="row">
+                            <div class="cell">Citation Count</div>
+                            </div>
+                            <div class="row">
+                            <div class="cell" id="pub-citation-count">0</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="metrics" aria-label="Person metrics section">
+                        <div id="polarchart">
+                            <p id="concept_link_score">Concept link strength</p>
+                            <canvas id="myPolarChart" style="max-width:140px; height: 110px;"></canvas>
+                        </div> 
+
+                        <div id="barchart">
+                            <p id="publication_pear_year">Research activity per year</p>
+                            <canvas id="myBarChart" style="max-width:140px; height: 100px;"></canvas> 
+                        </div>
+                                 
+                    </section>
+                    <span class="info-icon" data-toggle="popover" title="The statistics are based on OpenAlex." data-content="The statistics are based on OpenAlex.">
+                            <i class="fa-solid fa-circle-info" style="color: #8f8f8f;"></i>
+                    </span>
+
+                
+            </div>
+        </div>
+    </div>
 
 
 
@@ -172,18 +337,19 @@
     </form>
     <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
         <div class="form-group">
+
         <div>
-            <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')" checked>
-            <label for="search-by-name">Search by author name:</label>
-            <br>
-            <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control">
-            <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control">
+            <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')" checked>
+            <label for="search-by-orcid">Search by ORCID:</label>
+            <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]">
         </div>
 
         <div>
-            <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')">
-            <label for="search-by-orcid">Search by ORCID:</label>
-            <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]" style="display:none">
+            <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')">
+            <label for="search-by-name">Search by author name:</label>
+            <br>
+            <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control" style="display:none">
+            <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control" style="display:none">
         </div>
 
         <br>
@@ -202,120 +368,33 @@
         </div>
     </form>
 
-    <input type="checkbox" id="show_pub" name="show_pub" value="show_pub" checked>
+    <input type="checkbox" id="show_pub" name="show_pub" onchange="check_show_pub()" checked>
     <label for="show_pub">Show research output nodes</label><br>
+
+    <form>
+        <label for="col_count">
+            Collaboration minimum: 
+        </label>
+        <select name="col_count" id="col_count" onchange="collaMin()" size="1">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="20">25</option>
+            <option value="20">30</option>
+        </select>
+    </form>
 </div>
 
 
-
-
-
-<!-- <div role="navigation" class="navbar navbar-expand-md navbar-default navbar-static-top">
-    <div class="container">
-        <div class="row"> -->
-            <!-- <div class="col-sm-6 col-md-6">
-                <ul class="nav navbar-nav">
-                    <li>
-                        <form class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
-                            <div class="form-group">
-                            <label for="keyword">Keyword:</label>
-                            <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="30">
-                            <br>
-                            <br>
-                            <label for="year">
-                                Year:
-                            </label>
-                            <select name="year" id="year" multiple="multiple">
-                                <option value="2013">2013</option>
-                                <option value="2014">2014</option>
-                                <option value="2015">2015</option>
-                                <option value="2016">2016</option>
-                                <option value="2017">2017</option>
-                                <option value="2018">2018</option>
-                                <option value="2019">2019</option>
-                                <option value="2020">2020</option>
-                                <option value="2021">2021</option>
-                                <option value="2022" selected>2022</option>
-                            </select>
-                            <br>
-                            <br>
-                            <button class="btn btn-default" type="submit" id="submit-btn">Search</button>
-                            </div>
-                        </form>
-
-                        <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
-                            <div class="form-group">
-                            <div>
-                                <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')" checked>
-                                <label for="search-by-name">Search by author name:</label>
-                                <br>
-                                <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control">
-                                <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control">
-                            </div>
-
-                            <div>
-                                <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')">
-                                <label for="search-by-orcid">Search by ORCID:</label>
-                                <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]" style="display:none">
-                            </div>
-
-                            <br>
-                            <button class="btn btn-default" type="submit" id="author-submit-btn">Search</button>
-                            </div>
-                        </form>
-
-                        <form class="navbar-form" id="pub-search", onsubmit="resetFields('publication')">
-                            <div class="form-group">
-                            <label for="publication">Search publication:</label>
-                            <br>
-                            <input type="text" name="doi" id="doi" placeholder="10.1117/12.2602737" class="form-control" required>
-                            <br>
-                            <br>
-                            <button class="btn btn-default" type="submit" id="pub-submit-btn">Search</button>
-                            </div>
-                        </form>
-                    </li>
-                </ul>
-            </div> -->
-
-            <!-- <div class="navbar-header col-sm-6 col-md-6">
-                <div class="navbar-brand">
-                    <div class="brand">Research Collaboration Network</div>
-                </div>
-            </div> -->
-
-
-
-      
-            <!-- <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ml-auto">
-                  <li class="nav-item">
-                    <a class="nav-link" href="escience">eScience</a>
-                  </li>
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                      Scopus
-                    </a>
-                    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdownMenuLink">
-                      <a class="dropdown-item" href="#topic-search">Topic</a>
-                      <a class="dropdown-item" href="#author-search">Author</a>
-                      <a class="dropdown-item" href="#pub-search">Publication</a>
-                    </div>
-                  </li>
-                </ul>
-              </div> -->
-<!-- 
-            <div class="col-sm-6 col-md-6">
-                <ul class="nav navbar-nav">
-                    <button onclick="showForm('topic-search')">Search by Topic</button>
-                    <button onclick="showForm('author-search')">Search by Author</button>
-                    <button onclick="showForm('pub-search')">Search by Publication</button>
-                </ul>
-            </div> -->
-<!--             
-        </div>
-    </div>
-</div> -->
 
 
 
@@ -326,17 +405,19 @@
                 <!-- <div class="panel-heading">Node information</div> -->
                 <table id="node_info" class="table table-striped table-hover"
                             style="width: 0;
-                                    position: fixed;
-                                    z-index: 1;
-                                    right: 0;
-                                    top: 100px;
-                                    background-color: #e8e8e8;">
+                            position: fixed;
+                            z-index: 1;
+                            right: 0;
+                            top: 200px;
+                            background-color: #e8e8e8;">
                     <thead>
                     <tr>
                         <th>Property</th>
                         <th>Value</th>
                     </tr>
+
                     </thead>
+
                     <tbody>
                     </tbody>
                 </table>
@@ -345,7 +426,7 @@
     <!-- </div> -->
 </div>
 
-<div style="position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px;">
+<div style="position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px; z-index: 3;">
     <!-- <h4>Color Legend</h4> -->
     <ul style="list-style:none; padding:0;">
         <li style="margin-bottom:5px;"><span style="background-color:#BBB; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Author</li>
@@ -366,14 +447,17 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
 
 
 <script>
-  
+
+    
 
     $(function() {
-        $('select[multiple]').multiselect()
+        $('select[multiple]').multiselect();
+        $('[data-toggle="popover"]').popover();   
     });
     
     function showForm(formId) {
@@ -411,10 +495,10 @@
             document.getElementById("orcid").value = "";
 
         }
-        else if (option === 'author') {
-            var formElement = document.getElementById("topic-search");
-            formElement.reset();
-        }
+        // else if (option === 'author') {
+        //     var formElement = document.getElementById("topic-search");
+        //     formElement.reset();
+        // }
     }
 
     showForm('topic-search');
@@ -432,7 +516,7 @@
     .node.second_coauthor { fill: #fff493; stroke: #9c9c9c;}
     .node.first_pub { fill: #8398cd; stroke: #6379b2;}
     .node.second_pub { fill: #BBB; stroke: #9c9c9c;}
-    .link { stroke: #999; stroke-opacity: .6; stroke-width: 1px; }
+    .link { stroke: #999; stroke-opacity: .6; stroke-width: 0.8px; }
 </style>
 
 
@@ -463,8 +547,14 @@
     var last_d;
     let maxId = 0;
 
+    var show_pub = true;
     var graph_node;
     var graph_link;
+    var coauthor_graph_node;
+    var coauthor_graph_link;
+
+    var myBarChart, myPolarChart;
+    var chartexist = false;
 
     // Define the SVG canvas
     var svg = d3.select("#graph").append("svg")
@@ -495,6 +585,117 @@
             ])
             .enter();
 
+    function set_new_chart(cite_by_year,concept_score) {
+        // Set chart options
+        var bar_options = {
+            legend: {display: false},
+            scales: {
+                xAxes: [{
+                    ticks: {
+                        minRotation: 0,
+                        maxRotation: 0,
+                        callback: function(value, index, values) {
+                            
+                            if (index === 0 || index === values.length - 1) {
+                            return value;
+                            } else {
+                            return null;
+                            }
+                        }
+                    }
+                }],
+                yAxes: [{
+                    display: false,
+                    suggestedMax: 50
+                }]
+            },
+            layout: {
+                padding: {
+                    top: 5
+                }
+            },
+            tooltips: {
+                callbacks: {
+                    label: function(tooltipItem) {
+                        var xLabel = tooltipItem.xLabel;
+                        var yLabel = tooltipItem.yLabel;
+                        return xLabel + ': ' + yLabel;
+                    }
+                }
+            },
+        };
+        const polaroptions = {
+            legend: {display: false},
+            scale: {
+                ticks: {
+                    beginAtZero: true
+                }
+            },
+            plugins: {
+                title: {
+                    display: false,
+                    text: 'My Polar Area Chart'
+                }
+            },
+            
+        };
+        const x_year = [];
+        const y_work = [];
+        cite_by_year = cite_by_year.reverse()
+        for (var i = 0; i < cite_by_year.length; i++) {
+            x_year.push(cite_by_year[i]["year"]);
+            if ("works_count" in cite_by_year[i]) {
+                y_work.push(cite_by_year[i]["works_count"]);
+            }
+            if ("cited_by_count" in cite_by_year[i]) {
+                y_work.push(cite_by_year[i]["cited_by_count"]);
+            }
+        }
+
+        // Set data
+        var bardata = {
+            labels: x_year,
+            datasets: [{
+                data: y_work,
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        };
+        // Initialize chart
+        var ctx = document.getElementById('myBarChart').getContext('2d');
+        myBarChart = new Chart(ctx, {
+            type: 'bar',
+            data: bardata,
+            options: bar_options
+        });
+                
+        const polardata = {
+            labels: concept_score['concept_name'],
+            datasets: [{
+            data: concept_score['score'],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.5)',
+                'rgba(54, 162, 235, 0.5)',
+                'rgba(255, 206, 86, 0.5)',
+                'rgba(75, 192, 192, 0.5)',
+                'rgba(229, 159, 132, 0.5)',
+                'rgba(201, 162, 217, 0.5)',
+                'rgba(81, 255, 183, 0.5)'
+            ],
+            borderWidth: 1
+            }]
+        };
+
+        var polar_ctx = document.getElementById('myPolarChart').getContext('2d');
+        myPolarChart = new Chart(polar_ctx, {
+                        type: 'polarArea',
+                        data: polardata,
+                        options: polaroptions
+                    });
+
+        return myBarChart,myPolarChart;
+    }
 
     // Just a test
     function legend_dragged(event, d) {
@@ -514,7 +715,9 @@
         // Append the links to the svg
         const link = network.selectAll(".link")
                     .data(graph_link).enter()
-                    .append("line").attr("class", "link");
+                    .append("line").attr("class", "link")
+                    .style("stroke-width", d => d.count ? 1/2*d.count : "0.5px")
+                    .on("click", handleLinkClick);
         // Append the nodes to the svg
         const node = network.selectAll(".node")
                     .data(graph_node).enter()
@@ -763,6 +966,111 @@
         force.alphaTarget(0.0).restart();
     }
 
+    function check_show_pub() {
+        var checkbox = document.getElementById("show_pub");
+        if (checkbox.checked) {
+            network.selectAll(".node").remove();
+            network.selectAll(".link").remove();
+            network.selectAll("text").remove();
+            maxId = 0;
+            arcs.selectAll("path").remove();
+            arcs.selectAll("text").remove();
+
+            show_pub = true;
+            build_new_svg(graph_node, graph_link);
+           
+        } else {
+            network.selectAll(".node").remove();
+            network.selectAll(".link").remove();
+            network.selectAll("text").remove();
+            maxId = 0;
+            arcs.selectAll("path").remove();
+            arcs.selectAll("text").remove();
+
+            show_pub = false;
+            build_new_svg(coauthor_graph_node, coauthor_graph_link);
+        }
+    }
+
+    function collaMin() {
+        var collaboration_min = document.getElementById("col_count").value;
+        col_min = Number(collaboration_min)
+        if (show_pub == false) {
+            filteredCoauthorNodes = coauthor_graph_node;
+            const filteredCoauthorLinks = coauthor_graph_link.filter(link => link.count >= col_min);
+            // filter isolated nodes that do not have any links
+            const isolatedNodes = filteredCoauthorNodes.filter(function(node) {
+                return !filteredCoauthorLinks.some(function(link) {
+                    return link.source === node || link.target === node;
+                });
+            });
+            // delete the original canvas
+            network.selectAll(".node").remove();
+            network.selectAll(".link").remove();
+            network.selectAll("text").remove();
+            maxId = 0;
+
+            coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
+                return !isolatedNodes.includes(node);
+            });
+            coauthor_graph_link  = filteredCoauthorLinks;
+            // console.log(graph_node);
+            // build new network
+            build_new_svg(coauthor_graph_node, coauthor_graph_link)
+
+            // remove the tooltip
+            arcs.selectAll("path").remove();
+            arcs.selectAll("text").remove();
+
+        }
+ 
+    }
+
+
+    function handleLinkClick(event, d){
+        d3.selectAll('#node_info tbody tr').remove();
+        if (d.count) {
+            var countRow = d3.select('#node_info tbody')
+                    .append('tr');
+            countRow.append('td')
+                    .text('Collaboration count');
+            countRow.append('td')
+                    .text(d.count);
+        }
+        if (show_pub) {
+            var doiRow = d3.select('#node_info tbody')
+                    .append('tr');
+            doiRow.append('td')
+                    .text('DOI');
+            doiRow.append('td')
+                    .text(d.doi);
+        }
+        else {
+            for(let i = 0; i< d.doi.length; i++) {
+                var doiRow = d3.select('#node_info tbody')
+                        .append('tr');
+                doiRow.append('td')
+                        .text('DOI');
+                doiRow.append('td')
+                        .text(d.doi[i]);
+                    
+                if (d.title) {
+                    var titleRow = d3.select('#node_info tbody')
+                            .append('tr');
+                    titleRow.append('td')
+                            .text('Title');
+                    titleRow.append('td')
+                            .text(d.title[i]);
+                }
+                emptyRow = d3.select('#node_info tbody').append('tr');
+                emptyRow .append('td').text('');
+                emptyRow.append('td').text('');
+            }
+        }
+        d3.select('#node-details').style('display', 'block');
+    }
+
+
     function handleNodeClick(event, d){
         d3.selectAll('#node_info tbody tr').remove();
         
@@ -1004,10 +1312,17 @@
         // Select all links with the given node ID as the source or target
         const filteredNodes = graph_node.filter(node => node.id !== node_id);
         const filteredLinks = graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
+        const filteredCoauthorNodes = coauthor_graph_node.filter(node => node.id !== node_id);
+        const filteredCoauthorLinks = coauthor_graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
  
         // filter isolated nodes that do not have any links
         const isolatedNodes = filteredNodes.filter(function(node) {
             return !filteredLinks.some(function(link) {
+                return link.source === node || link.target === node;
+            });
+        });
+        const isolatedCoauthorNodes = filteredCoauthorNodes.filter(function(node) {
+            return !filteredCoauthorLinks.some(function(link) {
                 return link.source === node || link.target === node;
             });
         });
@@ -1023,9 +1338,18 @@
             return !isolatedNodes.includes(node);
         });
         graph_link = filteredLinks;
+        coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
+            return !isolatedCoauthorNodes.includes(node);
+        });
+        coauthor_graph_link  = filteredCoauthorLinks;
         // console.log(graph_node);
         // build new network
-        build_new_svg(graph_node, graph_link)
+        if (show_pub) {
+            build_new_svg(graph_node, graph_link)
+        }
+        else {
+            build_new_svg(coauthor_graph_node, coauthor_graph_link)
+        }
         // remove the tooltip
         arcs.selectAll("path").remove();
         arcs.selectAll("text").remove();
@@ -1042,15 +1366,22 @@
             var linkList = linksToFilter.data().map(function(d) {
                 return d.scopus_id;
             });
+            var coauthor_id = linksToFilter.data().map(function(d) {
+                return d.index;
+            });
         }
         else if (node_label == "author") {
             var linkList = linksToFilter.data().map(function(d) {
                 return d.doi;
             });
+            var coauthor_id = node_id;
         }
         else {
             var linkList = linksToFilter.data().map(function(d) {
                 return d.orcid;
+            });
+            var coauthor_id = linksToFilter.data().map(function(d) {
+                return d.index;
             });
         }
 
@@ -1059,6 +1390,7 @@
         + "&node_id=" + encodeURIComponent(node_id)
         + "&maxId=" + encodeURIComponent(maxId)
         + "&linkList=" + encodeURIComponent(linkList)
+        + "&coauthorList=" + encodeURIComponent(coauthor_id)
         )
         .then(function(links){
             network.selectAll(".node").remove();
@@ -1070,11 +1402,17 @@
             
             graph_node = graph_node.concat(links.nodes);
             graph_link = graph_link.concat(links.links);
+            coauthor_graph_node = coauthor_graph_node.concat(links.coauthor_nodes);
+            coauthor_graph_link = coauthor_graph_link.concat(links.coauthor_links);
 
-            console.log(graph_node);
-            console.log(graph_link);
-            
-            build_new_svg(graph_node, graph_link);
+            // console.log(graph_node);
+            // console.log(graph_link);
+            if (show_pub) {
+                build_new_svg(graph_node, graph_link);
+            }
+            else {
+                build_new_svg(coauthor_graph_node, coauthor_graph_link);
+            }
             
         });
     }
@@ -1082,12 +1420,12 @@
   
     // ############# Initial network ##############
     d3.json("/graph").then(function(graph) {
-
         graph_node = graph.nodes;
         graph_link = graph.links;
-
+        coauthor_graph_node = graph.coauthor_nodes;
+        coauthor_graph_link = graph.coauthor_links;
         build_new_svg(graph_node, graph_link);
-        
+       
     });
     // ########## refresh #############
     function refresh(){
@@ -1164,6 +1502,15 @@
 
                     graph_node = graph.nodes;
                     graph_link = graph.links;
+                    coauthor_graph_node = graph.coauthor_nodes;
+                    coauthor_graph_link = graph.coauthor_links;
+
+                    if (show_pub) {
+                        build_new_svg(graph_node, graph_link);
+                    }
+                    else {
+                        build_new_svg(coauthor_graph_node, coauthor_graph_link);
+                    }
 
                     build_new_svg(graph_node,graph_link);
                 });
@@ -1187,7 +1534,25 @@
             var orcid = form.find("input[name='orcid']").val();
             var firstname = form.find("input[name='firstname']").val();
             var surname = form.find("input[name='surname']").val();
-      
+            
+            
+
+            const nameElement = document.getElementById("name-title");
+            nameElement.textContent = name;
+
+            // Update the ORCID link
+            const orcidLinkElement = document.querySelector(".orcid[href]");
+            if (orcid) {
+                orcidLinkElement.style.display = "inline";
+                orcidLinkElement.href = `https://orcid.org/${orcid}`;
+            } else {
+                orcidLinkElement.style.display = "none";
+            }
+
+            // Update the affiliation
+            const affiliationElement = document.getElementById("affiliation");
+            affiliationElement.textContent = affiliation;
+            
             refresh();
 
             d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid)+ 
@@ -1197,8 +1562,64 @@
                 .then(function (graph) {
                     graph_node = graph.nodes;
                     graph_link = graph.links;
+                    coauthor_graph_node = graph.coauthor_nodes;
+                    coauthor_graph_link = graph.coauthor_links;
+                    
+                    search_author_name = graph["search_author_name"];
+                    works_count = graph['works_count'];
+                    cited_by_count = graph['cited_by_count'];
+                    h_index = graph['h_index'];
+                    ror = graph['ror'];
+                    search_aff_name = graph["search_aff_name"];
+                    search_country = graph["search_country"];
+                    cite_by_year = graph['cite_by_year'];
+                    concept_score = graph["concept_score"];
 
-                    build_new_svg(graph_node,graph_link);
+                    const nameElement = document.getElementById("name-title");
+                    nameElement.textContent = search_author_name;
+
+                    const orcidLinkElement1 = document.getElementById("orcid1");
+                    const orcidLinkElement2 = document.getElementById("orcid2");
+                    const orcidLinkElement3 = document.getElementById("orcid3");
+                    if (orcid) {
+                        orcidLinkElement1.href = 'https://orcid.org/'+orcid;
+                        orcidLinkElement2.href = 'https://orcid.org/'+orcid;
+                        orcidLinkElement3.innerHTML = 'https://orcid.org/'+orcid;
+                    } else {
+                        orcidLinkElement1.style.display = "none";
+                        orcidLinkElement2.style.display = "none";
+                    }
+
+                    const rorElement = document.getElementById("ror");
+                    rorElement.href = ror;
+                    // Update the affiliation
+                    const affiliationElement = document.getElementById("affiliation");
+                    affiliationElement.textContent = search_aff_name+', '+search_country;
+
+                    document.getElementById("work-count-value").textContent = works_count;
+                    document.getElementById("h-index-value").textContent = h_index;
+                    document.getElementById("citation-count-value").textContent = cited_by_count;
+
+                    if (chartexist) {
+                        myBarChart.data.datasets[0].data = [];
+                        myPolarChart.data.datasets[0].data = [];
+                        myBarChart.update();
+                        myPolarChart.update();
+                        chartExists = false;
+                    }
+                    myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
+                    chartexist = true;
+
+                    document.getElementById("profile").style.visibility = "visible";
+                    document.getElementById("person_profile").style.display = "block"
+                    document.getElementById("person_table").style.display = "block";
+
+                    if (show_pub) {
+                        build_new_svg(graph_node, graph_link);
+                    }
+                    else {
+                        build_new_svg(coauthor_graph_node, coauthor_graph_link);
+                    }
                 });
             return false;
         }
@@ -1223,7 +1644,70 @@
                     graph_node = graph.nodes;
                     graph_link = graph.links;
 
-                    build_new_svg(graph_node,graph_link);
+                    coauthor_graph_node = graph.coauthor_nodes;
+                    coauthor_graph_link = graph.coauthor_links;
+
+                    // make profile
+                    search_title = graph["title"];
+                    cited_by_count = graph['cited_by_count'];
+                    author_string = graph['author_string'];
+                    author_list = graph['author_list'];
+                    orcid_list = graph['orcid_list'];
+                    pub_date = graph['date'];
+                    source_issn = graph['source_issn'];
+                    cited_by_count = graph['cited_by_count'];
+                    cite_by_year = graph['cite_by_year'];
+                    concept_score = graph["concept_score"];
+
+                    const nameElement = document.getElementById("name-title");
+                    nameElement.textContent = search_title;
+
+                    const doiLinkElement1 = document.getElementById("doi1");
+                    const doiLinkElement2 = document.getElementById("doi2");
+                    const doiLinkElement3 = document.getElementById("doi3");
+                    if (doi) {
+                        doiLinkElement1.href = "https://doi.org/" + doi;
+                        doiLinkElement2.href = "https://doi.org/" + doi;
+                        doiLinkElement3.innerHTML = "https://doi.org/" + doi;
+                    } else {
+                        doiLinkElement1.style.display = "none";
+                        doiLinkElement2.style.display = "none";
+                    }
+                    const authorElement = document.getElementById("pub_authors");
+
+                    author_list.forEach(function(name) {
+                        var anchor = document.createElement("a");
+                        anchor.href = "https://example.com/profile/" + name;
+                        anchor.textContent = name;
+                        
+                        // Append the anchor element to the names container
+                        namesContainer.appendChild(anchor);
+                        });
+                    authorElement.textContent = author_string;
+
+                    document.getElementById("pub-citation-count").textContent = cited_by_count;
+
+                    if (chartexist) {
+                        myBarChart.data.datasets[0].data = [];
+                        myPolarChart.data.datasets[0].data = [];
+                        myBarChart.update();
+                        myPolarChart.update();
+                        chartExists = false;
+                    }
+                    myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
+                    chartexist = true;
+
+                    document.getElementById("profile").style.visibility = "visible";
+                    document.getElementById("pub_profile").style.display = "block";
+                    document.getElementById("pub_table").style.display = "block";
+
+
+                    if (show_pub) {
+                        build_new_svg(graph_node, graph_link);
+                    }
+                    else {
+                        build_new_svg(coauthor_graph_node, coauthor_graph_link);
+                    }
                 });
             return false;
         }
@@ -1243,10 +1727,16 @@
         d3.json("/escience").then(function(graph) {
             graph_node = graph.nodes;
             graph_link = graph.links;
+            coauthor_graph_node = graph.coauthor_nodes;
+            coauthor_graph_link = graph.coauthor_links;
 
-            build_new_svg(graph_node, graph_link);
-            });
-
+            if (show_pub) {
+                build_new_svg(graph_node, graph_link);
+            }
+            else {
+                build_new_svg(coauthor_graph_node, coauthor_graph_link);
+            }
+        });
     });
 
 
@@ -1260,11 +1750,16 @@
 
             graph_node = graph.nodes;
             graph_link = graph.links;
+            coauthor_graph_node = graph.coauthor_nodes;
+            coauthor_graph_link = graph.coauthor_links;
 
-            build_new_svg(graph_node, graph_link);
-
+            if (show_pub) {
+                build_new_svg(graph_node, graph_link);
+            }
+            else {
+                build_new_svg(coauthor_graph_node, coauthor_graph_link);
+            }
         });
-
     });
 </script>
 
