@@ -11,6 +11,7 @@ from flask import (
     g,
     request,
     Response,
+    send_from_directory
 )
 from neo4j import (
     GraphDatabase,
@@ -18,6 +19,7 @@ from neo4j import (
 from rcn_py import neo4j_rsd
 from rcn_py import orcid as orcid_py
 from rcn_py import openalex
+from rcn_py import topic_modeling
 
 # uri = "bolt://localhost:7687"
 # username = "neo4j"
@@ -30,7 +32,7 @@ uri = sys.argv[1]
 username = sys.argv[2]
 password = sys.argv[3]
 
-app = Flask(__name__, static_url_path="/static/")
+app = Flask(__name__, static_url_path="/static", static_folder='static')
 port = os.getenv("PORT", 8081)
 driver = GraphDatabase.driver(uri, auth=(username, password))
 
@@ -47,6 +49,10 @@ def get_db(database):
 def close_db(error):
     if hasattr(g, "neo4j_db"):
         g.neo4j_db.close()
+
+@app.route('/layout.js')
+def serve_js():
+    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'layout.js')
 
 @app.route("/")
 def get_index():
@@ -106,10 +112,11 @@ def get_example_graph():
         return list(tx.run("""
             MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication {year: $year}) 
             WHERE   $keyword in p.keywords
-            RETURN  collect(n.scopus_id) AS author_scopus_id,
-                    collect(n.name) AS name,
-                    collect(n.country) AS country,
-                    collect(n.affiliation) AS affiliation,
+            RETURN  COLLECT(n.name) AS name, 
+                    COLLECT(CASE WHEN (n.scopus_id) IS NOT NULL THEN n.scopus_id ELSE '' END) AS author_scopus_id, 
+                    COLLECT(CASE WHEN (n.orcid) IS NOT NULL THEN n.orcid ELSE '' END) AS orcid,
+                    COLLECT(CASE WHEN (n.affiliation) IS NOT NULL THEN n.affiliation ELSE '' END) AS affiliation,
+                    COLLECT(CASE WHEN (n.country) IS NOT NULL THEN n.country ELSE '' END) AS country,
                     p.title AS title,
                     p.cited AS cited,
                     p.doi AS doi,
@@ -166,6 +173,7 @@ def get_example_graph():
                 source = i
                 author = {"title": record["name"][a],
                         "scopus_id": record["author_scopus_id"][a],
+                        "orcid": record["orcid"][a],
                         "country": record["country"][a],
                         "affiliation": record["affiliation"][a],
                         "label": "author",
@@ -201,10 +209,11 @@ def get_search_query():
             MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication) 
             WHERE   $keyword in p.keywords 
                 AND p.year in $year
-            RETURN  collect(n.scopus_id) AS author_scopus_id,
-                    collect(n.name) AS name,
-                    collect(n.country) AS country,
-                    collect(n.affiliation) AS affiliation,
+            RETURN  COLLECT(n.name) AS name, 
+                    COLLECT(CASE WHEN (n.scopus_id) IS NOT NULL THEN n.scopus_id ELSE '' END) AS author_scopus_id, 
+                    COLLECT(CASE WHEN (n.orcid) IS NOT NULL THEN n.orcid ELSE '' END) AS orcid,
+                    COLLECT(CASE WHEN (n.affiliation) IS NOT NULL THEN n.affiliation ELSE '' END) AS affiliation,
+                    COLLECT(CASE WHEN (n.country) IS NOT NULL THEN n.country ELSE '' END) AS country,
                     p.title AS title,
                     p.cited AS cited,
                     p.doi AS doi,
@@ -264,7 +273,7 @@ def get_search_query():
             coauthor_link = []
             temp_source = []
 
-            for a in range(len(record["author_scopus_id"])):
+            for a in range(len(record["name"])):
                 
                 try:
                     source = node_records.index(record["name"][a])
@@ -273,6 +282,7 @@ def get_search_query():
                     source = i
                     author = {"title": record["name"][a],
                             "scopus_id": record["author_scopus_id"][a],
+                            "orcid": record["orcid"][a],
                             "country": record["country"][a],
                             "affiliation": record["affiliation"][a],
                             "label": "author",
@@ -307,9 +317,11 @@ def get_orcid_search():
                     <-[:IS_AUTHOR_OF]-(m:Person)
             WHERE labels(p) IN [['Publication'], ['Project'], ['Software']] AND
                     (n.orcid = $orcid OR n.scopus_id = $scopus_id)
-            RETURN  
-                    apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS author_scopus_id,
-                    apoc.coll.toSet(collect(n.orcid)+collect(m.orcid)) AS author_orcid,
+            RETURN  collect(m.name)+apoc.coll.toSet(collect(n.name)) AS name,
+                    collect(CASE WHEN (m.scopus_id) IS NOT NULL THEN m.scopus_id ELSE '' END)+apoc.coll.toSet(collect(n.scopus_id)) AS author_scopus_id, 
+                    collect(CASE WHEN (m.orcid) IS NOT NULL THEN m.orcid ELSE '' END)+apoc.coll.toSet(collect(n.orcid)) AS author_orcid,
+                    collect(CASE WHEN (m.affiliation) IS NOT NULL THEN m.affiliation ELSE '' END)+apoc.coll.toSet(collect(n.affiliation)) AS affiliation,
+                    collect(CASE WHEN (m.country) IS NOT NULL THEN m.country ELSE '' END)+apoc.coll.toSet(collect(n.country)) AS country,
                     p.title AS title,
                     p.cited AS cited,
                     p.doi AS doi,
@@ -353,8 +365,11 @@ def get_orcid_search():
             WHERE labels(p) IN [['Publication'], ['Project'], ['Software']] AND
                     (n.name in $namelist)
             RETURN  
-                    apoc.coll.toSet(collect(n.scopus_id)+collect(m.scopus_id)) AS author_scopus_id,
-                    apoc.coll.toSet(collect(n.orcid)+collect(m.orcid)) AS author_orcid,
+                    collect(m.name)+apoc.coll.toSet(collect(n.name)) AS name,
+                    collect(CASE WHEN (m.scopus_id) IS NOT NULL THEN m.scopus_id ELSE '' END)+apoc.coll.toSet(collect(n.scopus_id)) AS author_scopus_id, 
+                    collect(CASE WHEN (m.orcid) IS NOT NULL THEN m.orcid ELSE '' END)+apoc.coll.toSet(collect(n.orcid)) AS author_orcid,
+                    collect(CASE WHEN (m.affiliation) IS NOT NULL THEN m.affiliation ELSE '' END)+apoc.coll.toSet(collect(n.affiliation)) AS affiliation,
+                    collect(CASE WHEN (m.country) IS NOT NULL THEN m.country ELSE '' END)+apoc.coll.toSet(collect(n.country)) AS country,
                     p.title AS title,
                     p.cited AS cited,
                     p.doi AS doi,
@@ -370,25 +385,25 @@ def get_orcid_search():
             namelist = namelist
         ))
     
-    def get_coauthor_info_scopus(tx, scopus_id):
-        return list(tx.run("""
-            MATCH (n:Person {scopus_id: $scopus_id})
-            RETURN  
-                    n.name AS name,
-                    n.country AS country,
-                    n.affiliation AS aff
-            """,
-            scopus_id = scopus_id
-        ))
-    def get_coauthor_info_rsd(tx, orcid):
-         return list(tx.run("""
-            MATCH (n:Person {orcid: $orcid})
-            RETURN  
-                    n.name AS name,
-                    n.affiliation AS aff
-            """,
-            orcid = orcid
-        ))
+    # def get_coauthor_info_scopus(tx, scopus_id):
+    #     return list(tx.run("""
+    #         MATCH (n:Person {scopus_id: $scopus_id})
+    #         RETURN  
+    #                 n.name AS name,
+    #                 n.country AS country,
+    #                 n.affiliation AS aff
+    #         """,
+    #         scopus_id = scopus_id
+    #     ))
+    # def get_coauthor_info_rsd(tx, orcid):
+    #      return list(tx.run("""
+    #         MATCH (n:Person {orcid: $orcid})
+    #         RETURN  
+    #                 n.name AS name,
+    #                 n.affiliation AS aff
+    #         """,
+    #         orcid = orcid
+    #     ))
     #
     # def second_coauthor(tx, scopus_id):
     #     return list(tx.run("""
@@ -450,100 +465,15 @@ def get_orcid_search():
                 concept_score['score'].append(c['score'])
 
 
-
-        #     works_results = openalex.search_works_by_orcid(orcid)
-            
-        #     nodes = []
-        #     rels = []
-        #     node_records = []
-        #     nodes_id_in_rel = []
-        #     i = 0
-        #     coauthor_nodes = []
-        #     coauthor_rels = [] 
-
-        #     for work in works_results['results']:
-        #         target = i
-        #         node_records.append(work['doi'])
-
-        #         if work["cited_by_count"] > 0:
-        #             pub_radius = 6 + math.log(work["cited_by_count"])
-        #         else:
-        #             pub_radius = 6
-        #         nodes.append({"title": work["title"], 
-        #                 "citation_count": work["cited_by_count"],
-        #                 "doi": work["doi"],
-        #                 "year": work["publication_year"],
-        #                 "label": work["type"], 
-        #                 "id": target,
-        #                 "color": "publication",
-        #                 "radius": pub_radius
-        #                 })
-        #         i += 1
-        #         temp_source = []
-        #         coauthor_link = []
-                
-        #         for au in work['authorships']:
-        #             if not au["author"]["orcid"]:
-        #                 new_orcid = orcid_py.name_to_orcid_id(au["author"]["display_name"])
-        #             else:
-        #                 new_orcid = au["author"]["orcid"]
-                    
-
-        #             if orcid == new_orcid:
-        #                 author_color = "author_highlight"
-        #             else:
-        #                 author_color = "first_coauthor"
-
-        #             try:
-        #                 source = node_records.index(new_orcid)
-        #             except ValueError:
-        #                 new_author_name = au["author"]["display_name"]
-        #                 if au['institutions']:
-        #                     new_country = au['institutions'][0]['country_code']
-        #                     new_aff_name = au['institutions'][0]['display_name']
-        #                 else:
-        #                     new_country = ''
-        #                     new_aff_name = ''
-
-        #                 node_records.append(new_orcid)
-        #                 source = i
-
-        #                 author = {"title": new_author_name,
-        #                         "scopus_id": new_orcid,
-        #                         "country": new_country,
-        #                         "affiliation": new_aff_name,
-        #                         "label": "author",
-        #                         "id": source,
-        #                         "color": author_color}
-                        
-        #                 nodes.append(author)
-        #                 coauthor_nodes.append(author)
-        #                 i += 1
-        #             temp_source.append(source)
-        #             nodes_id_in_rel.append(source)
-        #             rels.append({"source": source, "target": target, "doi":work["doi"], "scopus_id": id})
-
-        #         coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
-
-        #     for l in coauthor_link:
-        #         coauthor_rels.append({"source": l[0], "target": l[1], "doi":work["doi"], "title": work["title"]})
-
-        # nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
-        # coauthor_nodes = get_link_count_of_author(coauthor_nodes, nodes_id_in_rel)
-        # coauthor_rels = get_link_count_of_rel(coauthor_rels)
-            
-        # return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
-        #                        "search_author_name": search_author_name, "works_count": works_count,"cited_by_count": cited_by_count,
-        #                        "h_index": h_index, "ror": ror, "search_aff_name": search_aff_name, "search_country":search_country,
-        #                        "cite_by_year": cite_by_year, "concept_score": concept_score}),
-        #             mimetype="application/json")
-
         elif firstname and surname:
             namelist = []
             namelist.append(firstname + ' ' + surname)
             namelist.append(surname + ' ' + firstname[0]+ ".")
             namelist.append(firstname[0]+ ". "+surname)
             results = db.execute_read(get_coauthor_byName, namelist)       
+        
+        else:
+            return []
         
 
        
@@ -582,29 +512,38 @@ def get_orcid_search():
             i += 1
             temp_source = []
             coauthor_link = []
-            if record["label"] == "publication":
-                for id in record["author_scopus_id"]:
-                    # Get coauthor info from DB
-                    co_author_results = db.execute_read(get_coauthor_info_scopus, id)
-                    name = co_author_results[0]["name"]
-                    country = co_author_results[0]["country"]
-                    aff = co_author_results[0]["aff"]
 
-                    if id == scopus_id:
+            for index in range(len(record["name"])):
+                    # Get coauthor info from DB
+                    name = record["name"][index]
+                    country = record["country"][index]
+                    aff = record["affiliation"][index]
+
+                    if record["author_scopus_id"][index] == scopus_id or record["author_orcid"][index] == orcid:
                         author_color = "author_highlight"
                     else:
                         author_color = "first_coauthor"
 
                     try:
-                        if (id == scopus_id) and (orcid in node_records):
-                            source = node_records.index(orcid) 
+                        if len(record["author_orcid"][index]) != 0:
+                            source = node_records.index(record["author_orcid"][index]) 
+                        elif len(record["author_scopus_id"][index]) != 0:
+                            source = node_records.index(record["author_scopus_id"][index]) 
                         else:
-                            source = node_records.index(id)
+                            source = node_records.index(name) 
+                       
                     except ValueError:
-                        node_records.append(id)
+                        if len(record["author_orcid"][index]) != 0:
+                            node_records.append(record["author_orcid"][index])
+                        elif len(record["author_scopus_id"][index]) != 0:
+                            node_records.append(record["author_scopus_id"][index])
+                        else:
+                            node_records.append(name)
+                        
                         source = i
                         author = {"title": name,
-                                "scopus_id": id,
+                                "scopus_id": record["author_scopus_id"][index],
+                                "orcid": record["author_orcid"][index],
                                 "country": country,
                                 "affiliation": aff,
                                 "label": "author",
@@ -615,39 +554,10 @@ def get_orcid_search():
                         i += 1
                     temp_source.append(source)
                     nodes_id_in_rel.append(source)
-                    rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": id})
-            else:
-                for id in record["author_orcid"]:
-                    # Get coauthor info from DB
-                    co_author_results = db.execute_read(get_coauthor_info_rsd, id)
-                    name = co_author_results[0]["name"]
-                    aff = co_author_results[0]["aff"]
-
-                    if id == orcid:
-                        author_color = "author_highlight"
-                    else:
-                        author_color = "first_coauthor"
-
-                    try:
-                        if (id == orcid) and (scopus_id in node_records):
-                            source = node_records.index(scopus_id) 
-                        else:
-                            source = node_records.index(id)
-                    except ValueError:
-                        node_records.append(id)
-                        source = i
-                        author = {"title": name,
-                                "orcid": id,
-                                "affiliation": aff,
-                                "label": "author",
-                                "id": source,
-                                "color": author_color}
-                        nodes.append(author)
-                        coauthor_nodes.append(author)
-                        i += 1
-                    temp_source.append(source)
-                    nodes_id_in_rel.append(source)
-                    rels.append({"source": source, "target": target, "doi":record["doi"], "orcid": id})
+                    rels.append({"source": source, "target": target, "doi":record["doi"], 
+                                 "scopus_id": record["author_scopus_id"][index],
+                                 "orcid": record["author_orcid"][index]})
+            
             coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
 
             for l in coauthor_link:
@@ -670,55 +580,66 @@ def get_orcid_search():
 def get_pub_search():
     def doi_search(tx, doi):
         return list(tx.run("""
-            MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication {doi: $doi})
+            MATCH (n:Person)-[:IS_AUTHOR_OF]->(p {doi: $doi})
             RETURN  
-                    collect(n.scopus_id) AS author_scopus_id,
-                    collect(n.name) AS name,
-                    collect(n.country) AS country,
-                    collect(n.affiliation) AS affiliation,
+                    COLLECT(n.name) AS name, 
+                    COLLECT(CASE WHEN (n.scopus_id) IS NOT NULL THEN n.scopus_id ELSE '' END) AS author_scopus_id, 
+                    COLLECT(CASE WHEN (n.orcid) IS NOT NULL THEN n.orcid ELSE '' END) AS orcid,
+                    COLLECT(CASE WHEN (n.affiliation) IS NOT NULL THEN n.affiliation ELSE '' END) AS affiliation,
+                    COLLECT(CASE WHEN (n.country) IS NOT NULL THEN n.country ELSE '' END) AS country,
                     p.title AS title,
                     p.cited AS cited,
                     p.subject AS subject,
-                    p.year AS year
+                    p.year AS year,
+                    CASE 
+                        WHEN labels(p) = ['Project'] THEN  'project'
+                        WHEN labels(p) = ['Software'] THEN 'software'
+                        WHEN labels(p) = ['Publication'] THEN 'publication'
+                        ELSE '' 
+                    END AS label
             """,
             doi = doi
         ))
     
     try:
         doi = request.args["doi"]
+
     except KeyError:
         return []
     else:
         if "https://doi.org/" in doi:
             doi = doi.replace("https://doi.org/",'')
         openalex_pub_result = openalex.get_pub_info_by_doi(doi)
-        author_list = []
-        orcid_list = []
-        concept_score = {}
-        concept_score['concept_name'] = []
-        concept_score['score'] = []
-        openalex_pub_result = openalex.get_pub_info_by_doi(doi)
-        title = openalex_pub_result['results'][0]["title"]
-        for au in openalex_pub_result['results'][0]["authorships"]:
-            author_list.append(au['author']['display_name'])
-            orcid_list.append(au['author']['orcid'])
-        author_string = ', '.join(author_list)
-        date = openalex_pub_result['results'][0]['publication_date']
-        source = openalex_pub_result['results'][0]['primary_location']["source"]
-        if source['issn_l']:
-            source_issn = source["display_name"]+', '+ source['issn_l']
+        if openalex_pub_result['meta']['count'] != 0:
+            author_list = []
+            orcid_list = []
+            concept_score = {}
+            concept_score['concept_name'] = []
+            concept_score['score'] = []
+            openalex_pub_result = openalex.get_pub_info_by_doi(doi)
+            title = openalex_pub_result['results'][0]["title"]
+            for au in openalex_pub_result['results'][0]["authorships"]:
+                author_list.append(au['author']['display_name'])
+                orcid_list.append(au['author']['orcid'])
+            author_string = ', '.join(author_list)
+            date = openalex_pub_result['results'][0]['publication_date']
+            source = openalex_pub_result['results'][0]['primary_location']["source"]
+            if source['issn_l']:
+                source_issn = source["display_name"]+', '+ source['issn_l']
+            else:
+                source_issn = source["display_name"]
+            cited_by_count = openalex_pub_result['results'][0]["cited_by_count"]
+            concepts = openalex_pub_result['results'][0]['concepts']
+            for c in concepts[0:7]:
+                concept_score['concept_name'].append(c['display_name'])
+                concept_score['score'].append(c['score'])
+            cite_by_year = openalex_pub_result['results'][0]['counts_by_year']
+            openalex_data = True
         else:
-            source_issn = source["display_name"]
-        cited_by_count = openalex_pub_result['results'][0]["cited_by_count"]
-        concepts = openalex_pub_result['results'][0]['concepts']
-        for c in concepts[0:7]:
-            concept_score['concept_name'].append(c['display_name'])
-            concept_score['score'].append(c['score'])
-        cite_by_year = openalex_pub_result['results'][0]['counts_by_year']
-        
+            openalex_data = False
 
+        
         db = get_db("neo4j")
-        # doi = doi.replace("%2F", "/")
         results = db.execute_read(doi_search, doi)
         
 
@@ -730,36 +651,42 @@ def get_pub_search():
 
         record = results[0]
         target = i
-        if math.isnan(record["cited"]):
+        if record["cited"]:
+            if math.isnan(record["cited"]):
+                citation_count = 0
+                pub_radius = 6
+            else:
+                citation_count = record["cited"]
+                pub_radius = 6 + math.log(citation_count)
+        else:
             citation_count = 0
             pub_radius = 6
-        else:
-            citation_count = record["cited"]
-            pub_radius = 6 + math.log(citation_count)
 
         nodes.append({"title": record["title"], 
                         "citation_count": citation_count,
                         "doi": doi,
                         "subject": record["subject"],
                         "year": record["year"],
-                        "label": "publication", 
+                        "label": record["label"], 
                         "id": target,
-                        "color": "publication",
+                        "color": record["label"],
                         "radius": pub_radius})
         i += 1
         temp_source = []
         coauthor_link = []
         for a in range(len(record["author_scopus_id"])):
             source = i
+
             author = {"title": record["name"][a],
-                            "scopus_id": record["author_scopus_id"][a],
-                            "country": record["country"][a],
-                            "affiliation": record["affiliation"][a],
-                            "label": "author",
-                            "id": source,
-                            "color": "author",
-                            "radius": 5
-                            }
+                        "scopus_id": record["author_scopus_id"][a],
+                        "orcid": record["orcid"][a],
+                        "country": record["country"][a],
+                        "affiliation": record["affiliation"][a],
+                        "label": "author",
+                        "id": source,
+                        "color": "author",
+                        "radius": 5
+                        }
             nodes.append(author)
             coauthor_nodes.append(author)
             temp_source.append(source)
@@ -769,10 +696,14 @@ def get_pub_search():
         for l in coauthor_link:
             coauthor_rels.append({"source": l[0], "target": l[1], "count": 1,"doi":doi, "title": record["title"]})
 
-    return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
+    if openalex_data:
+        return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
                            "title": title, 'doi': doi, 'author_string': author_string, 'author_list':author_list,
                            'orcid_list':orcid_list, 'date': date, 'source_issn':source_issn,
                            'cited_by_count':cited_by_count, 'concept_score': concept_score, 'cite_by_year':cite_by_year}),
+                    mimetype="application/json")
+    else:
+        return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels}),
                     mimetype="application/json")
 
 
@@ -862,6 +793,9 @@ def show_link():
         coauthor_rels = []
         link_list = linkList.split(',')
         coauthorID = coauthorID.split(',')
+        if len(coauthorID) != 0:
+            coauthorID= list(map(int, coauthorID))
+
 
         db = get_db("neo4j")
         if node_label == "publication":
@@ -884,7 +818,7 @@ def show_link():
                     rels.append({"source": max_id, "target": node_id, "doi": unique_id, "scopus_id": record['scopus_id']})
             coauthor_link = coauthor_link+list(itertools.combinations(coauthorID, 2))
             for l in coauthor_link:
-                coauthor_rels.append({"source": l[0], "target": l[1], "count": 1,"doi":unique_id})
+                coauthor_rels.append({"source": l[0], "target": l[1], "count": 1, "doi":unique_id})
             coauthor_nodes = nodes
             
 
@@ -960,8 +894,11 @@ def show_esc_graph():
             MATCH (n:Person)-[:IS_AUTHOR_OF]->(p)
             WHERE   labels(p) IN [['Publication'], ['Project'], ['Software']] AND
                     n.affiliation = "Netherlands eScience Center"
-            RETURN  collect(n.scopus_id) AS au_scopus_id,
-                    collect(n.orcid) AS orcid,
+            RETURN  COLLECT(n.name) AS name_list, 
+                    COLLECT(CASE WHEN (n.scopus_id) IS NOT NULL THEN n.scopus_id ELSE '' END) AS scopus_id, 
+                    COLLECT(CASE WHEN (n.orcid) IS NOT NULL THEN n.orcid ELSE '' END) AS orcid,
+                    COLLECT(CASE WHEN (n.affiliation) IS NOT NULL THEN n.affiliation ELSE '' END) AS affiliation,
+                    COLLECT(CASE WHEN (n.country) IS NOT NULL THEN n.country ELSE '' END) AS country,
                     p.title AS title,
                     p.cited AS cited,
                     p.doi AS doi,
@@ -969,58 +906,59 @@ def show_esc_graph():
                     p.year AS year,
                     p.project_id AS project_id,
                     p.software_id AS software_id,
+                    p.description AS description,
                     CASE 
                         WHEN labels(p) = ['Project'] THEN  'project'
                         WHEN labels(p) = ['Software'] THEN 'software'
                         WHEN labels(p) = ['Publication'] THEN 'publication'
                         ELSE '' 
                     END AS label
-            LIMIT $limit
-            """,
-            limit = 500
+            """
         ))
         
-        # MATCH "name" SLOW!
-    def get_esc_info(tx, name):
-        return list(tx.run("""
-            MATCH (n:Person {name:$name})
-            WHERE  n.affiliation = "Netherlands eScience Center"
-            RETURN  n.scopus_id AS scopus_id,
-                    n.affiliation AS affiliation,
-                    n.country AS country,
-                    n.orcid AS orcid
-            """,
-            name = name
-        ))
+
+    # def get_esc_info(tx, name):
+    #     return list(tx.run("""
+    #         MATCH (n:Person {name:$name})
+    #         WHERE  n.affiliation = "Netherlands eScience Center"
+    #         RETURN  n.scopus_id AS scopus_id,
+    #                 n.affiliation AS affiliation,
+    #                 n.country AS country,
+    #                 n.orcid AS orcid
+    #         """,
+    #         name = name
+    #     ))
     
-    def get_esc_info_scoid(tx, scopus_id):
-        return list(tx.run("""
-            MATCH (n:Person {scopus_id:$scopus_id})
-            WHERE  n.affiliation = "Netherlands eScience Center"
-            RETURN  n.scopus_id AS scopus_id,
-                    n.name AS name,
-                    n.affiliation AS affiliation,
-                    n.country AS country,
-                    n.orcid AS orcid
-            """,
-            scopus_id = scopus_id
-        ))
+    # def get_esc_info_scoid(tx, scopus_id):
+    #     return list(tx.run("""
+    #         MATCH (n:Person {scopus_id:$scopus_id})
+    #         WHERE  n.affiliation = "Netherlands eScience Center"
+    #         RETURN  n.scopus_id AS scopus_id,
+    #                 n.name AS name,
+    #                 n.affiliation AS affiliation,
+    #                 n.country AS country,
+    #                 n.orcid AS orcid
+    #         """,
+    #         scopus_id = scopus_id
+    #     ))
     
-    def get_esc_info_orcid(tx, orcid):
-        return list(tx.run("""
-            MATCH (n:Person {orcid:$orcid})
-            WHERE  n.affiliation = "Netherlands eScience Center"
-            RETURN  n.scopus_id AS scopus_id,
-                    n.name AS name,
-                    n.affiliation AS affiliation,
-                    n.country AS country,
-                    n.orcid AS orcid
-            """,
-            orcid = orcid
-        ))
+    # def get_esc_info_orcid(tx, orcid):
+    #     return list(tx.run("""
+    #         MATCH (n:Person {orcid:$orcid})
+    #         WHERE  n.affiliation = "Netherlands eScience Center"
+    #         RETURN  n.scopus_id AS scopus_id,
+    #                 n.name AS name,
+    #                 n.affiliation AS affiliation,
+    #                 n.country AS country,
+    #                 n.orcid AS orcid
+    #         """,
+    #         orcid = orcid
+    #     ))
     
     db = get_db("rsd")
     results = db.execute_read(work)
+    groups, topics = topic_modeling.build_corpus(results, 15, 2)
+
     nodes = []
     rels = []
     node_records = []
@@ -1031,6 +969,7 @@ def show_esc_graph():
         
     
     i = 0
+    pub_i = 0
     for record in results:
         target = i
         node_records.append(record["doi"])
@@ -1052,75 +991,80 @@ def show_esc_graph():
                       "subject": record["subject"],
                       "year": record["year"],
                       "label": record["label"], 
+                      "group": int(groups[pub_i]),
                       "id": target,
                       "color": record["label"],
                       "radius": pub_radius
                       })
         i += 1
+        pub_i += 1
 
         # if pub, then use scopus id
         coauthor_link = []
         temp_source = []
         
-        if record["label"] == "Publication":
-            for sco_id in record["scopus_id"]:
-                try:
-                    source = node_records.index(sco_id)
-                except ValueError:
-                    node_records.append(sco_id)
-                    source = i
+        for n in range(len(record["name_list"])):
+            
+            try:
+                if len(record["scopus_id"][n]) != 0:
+                    source = node_records.index(record["scopus_id"][n])
+                elif len(record["orcid"][n]) != 0:
+                    source = node_records.index(record["orcid"][n])
+                else:
+                    continue
+            except ValueError:
+                if len(record["scopus_id"][n]) != 0:
+                    node_records.append(record["scopus_id"][n])
+                elif len(record["scopus_id"][n]) != 0:
+                    node_records.append(record["orcid"][n])
+                else:
+                    continue
+                source = i
 
-                    # name 
-                    au_info_results = db.execute_read(get_esc_info_scoid, sco_id)
-                    au_name = au_info_results[0]["name"]
-                    orcid = au_info_results[0]["orcid"]
-                    country = au_info_results[0]["country"]
-                    aff = "Netherlands eScience Center"
-
-                    author = {"title": au_name,
-                            "scopus_id": sco_id,
-                            "orcid": orcid,
-                            "country": country,
-                            "affiliation": aff,
+                author = {"title": record["name_list"][n],
+                            "scopus_id": record["scopus_id"][n],
+                            "orcid": record["orcid"][n],
+                            "country": record["country"][n],
+                            "affiliation": record["affiliation"][n],
                             "label": "author",
                             "id": source,
                             "color": "author"}
-                    nodes.append(author)
-                    coauthor_nodes.append(author)
-                    i += 1
-                temp_source.append(source)
-                nodes_id_in_rel.append(source)
-                rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": scopus_id, "orcid":orcid})
+                nodes.append(author)
+                coauthor_nodes.append(author)
+                i += 1
+            temp_source.append(source)
+            nodes_id_in_rel.append(source)
+            rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": record["scopus_id"][n], "orcid":record["orcid"][n]})
 
-        else:
-            for orcid in record["orcid"]:
-                try:
-                    source = node_records.index(orcid)
-                except ValueError:
-                    node_records.append(orcid)
-                    source = i
+        # else:
+        #     for orcid in record["orcid"]:
+        #         try:
+        #             source = node_records.index(orcid)
+        #         except ValueError:
+        #             node_records.append(orcid)
+        #             source = i
 
-                    # name 
-                    au_info_results = db.execute_read(get_esc_info_orcid, orcid)
-                    scopus_id = au_info_results[0]["scopus_id"]
-                    au_name = au_info_results[0]["name"]
-                    country = au_info_results[0]["country"]
-                    aff = "Netherlands eScience Center"
+        #             # name 
+        #             au_info_results = db.execute_read(get_esc_info_orcid, orcid)
+        #             scopus_id = au_info_results[0]["scopus_id"]
+        #             au_name = au_info_results[0]["name"]
+        #             country = au_info_results[0]["country"]
+        #             aff = "Netherlands eScience Center"
 
-                    author = {"title": au_name,
-                            "scopus_id": scopus_id,
-                            "orcid": orcid,
-                            "country": country,
-                            "affiliation": aff,
-                            "label": "author",
-                            "id": source,
-                            "color": "author"}
-                    nodes.append(author)
-                    coauthor_nodes.append(author)
-                    i += 1
-                temp_source.append(source)
-                nodes_id_in_rel.append(source)
-                rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": scopus_id, "orcid":orcid})
+        #             author = {"title": au_name,
+        #                     "scopus_id": scopus_id,
+        #                     "orcid": orcid,
+        #                     "country": country,
+        #                     "affiliation": aff,
+        #                     "label": "author",
+        #                     "id": source,
+        #                     "color": "author"}
+        #             nodes.append(author)
+        #             coauthor_nodes.append(author)
+        #             i += 1
+        #         temp_source.append(source)
+        #         nodes_id_in_rel.append(source)
+        #         rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": scopus_id, "orcid":orcid})
             
         coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
 
@@ -1131,8 +1075,130 @@ def show_esc_graph():
     coauthor_nodes = get_link_count_of_author(coauthor_nodes, nodes_id_in_rel)
     coauthor_rels = get_link_count_of_rel(coauthor_rels)
         
-    return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels}),
+    return Response(dumps({"nodes": nodes, "links": rels, 
+                           "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
+                           "topics": topics}),
                     mimetype="application/json")
+
+################################## OpenAlex affiliation ####################################
+@app.route("/openalex-aff-search")
+def openalex_aff_search():
+    try:
+        aff_name = request.args["aff_name"]
+    except KeyError:
+        return []
+    else:
+        aff_result = openalex.find_institution(aff_name)
+        # if fetch no info
+        if aff_result['meta']['count'] == 0:
+            return []
+        
+        aff_info = aff_result['results'][0]
+
+        display_name = aff_info['display_name']
+        ror = aff_info['ror']
+
+        works_count = aff_info['works_count']
+        cite_count = aff_info['cited_by_count']
+        h_index = aff_info['summary_stats']['h_index']
+        
+        home_page = aff_info['homepage_url']
+        city = aff_info['geo']['city']
+        country = aff_info['geo']['country']
+        counts_by_year = aff_info['counts_by_year']
+        concept_score = {}
+        concept_score['concept_name'] = []
+        concept_score['score'] = []
+        for c in aff_info['x_concepts'][0:7]:
+                concept_score['concept_name'].append(c['display_name'])
+                concept_score['score'].append(c['score'])
+
+        # Get works
+        openalex_aff_works = openalex.get_some_works_of_one_institution(aff_name)
+
+        i = 0
+        node_records = []
+        nodes = []
+        rels = []
+        nodes_id_in_rel = []
+        coauthor_nodes = []
+        coauthor_rels = [] 
+
+        for work in openalex_aff_works:
+
+            target = i
+            node_records.append(work["doi"])
+            if math.isnan(work["cited_by_count"]) or work["cited_by_count"] == 0 :
+                citation_count = 0
+                pub_radius = 6
+            else:
+                citation_count = work["cited_by_count"]
+                pub_radius = 6 + math.log(citation_count)
+
+            nodes.append({"title": work["title"], 
+                        "citation_count": citation_count,
+                        "doi": work["doi"],
+                        "openalex_id": work["id"],
+                        "year": work['publication_year'],
+                        "label": 'publication', 
+                        "id": target,
+                        "color": 'publication',
+                        "radius": pub_radius
+                        })
+            i += 1
+
+            # if pub, then use scopus id
+            coauthor_link = []
+            temp_source = []
+            
+            for au in work['authorships']:
+                try:
+                    source = node_records.index(au['author']['id'])
+                    
+                except ValueError:
+                    node_records.append(au['author']['id'])
+                    source = i
+
+                    # handle empty values
+                    if len(au['institutions']) == 0:
+                        country_code = ''
+                        affiliation_name = ''
+                    else:
+                        country_code = au['institutions'][0]['country_code']
+                        affiliation_name = au['institutions'][0]['display_name']
+
+                    author = {
+                                "title": au['author']['display_name'],
+                                "orcid": au['author']["orcid"],
+                                "openalex_id": au['author']['id'],
+                                "country": country_code,
+                                "affiliation": affiliation_name,
+                                "label": "author",
+                                "id": source,
+                                "color": "author"}
+                    nodes.append(author)
+                    coauthor_nodes.append(author)
+                    i += 1
+                temp_source.append(source)
+                nodes_id_in_rel.append(source)
+                rels.append({"source": source, "target": target, "doi":work["doi"], "openalex_id":au['author']['id']})
+
+            coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
+
+            for l in coauthor_link:
+                coauthor_rels.append({"source": l[0], "target": l[1], "doi":work["doi"], "title": work["title"]})
+
+        nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
+        coauthor_nodes = get_link_count_of_author(coauthor_nodes, nodes_id_in_rel)
+        coauthor_rels = get_link_count_of_rel(coauthor_rels)
+        
+        return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
+                               "aff_name": display_name, 'ror': ror, 'works_count': works_count, 'cited_by_count':cite_count,
+                               'h_index':h_index, 'home_page': home_page, 'city':city, 'country':country,
+                               'concept_score': concept_score, 'cite_by_year':counts_by_year
+                               }),
+                    mimetype="application/json")
+
 
 if __name__ == "__main__":
     # uri = "bolt://localhost:7687"

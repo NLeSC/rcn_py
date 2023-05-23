@@ -206,6 +206,9 @@
                         <li class="nav-item">
                             <a class="nav-link nav-lg" id="scopus" data-menu="scopus">Scopus</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link nav-lg" id="openalex" data-menu="openalex">OpenAlex</a>
+                        </li>
                     </ul>
             </div>
     </nav>
@@ -308,6 +311,13 @@
             <button class="button button1" onclick="showForm('pub-search')">Publication</button>
         </div>
     </div>
+
+    <div class="sidebar-header" id="escience-search-button" style="display: none;">
+        <div class="button-group">
+            <button class="button button1" onclick="showForm('author-search')">Author</button>
+            <button class="button button1" onclick="showForm('pub-search')">Publication</button>
+        </div>
+    </div>
    
     <form>
         <div class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
@@ -354,6 +364,7 @@
 
         <br>
         <button class="button button2" type="submit" id="author-submit-btn">Search</button>
+        <button class="button button2" onclick="Find_node('author')">Find</button>
         </div>
     </form>
 
@@ -362,6 +373,18 @@
         <label for="publication">Search publication:</label>
         <br>
         <input type="text" name="doi" id="doi" placeholder="10.1117/12.2602737" class="form-control" required>
+        <br>
+        <br>
+        <button class="button button2" type="submit" id="pub-submit-btn">Search</button>
+        <button class="button button2" onclick="Find_node('publication')">Find</button>
+        </div>
+    </form>
+
+    <form class="navbar-form" id="aff-search", onsubmit="resetFields('affiliation')">
+        <div class="form-group">
+        <label for="affiliation">Search institution:</label>
+        <br>
+        <input type="text" name="aff" id="aff" placeholder="Netherlands eScience Center" class="form-control" required>
         <br>
         <br>
         <button class="button button2" type="submit" id="pub-submit-btn">Search</button>
@@ -392,8 +415,8 @@
             <option value="20">30</option>
         </select>
     </form>
+   
 </div>
-
 
 
 
@@ -482,24 +505,100 @@
           authorSurNameInput.style.display = "block";
           authorFirstNameInput.style.display = "block";
           orcidInput.style.display = "none";
+          orcidInput.value = "";
         } else {
           authorSurNameInput.style.display = "none";
           authorFirstNameInput.style.display = "none";
+          authorSurNameInput.value = "";
+          authorFirstNameInput.value = "";
           orcidInput.style.display = "block";
         }
       }
+    
+    // ################## Check & highlight node #################
+    function Find_node(option) {
+        // prevent the default form submission behavior
+        event.preventDefault();
 
-
-    function resetFields(option) {
-        if (option === 'topic'){
-            document.getElementById("orcid").value = "";
-
+        if (option === "author") {
+            for (const i of ["keyword", "doi", "aff"]) {
+                document.getElementById(i).value = "";
+            }
         }
-        // else if (option === 'author') {
-        //     var formElement = document.getElementById("topic-search");
-        //     formElement.reset();
-        // }
+        else if (option === "publication") {
+            for (const i of ["keyword", "orcid", "firstname", "surname", "aff"]) {
+                document.getElementById(i).value = "";
+            }
+        }
+
+        var search_orcid_value = document.getElementById('orcid').value;
+        var search_name_value = document.getElementById('firstname').value+' '+document.getElementById('surname').value;
+        var search_doi_value = document.getElementById('doi').value;
+
+        console.log(search_orcid_value, search_name_value, search_doi_value);
+
+        var nodeExists = checkNodeExists(search_orcid_value, search_name_value, search_doi_value);
+
+        // If the node exists, highlight it; otherwise, show a message
+        if (!nodeExists) {
+            console.log("Sorry, we couldn't find a matching node.")
+        } 
     }
+
+    function checkNodeExists(search_orcid_value, search_name_value, search_doi_value) {
+        // Iterate over the nodes in the network
+        const NodeToFind = svg.selectAll(".node")
+                                .filter(function(d) {
+                                    // Check if the search value matches any property of the node
+                                    return ((d.doi === search_doi_value && search_doi_value)
+                                    || (d.orcid === search_orcid_value && search_orcid_value)
+                                    || (d.name === search_name_value && search_name_value)) 
+                                });
+
+        console.log(NodeToFind.data());
+
+        if (NodeToFind.data().length != 0) { // Node exists
+            
+            handleNodeClick(NodeToFind.data()[0]);
+            addOrRemoveTooltip(NodeToFind.data()[0]);
+            
+            return true;
+        }
+        else {
+            return false;
+        }
+
+    }
+
+
+
+
+    // Empty the input field that is not in this stage
+    function resetFields(option) {
+        if (option === "topic") {
+            for (const i of ["orcid", "firstname", "surname", "doi", "aff"]) {
+                documednt.getElementById(i).value = "";
+            }
+        }
+        else if (option === "author") {
+            for (const i of ["keyword", "doi", "aff"]) {
+                document.getElementById(i).value = "";
+            }
+        }
+        else if (option === "publication") {
+            for (const i of ["keyword", "orcid", "firstname", "surname", "aff"]) {
+                document.getElementById(i).value = "";
+            }
+        }
+        else if (option === "affiliation") {
+            for (const i of ["keyword", "orcid", "firstname", "surname", "doi"]) {
+                document.getElementById(i).value = "";
+            }
+        }
+    }
+       
+        
+
 
     showForm('topic-search');
   </script>
@@ -647,7 +746,7 @@
             if ("works_count" in cite_by_year[i]) {
                 y_work.push(cite_by_year[i]["works_count"]);
             }
-            if ("cited_by_count" in cite_by_year[i]) {
+            else if ("cited_by_count" in cite_by_year[i]) {
                 y_work.push(cite_by_year[i]["cited_by_count"]);
             }
         }
@@ -711,7 +810,10 @@
             delete force_node[i].fy;
         }
         force.nodes(force_node)
-            .force("link", d3.forceLink(graph_link).id(function(d) { return d.id; }));
+            .force("link", d3.forceLink(graph_link)
+                        .id(function(d) { return d.id; })
+                        .distance(d => d.count ? 50/d.count : 50)
+                        );
         // Append the links to the svg
         const link = network.selectAll(".link")
                     .data(graph_link).enter()
@@ -724,14 +826,6 @@
                     .append("circle")
                     .attr("class", function (d) { return "node "+d.color; })
                     .attr("r", function (d) { 
-                        // if(d.label == "publication") {
-                        //     if (d.citation_count != 0) {
-                        //     return 6 + Math.log(d.citation_count);}
-                        //     else {return 6;}}
-                        // else if (d.label == "author") {
-                        //     return 5 + Math.log(d.link_num);
-                        // }
-                        // else { return 5; }
                         return d.radius;
                      })
                     // .attr("stroke", "light-grey")
@@ -767,8 +861,51 @@
             } 
         });  
                   
-        addOrRemoveTooltip(node);
-        addOrRemoveTooltip(text);
+        node.on("click", function(event, d) {
+            if (clicked[d.id]) {
+                arcs.selectAll("path").remove();
+                arcs.selectAll("text").remove();
+                if(lockked[d.id]){
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+                else {
+                    d.fx = null;
+                    d.fy = null;
+                }
+                d3.select('#node-details').style('display', 'none');
+                clicked[d.id] = false;
+            }
+            else {
+                addOrRemoveTooltip(d);
+                handleNodeClick(d);
+
+                clicked[d.id] = true;
+            }
+        });
+           
+        text.on("click", function(event, d) {
+            if (clicked[d.id]) {
+                arcs.selectAll("path").remove();
+                arcs.selectAll("text").remove();
+                if(lockked[d.id]){
+                    d.fx = d.x;
+                    d.fy = d.y;
+                }
+                else {
+                    d.fx = null;
+                    d.fy = null;
+                }
+                d3.select('#node-details').style('display', 'none');
+                clicked[d.id] = false;
+            }
+            else {
+                addOrRemoveTooltip(d);
+                handleNodeClick(d);
+
+                clicked[d.id] = true;
+            }
+        });
         
         // html title attribute
         node.append("title")
@@ -1010,13 +1147,14 @@
             network.selectAll("text").remove();
             maxId = 0;
 
-            coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
+            
+            filteredCoauthorNodes = filteredCoauthorNodes.filter(function(node) {
                 return !isolatedNodes.includes(node);
             });
-            coauthor_graph_link  = filteredCoauthorLinks;
+            // coauthor_graph_link  = filteredCoauthorLinks;
             // console.log(graph_node);
             // build new network
-            build_new_svg(coauthor_graph_node, coauthor_graph_link)
+            build_new_svg(filteredCoauthorNodes, filteredCoauthorLinks)
 
             // remove the tooltip
             arcs.selectAll("path").remove();
@@ -1071,172 +1209,160 @@
     }
 
 
-    function handleNodeClick(event, d){
-        d3.selectAll('#node_info tbody tr').remove();
+    function handleNodeClick(d){
         
-        if (d.label.indexOf("author") != -1) {
-            // Create a new table row for the node label
-            var labelRow = d3.select('#node_info tbody')
-                .append('tr');
-            labelRow.append('td')
-                .text('Label');
-            labelRow.append('td')
-                .text(d.label);
+            d3.selectAll('#node_info tbody tr').remove();
             
-            var titleRow = d3.select('#node_info tbody')
-                .append('tr');
-            titleRow.append('td')
-                .text('Name');
-            titleRow.append('td')
-                .text(d.title);
+            if (d.label.indexOf("author") != -1) {
+                // Create a new table row for the node label
+                var labelRow = d3.select('#node_info tbody')
+                    .append('tr');
+                labelRow.append('td')
+                    .text('Label');
+                labelRow.append('td')
+                    .text(d.label);
+                
+                var titleRow = d3.select('#node_info tbody')
+                    .append('tr');
+                titleRow.append('td')
+                    .text('Name');
+                titleRow.append('td')
+                    .text(d.title);
 
-            var idRow = d3.select('#node_info tbody')
-                .append('tr');
-            idRow.append('td')
-                .text('Scopus id');
-            idRow.append('td')
-                .text(d.scopus_id);
+                var idRow = d3.select('#node_info tbody')
+                    .append('tr');
+                idRow.append('td')
+                    .text('Scopus id');
+                idRow.append('td')
+                    .text(d.scopus_id);
 
-            var orcidRow = d3.select('#node_info tbody')
-                .append('tr');
-            orcidRow.append('td')
-                .text('ORCID');
-            orcidRow.append('td')
-                .text(d.orcid);
+                var orcidRow = d3.select('#node_info tbody')
+                    .append('tr');
+                orcidRow.append('td')
+                    .text('ORCID');
+                orcidRow.append('td')
+                    .text(d.orcid);
 
-            // Create a new table row for the node description
-            var countryRow = d3.select('#node_info tbody')
-                .append('tr');
-            countryRow.append('td')
-                .text('Country');
-            countryRow.append('td')
-                .text(d.country);
+                // Create a new table row for the node description
+                var countryRow = d3.select('#node_info tbody')
+                    .append('tr');
+                countryRow.append('td')
+                    .text('Country');
+                countryRow.append('td')
+                    .text(d.country);
 
-            var affRow = d3.select('#node_info tbody')
-                .append('tr');
-            affRow.append('td')
-                .text('Affiliation');
-            affRow.append('td')
-                .text(d.affiliation);
-        }
-        if (d.label == "publication") {
-            // Create a new table row for the node label
-            var labelRow = d3.select('#node_info tbody')
-                .append('tr');
-            labelRow.append('td')
-                .text('Label');
-            labelRow.append('td')
-                .text(d.label);
+                var affRow = d3.select('#node_info tbody')
+                    .append('tr');
+                affRow.append('td')
+                    .text('Affiliation');
+                affRow.append('td')
+                    .text(d.affiliation);
+            }
+            if (d.label == "publication") {
+                // Create a new table row for the node label
+                var labelRow = d3.select('#node_info tbody')
+                    .append('tr');
+                labelRow.append('td')
+                    .text('Label');
+                labelRow.append('td')
+                    .text(d.label);
+                
+                var titleRow = d3.select('#node_info tbody')
+                    .append('tr');
+                titleRow.append('td')
+                    .text('Title');
+                titleRow.append('td')
+                    .text(d.title);
+
+                var idRow = d3.select('#node_info tbody')
+                    .append('tr');
+                idRow.append('td')
+                    .text('DOI');
+                idRow.append('td')
+                    .text(d.doi);
+
+                var subjectRow = d3.select('#node_info tbody')
+                    .append('tr');
+                subjectRow.append('td')
+                    .text('Subject');
+                subjectRow.append('td')
+                    .text(d.subject);
+
+                var yearRow = d3.select('#node_info tbody')
+                    .append('tr');
+                yearRow.append('td')
+                    .text('Year');
+                yearRow.append('td')
+                    .text(d.year);
+            }
+            if (d.label == "project") {
+                // Create a new table row for the node label
+                var labelRow = d3.select('#node_info tbody')
+                    .append('tr');
+                labelRow.append('td')
+                    .text('Label');
+                labelRow.append('td')
+                    .text(d.label);
+                
+                var titleRow = d3.select('#node_info tbody')
+                    .append('tr');
+                titleRow.append('td')
+                    .text('Title');
+                titleRow.append('td')
+                    .text(d.title);
+
+                var yearRow = d3.select('#node_info tbody')
+                    .append('tr');
+                yearRow.append('td')
+                    .text('Year');
+                yearRow.append('td')
+                    .text(d.year);
+            }
+            if (d.label == "software") {
+                // Create a new table row for the node label
+                var labelRow = d3.select('#node_info tbody')
+                    .append('tr');
+                labelRow.append('td')
+                    .text('Label');
+                labelRow.append('td')
+                    .text(d.label);
+                
+                var titleRow = d3.select('#node_info tbody')
+                    .append('tr');
+                titleRow.append('td')
+                    .text('Title');
+                titleRow.append('td')
+                    .text(d.title);
+
+                var idRow = d3.select('#node_info tbody')
+                    .append('tr');
+                idRow.append('td')
+                    .text('DOI');
+                idRow.append('td')
+                    .text(d.doi);
+
+                var yearRow = d3.select('#node_info tbody')
+                    .append('tr');
+                yearRow.append('td')
+                    .text('Year');
+                yearRow.append('td')
+                    .text(d.year);
+            }
+            // Show the node details table
             
-            var titleRow = d3.select('#node_info tbody')
-                .append('tr');
-            titleRow.append('td')
-                .text('Title');
-            titleRow.append('td')
-                .text(d.title);
-
-            var idRow = d3.select('#node_info tbody')
-                .append('tr');
-            idRow.append('td')
-                .text('DOI');
-            idRow.append('td')
-                .text(d.doi);
-
-            var subjectRow = d3.select('#node_info tbody')
-                .append('tr');
-            subjectRow.append('td')
-                .text('Subject');
-            subjectRow.append('td')
-                .text(d.subject);
-
-            var yearRow = d3.select('#node_info tbody')
-                .append('tr');
-            yearRow.append('td')
-                .text('Year');
-            yearRow.append('td')
-                .text(d.year);
-        }
-        if (d.label == "project") {
-            // Create a new table row for the node label
-            var labelRow = d3.select('#node_info tbody')
-                .append('tr');
-            labelRow.append('td')
-                .text('Label');
-            labelRow.append('td')
-                .text(d.label);
-            
-            var titleRow = d3.select('#node_info tbody')
-                .append('tr');
-            titleRow.append('td')
-                .text('Title');
-            titleRow.append('td')
-                .text(d.title);
-
-            var yearRow = d3.select('#node_info tbody')
-                .append('tr');
-            yearRow.append('td')
-                .text('Year');
-            yearRow.append('td')
-                .text(d.year);
-        }
-        if (d.label == "software") {
-            // Create a new table row for the node label
-            var labelRow = d3.select('#node_info tbody')
-                .append('tr');
-            labelRow.append('td')
-                .text('Label');
-            labelRow.append('td')
-                .text(d.label);
-            
-            var titleRow = d3.select('#node_info tbody')
-                .append('tr');
-            titleRow.append('td')
-                .text('Title');
-            titleRow.append('td')
-                .text(d.title);
-
-            var idRow = d3.select('#node_info tbody')
-                .append('tr');
-            idRow.append('td')
-                .text('DOI');
-            idRow.append('td')
-                .text(d.doi);
-
-            var yearRow = d3.select('#node_info tbody')
-                .append('tr');
-            yearRow.append('td')
-                .text('Year');
-            yearRow.append('td')
-                .text(d.year);
-        }
-        // Show the node details table
-        d3.select('#node-details').style('display', 'block');
-                    
+            d3.select('#node-details').style('display', 'block');
+                  
     }
 
     // function for the circle tooltips
-    function addOrRemoveTooltip(selection) {
+    function addOrRemoveTooltip(d) {
 
-        selection.on("click", function(event, d) {
-            // info presentation
-            handleNodeClick(event, d);
+        // selection.on("click", function(event, d) {
+        //     // info presentation
+        //     handleNodeClick(d);
 
             // Tooltip
-            if (clicked[d.id]) {
-                arcs.selectAll("path").remove();
-                arcs.selectAll("text").remove();
-                clicked[d.id] = false;
-                if(lockked[d.id]){
-                    d.fx = d.x;
-                    d.fy = d.y;
-                }
-                else {
-                    d.fx = null;
-                    d.fy = null;
-                }
-                d3.select('#node-details').style('display', 'none');
-            } 
-            else {
+            
                 // If click another node, hide the previous tootip
                 if (last_clicked_node && last_clicked_node != d.id) {
                     clicked[last_clicked_node] = false;
@@ -1292,12 +1418,13 @@
                 // present the tooltip of this node
                 show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
                         
-                clicked[d.id] = true;
+                
                 last_clicked_node = d.id;
                 last_d = d;
-            }
-        })
+          
     }
+
+
     function node_lock_unlock(node_id) {
         if (lockked[node_id]) {
             lockked[node_id] = false;
@@ -1367,7 +1494,10 @@
                 return d.scopus_id;
             });
             var coauthor_id = linksToFilter.data().map(function(d) {
-                return d.index;
+                if (d.source.id === node_id)
+                    return d.target.id;
+                else if(d.target.id === node_id)
+                    return d.source.id;
             });
         }
         else if (node_label == "author") {
@@ -1407,6 +1537,10 @@
 
             // console.log(graph_node);
             // console.log(graph_link);
+            // console.log(coauthor_graph_node);
+            // console.log(coauthor_graph_link);
+
+
             if (show_pub) {
                 build_new_svg(graph_node, graph_link);
             }
@@ -1512,6 +1646,9 @@
                         build_new_svg(coauthor_graph_node, coauthor_graph_link);
                     }
 
+                    document.getElementById("profile").style.visibility = "hidden";
+                    d3.select('#node-details').style('display', 'none');
+
                     build_new_svg(graph_node,graph_link);
                 });
             return false;
@@ -1524,6 +1661,8 @@
         form_orcid.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             // call your function here
+            d3.select('#node-details').style('display', 'none');
+            document.getElementById("profile").style.visibility = "hidden";
             author_search();
         });
 
@@ -1534,8 +1673,7 @@
             var orcid = form.find("input[name='orcid']").val();
             var firstname = form.find("input[name='firstname']").val();
             var surname = form.find("input[name='surname']").val();
-            
-            
+
 
             const nameElement = document.getElementById("name-title");
             nameElement.textContent = name;
@@ -1613,6 +1751,11 @@
                     document.getElementById("profile").style.visibility = "visible";
                     document.getElementById("person_profile").style.display = "block"
                     document.getElementById("person_table").style.display = "block";
+                    document.getElementById("pub_table").style.display = "none";
+                    document.getElementById("doi1").style.display = "none";
+                    document.getElementById("doi2").style.display = "none";
+                    document.getElementById("doi3").style.display = "none";
+                    d3.select('#node-details').style('display', 'none');
 
                     if (show_pub) {
                         build_new_svg(graph_node, graph_link);
@@ -1630,7 +1773,10 @@
         form_pub.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             // call your function here
+            d3.select('#node-details').style('display', 'none');
+            document.getElementById("profile").style.visibility = "hidden";
             pub_search();
+            
         });
 
         function pub_search(){
@@ -1648,60 +1794,71 @@
                     coauthor_graph_link = graph.coauthor_links;
 
                     // make profile
-                    search_title = graph["title"];
-                    cited_by_count = graph['cited_by_count'];
-                    author_string = graph['author_string'];
-                    author_list = graph['author_list'];
-                    orcid_list = graph['orcid_list'];
-                    pub_date = graph['date'];
-                    source_issn = graph['source_issn'];
-                    cited_by_count = graph['cited_by_count'];
-                    cite_by_year = graph['cite_by_year'];
-                    concept_score = graph["concept_score"];
-
-                    const nameElement = document.getElementById("name-title");
-                    nameElement.textContent = search_title;
-
-                    const doiLinkElement1 = document.getElementById("doi1");
-                    const doiLinkElement2 = document.getElementById("doi2");
-                    const doiLinkElement3 = document.getElementById("doi3");
-                    if (doi) {
-                        doiLinkElement1.href = "https://doi.org/" + doi;
-                        doiLinkElement2.href = "https://doi.org/" + doi;
-                        doiLinkElement3.innerHTML = "https://doi.org/" + doi;
-                    } else {
-                        doiLinkElement1.style.display = "none";
-                        doiLinkElement2.style.display = "none";
-                    }
-                    const authorElement = document.getElementById("pub_authors");
-
-                    author_list.forEach(function(name) {
-                        var anchor = document.createElement("a");
-                        anchor.href = "https://example.com/profile/" + name;
-                        anchor.textContent = name;
-                        
-                        // Append the anchor element to the names container
-                        namesContainer.appendChild(anchor);
-                        });
-                    authorElement.textContent = author_string;
-
-                    document.getElementById("pub-citation-count").textContent = cited_by_count;
-
                     if (chartexist) {
-                        myBarChart.data.datasets[0].data = [];
-                        myPolarChart.data.datasets[0].data = [];
-                        myBarChart.update();
-                        myPolarChart.update();
-                        chartExists = false;
+                            myBarChart.data.datasets[0].data = [];
+                            myPolarChart.data.datasets[0].data = [];
+                            myBarChart.update();
+                            myPolarChart.update();
+                            chartExists = false;
+                        }
+                    if ("title" in graph) {
+                        search_title = graph["title"];
+                        cited_by_count = graph['cited_by_count'];
+                        author_string = graph['author_string'];
+                        author_list = graph['author_list'];
+                        orcid_list = graph['orcid_list'];
+                        pub_date = graph['date'];
+                        source_issn = graph['source_issn'];
+                        cited_by_count = graph['cited_by_count'];
+                        cite_by_year = graph['cite_by_year'];
+                        concept_score = graph["concept_score"];
+
+                        const nameElement = document.getElementById("name-title");
+                        nameElement.textContent = search_title;
+
+                        const doiLinkElement1 = document.getElementById("doi1");
+                        const doiLinkElement2 = document.getElementById("doi2");
+                        const doiLinkElement3 = document.getElementById("doi3");
+                        if (doi) {
+                            doiLinkElement1.href = "https://doi.org/" + doi;
+                            doiLinkElement2.href = "https://doi.org/" + doi;
+                            doiLinkElement3.innerHTML = "https://doi.org/" + doi;
+                        } else {
+                            doiLinkElement1.style.display = "none";
+                            doiLinkElement2.style.display = "none";
+                        }
+                        const authorElement = document.getElementById("pub_authors");
+
+                        orcid_list.forEach(function(name) {
+                            var anchor = document.createElement("a");
+                            anchor.href = "https://example.com/profile/" + name;
+                            anchor.textContent = name;
+                            
+                            // Append the anchor element to the names container
+                            // namesContainer.appendChild(anchor);
+                            });
+                        authorElement.textContent = author_string;
+
+                        document.getElementById("pub-citation-count").textContent = cited_by_count;
+
+                        
+                        myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
+                        chartexist = true;
+
+                        document.getElementById("profile").style.visibility = "visible";
+                        document.getElementById("pub_profile").style.display = "block";
+                        document.getElementById("person_table").style.display = "none";
+                        document.getElementById("pub_table").style.display = "block";
+                        document.getElementById("orcid1").style.display = "none";
+                        document.getElementById("orcid2").style.display = "none";
+                        document.getElementById("orcid3").style.display = "none";
                     }
-                    myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
-                    chartexist = true;
+                    else {
+                        document.getElementById("profile").style.visibility = "hidden";
+                    }
 
-                    document.getElementById("profile").style.visibility = "visible";
-                    document.getElementById("pub_profile").style.display = "block";
-                    document.getElementById("pub_table").style.display = "block";
-
-
+                    d3.select('#node-details').style('display', 'none');
+                    
                     if (show_pub) {
                         build_new_svg(graph_node, graph_link);
                     }
@@ -1712,38 +1869,185 @@
             return false;
         }
 
+        // ####################### institution search #########################
+        const form_aff = document.getElementById('aff-search');
+        form_aff.addEventListener('submit', function(event) {
+            event.preventDefault(); // prevent the form from submitting and refreshing the page
+            // call your function here
+            d3.select('#node-details').style('display', 'none');
+            document.getElementById("profile").style.visibility = "hidden";
+            aff_search();
+        });
+
+        function aff_search(){
+            var form = $('#aff-search');
+            var initial_aff_name = form.find("input[name='aff']").val();
+            // console.log(initial_aff_name);
+            refresh();
+
+            d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
+                // make profile
+                if (JSON.stringify(graph) === '[]') {
+                    return false;
+                }
+
+                search_title = graph["aff_name"];
+                ror = graph["ror"];
+                works_count = graph["works_count"]
+                cited_by_count = graph['cited_by_count'];
+                h_index = graph["h_index"];
+                home_page = graph["home_page"];
+                city = graph["city"];
+                country = graph["country"];
+                cite_by_year = graph['cite_by_year'];
+                concept_score = graph["concept_score"];
+
+                const nameElement = document.getElementById("name-title");
+                nameElement.textContent = search_title;
+
+                const doiLinkElement1 = document.getElementById("doi1");
+                const doiLinkElement2 = document.getElementById("doi2");
+                const doiLinkElement3 = document.getElementById("doi3");
+                if (ror) {
+                    doiLinkElement1.href = ror;
+                    doiLinkElement2.href = ror;
+                    doiLinkElement3.innerHTML = ror;
+                } else {
+                    doiLinkElement1.style.display = "none";
+                    doiLinkElement2.style.display = "none";
+                }
+                
+                document.getElementById("work-count-value").textContent = works_count;
+                document.getElementById("h-index-value").textContent = h_index;
+                document.getElementById("citation-count-value").textContent = cited_by_count;
+
+                
+                myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
+                chartexist = true;
+
+                document.getElementById("profile").style.visibility = "visible";
+                document.getElementById("pub_profile").style.display = "block";
+                document.getElementById("person_table").style.display = "block";
+                document.getElementById("pub_table").style.display = "none";
+
+                document.getElementById("orcid1").style.display = "none";
+                document.getElementById("orcid2").style.display = "none";
+                document.getElementById("orcid3").style.display = "none";
+
+
+                graph_node = graph.nodes;
+                graph_link = graph.links;
+                coauthor_graph_node = graph.coauthor_nodes;
+                coauthor_graph_link = graph.coauthor_links;
+
+                if (show_pub) {
+                    build_new_svg(graph_node, graph_link);
+                }
+                else {
+                    build_new_svg(coauthor_graph_node, coauthor_graph_link);
+                }
+
+            });
+
+       
+            return false;
+        }
+
         
     })
+
+
 
 
     // ################### eScience ###################
     document.getElementById('escience').addEventListener('click', function() {
         refresh();
         escience = true;
-        showForm('author-search');
+        
         // document.getElementById("button-group").style.display = "none";
         d3.select('#scopus-search-button').style('display', 'none');
+        d3.select('#escience-search-button').style('display', 'block');
+        d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        showForm('author-search');
+
+        const initial_aff_name = "Netherlands eScience Center"
+        d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
+            // make profile
+            search_title = graph["aff_name"];
+            ror = graph["ror"];
+            works_count = graph["works_count"]
+            cited_by_count = graph['cited_by_count'];
+            h_index = graph["h_index"];
+            home_page = graph["home_page"];
+            city = graph["city"];
+            country = graph["country"];
+            cite_by_year = graph['cite_by_year'];
+            concept_score = graph["concept_score"];
+
+            const nameElement = document.getElementById("name-title");
+            nameElement.textContent = search_title;
+
+            const doiLinkElement1 = document.getElementById("doi1");
+            const doiLinkElement2 = document.getElementById("doi2");
+            const doiLinkElement3 = document.getElementById("doi3");
+            if (ror) {
+                doiLinkElement1.href = ror;
+                doiLinkElement2.href = ror;
+                doiLinkElement3.innerHTML = ror;
+            } else {
+                doiLinkElement1.style.display = "none";
+                doiLinkElement2.style.display = "none";
+            }
+            
+            document.getElementById("work-count-value").textContent = works_count;
+            document.getElementById("h-index-value").textContent = h_index;
+            document.getElementById("citation-count-value").textContent = cited_by_count;
+
+            if (chartexist) {
+                        myBarChart.data.datasets[0].data = [];
+                        myPolarChart.data.datasets[0].data = [];
+                        myBarChart.update();
+                        myPolarChart.update();
+                        chartExists = false;
+            }
+            myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
+            chartexist = true;
+
+            document.getElementById("profile").style.visibility = "visible";
+            document.getElementById("pub_profile").style.display = "block";
+            document.getElementById("person_table").style.display = "block";
+
+            document.getElementById("orcid1").style.display = "none";
+            document.getElementById("orcid2").style.display = "none";
+            document.getElementById("orcid3").style.display = "none";
+
+        });
 
         d3.json("/escience").then(function(graph) {
             graph_node = graph.nodes;
             graph_link = graph.links;
             coauthor_graph_node = graph.coauthor_nodes;
             coauthor_graph_link = graph.coauthor_links;
-
+            
             if (show_pub) {
                 build_new_svg(graph_node, graph_link);
             }
             else {
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
+            
         });
     });
 
 
     document.getElementById('scopus').addEventListener('click', function() {
         refresh();
-        
+        escience = false;
         d3.select('#scopus-search-button').style('display', 'block');
+        d3.select('#escience-search-button').style('display', 'none');
+        d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
         showForm('topic-search');
 
         d3.json("/graph").then(function(graph) {
@@ -1761,6 +2065,84 @@
             }
         });
     });
+
+    document.getElementById('openalex').addEventListener('click', function() {
+        refresh();
+        escience = false;
+        d3.select('#scopus-search-button').style('display', 'none');
+        d3.select('#escience-search-button').style('display', 'none');
+        d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        showForm('aff-search');
+
+        const initial_aff_name = "Netherlands eScience Center"
+        d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
+
+            graph_node = graph.nodes;
+            graph_link = graph.links;
+            coauthor_graph_node = graph.coauthor_nodes;
+            coauthor_graph_link = graph.coauthor_links;
+
+            // make profile
+            search_title = graph["aff_name"];
+            ror = graph["ror"];
+            works_count = graph["works_count"]
+            cited_by_count = graph['cited_by_count'];
+            h_index = graph["h_index"];
+            home_page = graph["home_page"];
+            city = graph["city"];
+            country = graph["country"];
+            cite_by_year = graph['cite_by_year'];
+            concept_score = graph["concept_score"];
+
+            const nameElement = document.getElementById("name-title");
+            nameElement.textContent = search_title;
+
+            const doiLinkElement1 = document.getElementById("doi1");
+            const doiLinkElement2 = document.getElementById("doi2");
+            const doiLinkElement3 = document.getElementById("doi3");
+            if (ror) {
+                doiLinkElement1.href = ror;
+                doiLinkElement2.href = ror;
+                doiLinkElement3.innerHTML = ror;
+            } else {
+                doiLinkElement1.style.display = "none";
+                doiLinkElement2.style.display = "none";
+            }
+            
+            document.getElementById("work-count-value").textContent = works_count;
+            document.getElementById("h-index-value").textContent = h_index;
+            document.getElementById("citation-count-value").textContent = cited_by_count;
+
+            if (chartexist) {
+                        myBarChart.data.datasets[0].data = [];
+                        myPolarChart.data.datasets[0].data = [];
+                        myBarChart.update();
+                        myPolarChart.update();
+                        chartExists = false;
+            }
+            myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
+            chartexist = true;
+
+            document.getElementById("profile").style.visibility = "visible";
+            document.getElementById("pub_profile").style.display = "block";
+            document.getElementById("person_table").style.display = "block";
+
+            document.getElementById("doi1").style.display = "none";
+            document.getElementById("doi2").style.display = "none";
+            document.getElementById("doi3").style.display = "none";
+
+            if (show_pub) {
+                build_new_svg(graph_node, graph_link);
+            }
+            else {
+                build_new_svg(coauthor_graph_node, coauthor_graph_link);
+            }
+        });
+    });
+
+
+
 </script>
 
 </body>
