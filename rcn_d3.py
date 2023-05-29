@@ -202,12 +202,15 @@ def get_example_graph():
     # return Response(dumps({"s": x}),mimetype="application/json")
 
 # 
-@app.route('/search')
+@app.route('/topic-search')
 def get_search_query():
     def work(tx, year, search_query):
         return list(tx.run("""
             MATCH (n:Person)-[:IS_AUTHOR_OF]->(p:Publication) 
-            WHERE   $keyword in p.keywords 
+            WHERE  ((p.title CONTAINS $keyword)
+                    OR (
+                        ANY(keyword IN p.keywords WHERE apoc.text.fuzzyMatch(keyword, $keyword) = true)
+                    ))
                 AND p.year in $year
             RETURN  COLLECT(n.name) AS name, 
                     COLLECT(CASE WHEN (n.scopus_id) IS NOT NULL THEN n.scopus_id ELSE '' END) AS author_scopus_id, 
@@ -957,7 +960,13 @@ def show_esc_graph():
     
     db = get_db("rsd")
     results = db.execute_read(work)
-    groups, topics = topic_modeling.build_corpus(results, 15, 2)
+    groups, topics = topic_modeling.build_corpus(results, 7, 2)
+
+    # preprocess topic lists
+    topic_strings = []
+    for t in topics:
+        topic_strings.append(t[0]+', '+t[1]+', '+t[2])
+
 
     nodes = []
     rels = []
@@ -1077,7 +1086,7 @@ def show_esc_graph():
         
     return Response(dumps({"nodes": nodes, "links": rels, 
                            "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
-                           "topics": topics}),
+                           "topics": topic_strings}),
                     mimetype="application/json")
 
 ################################## OpenAlex affiliation ####################################

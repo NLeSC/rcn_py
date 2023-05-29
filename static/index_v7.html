@@ -47,8 +47,28 @@
             height: 100px;
         } */
         .navbar-brand {
+            position: absolute;
             margin-top: 25px;
         }
+        #menu_list {
+            position: absolute;
+            margin-left: 300px;
+        }
+        /* @media screen and (max-width: 768px) {
+            .nav-lg {
+                font-size: 1vw; 
+            }
+        } */
+
+        .navbar-nav {
+            display: flex;
+            flex-direction: row;
+        }
+
+        .nav-item {
+        white-space: nowrap; /* Prevent menu item from wrapping */
+        }
+        
         svg {
             position: absolute;
             left: -50%;
@@ -132,7 +152,6 @@
         #name-title {
             position: relative;
         }
-
         
         .metrics {
             position: absolute;
@@ -195,8 +214,8 @@
                     <span class="navbar-toggler-icon"></span>
                 </button> -->
                     
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul class="navbar-nav mr-auto">
+            <div class="collapse navbar-collapse" id="menu_list">
+                    <ul class="navbar-nav">
                         <li class="nav-item active">
                             <a class="nav-link nav-lg" href="#">Home <span class="sr-only">(current)</span></a>
                         </li>
@@ -226,13 +245,11 @@
                                 
                                 <div class="rendering rendering_person rendering_personorcidrendererportal rendering_person_personorcidrendererportal" id="person_profile" style="display: none;">
                                     <a href="" target="_blank" class="orcid" aria-label="Orcid" title="Orcid" id="orcid1">
-                                        <i class="fa-brands fa-orcid" style="color: #aecc54; width: 15px;"></i>
-                                    </a>
-                                    <a href="" target="_blank" class="orcid" aria-label="Orcid" title="Orcid" id="orcid2">
-                                        <span id="orcid3"></span>
+                                        <i class="fa-brands fa-orcid" style="color: #aecc54;"></i>
+                                        <span id="orcid2"></span>
                                     </a>
                                     <br>
-                                    <a href="" target="_blank" class="ror" aria-label="ror" title="ror" id="ror">
+                                    <a href="" target="_blank" class="ror" aria-label="ror" title="ROR" id="ror">
                                         <i class="fa-solid fa-building-columns" style="color: #5ea090;"></i>
                                     </a>
                                     <span id="affiliation"></span>
@@ -240,16 +257,24 @@
                                 </div> 
 
                                 <div class="rendering rendering_person rendering_personorcidrendererportal rendering_person_personorcidrendererportal" id="pub_profile" style="display: none;">
+                                    <label>DOI: </label>
                                     <a href="" target="_blank" class="doi" aria-label="DOI" title="DOI" id="doi1">
-                                        <i class="fa-brands fa-orcid" style="color: #aecc54; width: 15px;"></i>
-                                    </a>
-                                    <a href="" target="_blank" class="doi" aria-label="DOI" title="DOI" id="doi2">
-                                        <span id="doi3"></span>
+                                        <span id="doi2"></span>
                                     </a>
                                     <br>
-                                    
-                                    <div id="pub_authors"></div>
+                                    <p id="pub_author_list"></p>
+                                    <br>
 
+                                </div> 
+
+                                <div class="rendering rendering_person rendering_personorcidrendererportal rendering_person_personorcidrendererportal" id="aff_profile" style="display: none;">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                    <span id="city-country"></span>
+                                    <br>
+                                    <a href="" target="_blank" class="ror" aria-label="ror" title="ror1" id="ror1">
+                                        <i class="fa-solid fa-building-columns" style="color: #5ea090;"></i>
+                                        <span id="ror2"></span>
+                                    </a>
                                 </div> 
 
                             </div>     
@@ -319,8 +344,8 @@
         </div>
     </div>
    
-    <form>
-        <div class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
+    <form class="navbar-form" id="topic-search", onsubmit="resetFields('topic')">
+        <div class="form-group">
             <label for="keyword">Keyword:</label>
             <input type="text" name="keyword" id="keyword" placeholder="Deep learning" class="form-control" minlength="3" maxlength="30">
             <br>
@@ -342,29 +367,29 @@
             </select>
             <br>
             <br>
-            <button class="button button2" type="submit" id="submit-btn">Search</button>
+            <button class="button button2" type="submit" id="topic-submit-btn">Search</button>
         </div>
     </form>
     <form class="navbar-form" id="author-search", onsubmit="resetFields('author')">
         <div class="form-group">
 
-        <div>
-            <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')" checked>
-            <label for="search-by-orcid">Search by ORCID:</label>
-            <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]">
-        </div>
+            <div>
+                <input type="radio" id="search-by-orcid" name="search-option" value="orcid" onclick="toggleSearchInput('orcid')" checked>
+                <label for="search-by-orcid">Search by ORCID:</label>
+                <input type="text" name="orcid" id="orcid" placeholder="0000-0000-0000-0000" class="form-control" pattern="[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]">
+            </div>
 
-        <div>
-            <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')">
-            <label for="search-by-name">Search by author name:</label>
+            <div>
+                <input type="radio" id="search-by-name" name="search-option" value="name" onclick="toggleSearchInput('author-name')">
+                <label for="search-by-name">Search by author name:</label>
+                <br>
+                <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control" style="display:none">
+                <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control" style="display:none">
+            </div>
+
             <br>
-            <input type="text" name="firstname" id="firstname" placeholder="First Name" class="form-control" style="display:none">
-            <input type="text" name="surname" id="surname" placeholder="Last Name" class="form-control" style="display:none">
-        </div>
-
-        <br>
-        <button class="button button2" type="submit" id="author-submit-btn">Search</button>
-        <button class="button button2" onclick="Find_node('author')">Find</button>
+            <button class="button button2" type="submit" id="author-submit-btn">Search</button>
+            <button class="button button2" onclick="Find_node('author')">Find</button>
         </div>
     </form>
 
@@ -391,6 +416,10 @@
         </div>
     </form>
 
+    <label id="error-message" style="visibility: hidden; color: white; background-color: #5a5a5a; padding: 2px;">
+        Sorry, we couldn't find a matching node.
+    </label>
+
     <input type="checkbox" id="show_pub" name="show_pub" onchange="check_show_pub()" checked>
     <label for="show_pub">Show research output nodes</label><br>
 
@@ -415,10 +444,13 @@
             <option value="20">30</option>
         </select>
     </form>
+
+    <input type="checkbox" id="show_topic_color" name="show_topic_color" onchange="node_topic_color()">
+    <label for="show_topic_color">Show node colors for topic clustering</label><br>
    
 </div>
 
-
+  
 
 
 <div class="row justify-content-end">
@@ -472,149 +504,46 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
+<!-- local js files -->
+<script src="/static/JavaScript/item_layout/layout.js"></script>
+<script src="/static/JavaScript/item_layout/profile.js"></script>
+<script src="/static/JavaScript/network/build_graph.js"></script>
+<script src="/static/JavaScript/network/search.js"></script>
+<script src="/static/JavaScript/network/side_bar.js"></script>
+<script src="/static/JavaScript/reaction/canvas_move.js"></script>
+<script src="/static/JavaScript/reaction/node_click.js"></script>
+<script src="/static/JavaScript/reaction/node_move.js"></script>
+<script src="/static/JavaScript/reaction/tooltip.js"></script>
+
+
 
 
 <script>
-
-    
 
     $(function() {
         $('select[multiple]').multiselect();
         $('[data-toggle="popover"]').popover();   
     });
     
-    function showForm(formId) {
-      // Get all forms
-      const forms = document.querySelectorAll('.navbar-form');
-  
-      // Loop through each form
-      forms.forEach(form => {
-        if (form.id === formId) {
-          form.classList.add('active'); // Show selected form
-        } else {
-          form.classList.remove('active'); // Hide other forms
-        }
-      });
+
+    function hideMessage() {
+        document.getElementById("error-message").style.visibility = "hidden"; // Hide the label
     }
-    function toggleSearchInput(inputName) {
-        var authorSurNameInput = document.getElementById("surname");
-        var authorFirstNameInput = document.getElementById("firstname");
-        var orcidInput = document.getElementById("orcid");
-        
-        if (inputName === "author-name") {
-          authorSurNameInput.style.display = "block";
-          authorFirstNameInput.style.display = "block";
-          orcidInput.style.display = "none";
-          orcidInput.value = "";
-        } else {
-          authorSurNameInput.style.display = "none";
-          authorFirstNameInput.style.display = "none";
-          authorSurNameInput.value = "";
-          authorFirstNameInput.value = "";
-          orcidInput.style.display = "block";
-        }
-      }
-    
-    // ################## Check & highlight node #################
-    function Find_node(option) {
-        // prevent the default form submission behavior
-        event.preventDefault();
-
-        if (option === "author") {
-            for (const i of ["keyword", "doi", "aff"]) {
-                document.getElementById(i).value = "";
-            }
-        }
-        else if (option === "publication") {
-            for (const i of ["keyword", "orcid", "firstname", "surname", "aff"]) {
-                document.getElementById(i).value = "";
-            }
-        }
-
-        var search_orcid_value = document.getElementById('orcid').value;
-        var search_name_value = document.getElementById('firstname').value+' '+document.getElementById('surname').value;
-        var search_doi_value = document.getElementById('doi').value;
-
-        console.log(search_orcid_value, search_name_value, search_doi_value);
-
-        var nodeExists = checkNodeExists(search_orcid_value, search_name_value, search_doi_value);
-
-        // If the node exists, highlight it; otherwise, show a message
-        if (!nodeExists) {
-            console.log("Sorry, we couldn't find a matching node.")
-        } 
-    }
-
-    function checkNodeExists(search_orcid_value, search_name_value, search_doi_value) {
-        // Iterate over the nodes in the network
-        const NodeToFind = svg.selectAll(".node")
-                                .filter(function(d) {
-                                    // Check if the search value matches any property of the node
-                                    return ((d.doi === search_doi_value && search_doi_value)
-                                    || (d.orcid === search_orcid_value && search_orcid_value)
-                                    || (d.name === search_name_value && search_name_value)) 
-                                });
-
-        console.log(NodeToFind.data());
-
-        if (NodeToFind.data().length != 0) { // Node exists
-            
-            handleNodeClick(NodeToFind.data()[0]);
-            addOrRemoveTooltip(NodeToFind.data()[0]);
-            
-            return true;
-        }
-        else {
-            return false;
-        }
-
-    }
-
-
-
-
-    // Empty the input field that is not in this stage
-    function resetFields(option) {
-        if (option === "topic") {
-            for (const i of ["orcid", "firstname", "surname", "doi", "aff"]) {
-                documednt.getElementById(i).value = "";
-            }
-        }
-        else if (option === "author") {
-            for (const i of ["keyword", "doi", "aff"]) {
-                document.getElementById(i).value = "";
-            }
-        }
-        else if (option === "publication") {
-            for (const i of ["keyword", "orcid", "firstname", "surname", "aff"]) {
-                document.getElementById(i).value = "";
-            }
-        }
-        else if (option === "affiliation") {
-            for (const i of ["keyword", "orcid", "firstname", "surname", "doi"]) {
-                document.getElementById(i).value = "";
-            }
-        }
-    }
-       
-        
-
 
     showForm('topic-search');
   </script>
   
 
 <style type="text/css">
-    .node { stroke: #222; stroke-width: 1.5px; }
-    .node.author { fill: #BBB; stroke: #9c9c9c; }
+    .node { stroke: #b1b1b1; stroke-width: 1.5px; }
+    
     .node.publication { fill: #8398cd; stroke: #6379b2;}
     .node.project { fill: #94bf91; stroke: #71ac6e;}
     .node.software { fill: #c093bd; stroke: #b07bae;}
     .node.author_highlight { fill: #e97c66; stroke: #cc6753;}
     .node.first_coauthor { fill: #e3b7c8; stroke: #c092a4;}
     .node.second_coauthor { fill: #fff493; stroke: #9c9c9c;}
-    .node.first_pub { fill: #8398cd; stroke: #6379b2;}
-    .node.second_pub { fill: #BBB; stroke: #9c9c9c;}
+    .node.author { fill: #BBB; stroke: #9c9c9c; }
     .link { stroke: #999; stroke-opacity: .6; stroke-width: 0.8px; }
 </style>
 
@@ -623,14 +552,14 @@
 <script type="text/javascript">
     // ####################### initial #######################
     const width = window.innerWidth*2, height =  window.innerHeight*2;
-    // const width = 960, height =  600;
+
     const force = d3.forceSimulation()
             .force("charge", d3.forceManyBody().strength(-8))
             .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
             .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
             .force("collision", d3.forceCollide().radius(function(d) { return 10; }).iterations(1))
             ;
-
+    
     // A temporary translate for the current position
     var escience = false;
     var svgTranslate = [0, 0];
@@ -683,873 +612,82 @@
                 { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
             ])
             .enter();
-
-    function set_new_chart(cite_by_year,concept_score) {
-        // Set chart options
-        var bar_options = {
-            legend: {display: false},
-            scales: {
-                xAxes: [{
-                    ticks: {
-                        minRotation: 0,
-                        maxRotation: 0,
-                        callback: function(value, index, values) {
-                            
-                            if (index === 0 || index === values.length - 1) {
-                            return value;
-                            } else {
-                            return null;
-                            }
-                        }
-                    }
-                }],
-                yAxes: [{
-                    display: false,
-                    suggestedMax: 50
-                }]
-            },
-            layout: {
-                padding: {
-                    top: 5
-                }
-            },
-            tooltips: {
-                callbacks: {
-                    label: function(tooltipItem) {
-                        var xLabel = tooltipItem.xLabel;
-                        var yLabel = tooltipItem.yLabel;
-                        return xLabel + ': ' + yLabel;
-                    }
-                }
-            },
-        };
-        const polaroptions = {
-            legend: {display: false},
-            scale: {
-                ticks: {
-                    beginAtZero: true
-                }
-            },
-            plugins: {
-                title: {
-                    display: false,
-                    text: 'My Polar Area Chart'
-                }
-            },
             
-        };
-        const x_year = [];
-        const y_work = [];
-        cite_by_year = cite_by_year.reverse()
-        for (var i = 0; i < cite_by_year.length; i++) {
-            x_year.push(cite_by_year[i]["year"]);
-            if ("works_count" in cite_by_year[i]) {
-                y_work.push(cite_by_year[i]["works_count"]);
-            }
-            else if ("cited_by_count" in cite_by_year[i]) {
-                y_work.push(cite_by_year[i]["cited_by_count"]);
-            }
-        }
+    
+    
 
-        // Set data
-        var bardata = {
-            labels: x_year,
-            datasets: [{
-                data: y_work,
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        };
-        // Initialize chart
-        var ctx = document.getElementById('myBarChart').getContext('2d');
-        myBarChart = new Chart(ctx, {
-            type: 'bar',
-            data: bardata,
-            options: bar_options
-        });
-                
-        const polardata = {
-            labels: concept_score['concept_name'],
-            datasets: [{
-            data: concept_score['score'],
-            backgroundColor: [
-                'rgba(255, 99, 132, 0.5)',
-                'rgba(54, 162, 235, 0.5)',
-                'rgba(255, 206, 86, 0.5)',
-                'rgba(75, 192, 192, 0.5)',
-                'rgba(229, 159, 132, 0.5)',
-                'rgba(201, 162, 217, 0.5)',
-                'rgba(81, 255, 183, 0.5)'
-            ],
-            borderWidth: 1
-            }]
-        };
-
-        var polar_ctx = document.getElementById('myPolarChart').getContext('2d');
-        myPolarChart = new Chart(polar_ctx, {
-                        type: 'polarArea',
-                        data: polardata,
-                        options: polaroptions
-                    });
-
-        return myBarChart,myPolarChart;
-    }
-
-    // Just a test
-    function legend_dragged(event, d) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-    }
-
-    function build_new_svg(graph_node, graph_link) {
-
-        force_node = graph_node;
-        for (var i = 0; i < force_node.length; i++) {
-            delete force_node[i].fx;
-            delete force_node[i].fy;
-        }
-        force.nodes(force_node)
-            .force("link", d3.forceLink(graph_link)
-                        .id(function(d) { return d.id; })
-                        .distance(d => d.count ? 50/d.count : 50)
-                        );
-        // Append the links to the svg
-        const link = network.selectAll(".link")
-                    .data(graph_link).enter()
-                    .append("line").attr("class", "link")
-                    .style("stroke-width", d => d.count ? 1/2*d.count : "0.5px")
-                    .on("click", handleLinkClick);
-        // Append the nodes to the svg
-        const node = network.selectAll(".node")
-                    .data(graph_node).enter()
-                    .append("circle")
-                    .attr("class", function (d) { return "node "+d.color; })
-                    .attr("r", function (d) { 
-                        return d.radius;
-                     })
-                    // .attr("stroke", "light-grey")
-                    .attr("cursor", "pointer")
-                    .style("opacity", 0.8)
-                    .call(d3.drag()
-                        .on("start", node_dragstarted)
-                        .on("drag", node_dragged)
-                        .on("end", node_dragended));
-
-        const text = network.selectAll("text")
-                    .data(graph_node).enter()
-                    .append('text')
-                    .text(function(d){
-                        if (d.label == "author") {
-                            return d.title;
-                        }
-                    })
-                    .style('font-size', d => `${d.radius / 2}px`)
-                    .style('fill', '#3F3F3F')
-                    .attr("cursor", "pointer")
-                    .attr('text-anchor', 'middle')
-                    .attr('alignment-baseline', 'middle')
-                    .call(d3.drag()
-                        .on("start", node_dragstarted)
-                        .on("drag", node_dragged)
-                        .on("end", node_dragended));
-
-        // Get current max node ID (for node expand button)
-        graph_node.forEach(node => {
-            if (node.id > maxId) {
-                maxId = node.id;
-            } 
-        });  
-                  
-        node.on("click", function(event, d) {
-            if (clicked[d.id]) {
-                arcs.selectAll("path").remove();
-                arcs.selectAll("text").remove();
-                if(lockked[d.id]){
-                    d.fx = d.x;
-                    d.fy = d.y;
-                }
-                else {
-                    d.fx = null;
-                    d.fy = null;
-                }
-                d3.select('#node-details').style('display', 'none');
-                clicked[d.id] = false;
-            }
-            else {
-                addOrRemoveTooltip(d);
-                handleNodeClick(d);
-
-                clicked[d.id] = true;
-            }
-        });
-           
-        text.on("click", function(event, d) {
-            if (clicked[d.id]) {
-                arcs.selectAll("path").remove();
-                arcs.selectAll("text").remove();
-                if(lockked[d.id]){
-                    d.fx = d.x;
-                    d.fy = d.y;
-                }
-                else {
-                    d.fx = null;
-                    d.fy = null;
-                }
-                d3.select('#node-details').style('display', 'none');
-                clicked[d.id] = false;
-            }
-            else {
-                addOrRemoveTooltip(d);
-                handleNodeClick(d);
-
-                clicked[d.id] = true;
-            }
-        });
+    
+    function show_topics(topics) {
+        // Define a color scale for the topic circles
+        // var colorScale = d3.scaleOrdinal()
+        //                     .domain(topics)
+        //                     .range(['#ffe599', '#f9cb9c', '#ea9999', '#cfe2f3', '#a2c4c9', '#c9a2c4',
+        //                     '#c4c9a2', '#bfe9b0', '#dce9b0', '#b0bfe9', '#e9dab0', '#e9beb0',
+        //                     '#c082a1', '#4d79a6', '#e69138' ]); // Specify colors for each topic
+        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
         
-        // html title attribute
-        node.append("title")
-                    .text(function (d) { return d.title; });
+        // Append circles and labels for each topic cluster
+        // Append topic circles
 
-
-        // force feed algo ticks
-        force.on("tick", function() {
-            network.selectAll('.link')
-            .attr("x1", function (d) { return d.source.x })
-            .attr("y1", function (d) { return d.source.y })
-            .attr("x2", function (d) { return d.target.x })
-            .attr("y2", function (d) { return d.target.y })
-            
-            network.selectAll('.node')
-            .attr("cx", function (d) { return d.x })
-            .attr("cy", function (d) { return d.y })
-
-            network.selectAll('text')
-            .attr('x', d => d.x).attr('y', d => d.y);
-
-        }).alphaDecay(0.05);
-
-        force.alpha(1).restart();
-    }
-
-    function show_new_tooltip(node_id, unique_id, node_label,node_x, node_y, node_radius){
-        arcs.selectAll("path").remove();
-        arcs.selectAll("text").remove();
-
-        var icons = arcs.append('text')
-                                .attr("font-family", "FontAwesome")
-                                .attr("text-anchor", "middle")
-                                .attr("font-size", "10px")
-                                .attr("x", d=>node_x + (node_radius+7) * Math.cos((d.start + d.end-1/2) * Math.PI))
-                                .attr("y", d=>node_y+3 + (node_radius+7) * Math.sin((d.start + d.end-1/2) * Math.PI))
-                                .text(function(d) { 
-                                    if (d.label == 'lock'){
-                                        if (lockked[node_id])
-                                            return d.icon[1];
-                                        else 
-                                            return d.icon[0];
-                                    }
-                                    else{
-                                        return d.icon;
-                                    } })
-                                ; 
-        var arc = d3.arc()
-                .innerRadius(node_radius+1).outerRadius(node_radius+14);
-        arcs.append("path")
-                .attr("d", d => arc({
-                            "startAngle": d.start * 2 * Math.PI + 0.02,
-                            "endAngle": d.end * 2 * Math.PI - 0.02
-                        }))    
-                .attr("transform", `translate(${node_x},${node_y})`)
-                .attr("fill", "lightgrey")
-                .style("opacity", 0.5)
-
-                .on("mouseover", function(event, d) {
-                    // change the style of the button
-                    d3.select(this)
-                    .style("opacity", 0.2);
-                })
-                .on("mouseout", function(event, d) {
-                    // restore the style of the button
-                    d3.select(this)
-                    .style("opacity", 0.5);
-                })
-                .on("click", function(event, d){
-                    if (d.label == "hide") {
-                        d3.select(this).style("opacity", 0.5);
-                        hide_node(node_id);
-                    }
-                    if (d.label == "lock") {
-                        d3.select(this).style("opacity", 0.5);
-                        node_lock_unlock(node_id);
-                        icons.text(function(d) { 
-                                    if (d.label == 'lock'){
-                                        if (lockked[node_id])
-                                            return d.icon[1];
-                                        else 
-                                            return d.icon[0];
-                                    }
-                                    else{
-                                        return d.icon;
-                                    } })
-                                ; 
-                    }
-                    if (d.label == "link") {
-                        d3.select(this).style("opacity", 0.5);
-                        show_all_link(unique_id, node_label, node_id);
-                    }        
-                });
-    }
-   
-
-    // Define the drag behavior
-    function zoomstarted(event) {
-        // Get current position of network after drag event
-        svgTranslate[0] = dx;
-        svgTranslate[1] = dy;
-    }
-    function zoomed(event) {
-        // Get the real-time scale
-        svgScale = event.transform.k;
-        zx = svgTranslate[0];
-        zy = svgTranslate[1];
-        // Update the transform of the network
-        svg.attr("transform", `translate(${zx},${zy})  scale(${svgScale})`);
-    }
-    function zoomended(event) {
-        // Save the current position after zooming
-        curTranslate[0] = zx;
-        curTranslate[1] = zy;
-    }
-  
-
-    function canvas_dragstarted(event) {
-        isDragging = true;
-        // Get the position of canvas at beginning
-        svgTranslate[0] = event.x;
-        svgTranslate[1] = event.y;
-    }
-    function canvas_dragged(event) {
-        if(isDragging) {
-            // "event.x - svgTranslate.x" means (current mouse x) - (previous mouse x)
-            dx = curTranslate[0] + event.x - svgTranslate[0];
-            dy = curTranslate[1] + event.y - svgTranslate[1];
-
-            // Update the transform of the canvas
-            svg.attr("transform", `translate(${dx},${dy}) scale(${svgScale})`);
-        }
-    }
-    function canvas_dragended(event){
-        // Update the starting position for the next drag event
-        curTranslate[0] = dx;
-        curTranslate[1] = dy;
-        isDragging = false;
-    }
-
-
-    function node_dragstarted(event) {
-        if (!event.active) force.alphaTarget(0.05).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-    }
-
-    function node_dragged(event, d) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-        if (clicked[d.id]) {
-            var node_id = d.id;
-            var node_label = d.label;
-            var node_radius = d.radius;
-            if (node_label == "publication"){
-                var unique_id = d.doi;
-                // if (d.citation_count != 0) {
-                //     node_radius =  6 + Math.log(d.citation_count);
-                // }
-                // else { node_radius = 6;}
-            }
-            else if (node_label == "author") {
-                if (d.scopus_id) {
-                    var unique_id = d.scopus_id; }
-                else {
-                    var unique_id = d.orcid; }
-                // node_radius = 5 + Math.log(d.link_num);;
-            }
-            // else if (node_label == "rsd_author") {
-            //     var unique_id = d.orcid;
-            //     // node_radius = 5 + Math.log(d.link_num);;
-            // }
-            else if (node_label == "software"){
-                var unique_id = d.software_id;
-                // node_radius = 5;
-            }
-            else if (node_label == "project"){
-                var unique_id = d.project_id;
-                // node_radius = 5;
-            }
-            // If a node is moving, its tooltip and icons will move along with it     
-            show_new_tooltip(node_id, unique_id, node_label, event.x, event.y, node_radius);
-        }
-    }
-          
-    function node_dragended(event, d) {
-        if (!event.active) force.alphaTarget(0);
-        if (lockked[d.id] || clicked[d.id]) {
-            event.subject.fx = event.x;
-            event.subject.fy = event.y;}
-        else{
-            event.subject.fx = null;
-            event.subject.fy = null;
-        }
-        force.alphaTarget(0.0).restart();
-    }
-
-    function check_show_pub() {
-        var checkbox = document.getElementById("show_pub");
-        if (checkbox.checked) {
-            network.selectAll(".node").remove();
-            network.selectAll(".link").remove();
-            network.selectAll("text").remove();
-            maxId = 0;
-            arcs.selectAll("path").remove();
-            arcs.selectAll("text").remove();
-
-            show_pub = true;
-            build_new_svg(graph_node, graph_link);
-           
-        } else {
-            network.selectAll(".node").remove();
-            network.selectAll(".link").remove();
-            network.selectAll("text").remove();
-            maxId = 0;
-            arcs.selectAll("path").remove();
-            arcs.selectAll("text").remove();
-
-            show_pub = false;
-            build_new_svg(coauthor_graph_node, coauthor_graph_link);
-        }
-    }
-
-    function collaMin() {
-        var collaboration_min = document.getElementById("col_count").value;
-        col_min = Number(collaboration_min)
-        if (show_pub == false) {
-            filteredCoauthorNodes = coauthor_graph_node;
-            const filteredCoauthorLinks = coauthor_graph_link.filter(link => link.count >= col_min);
-            // filter isolated nodes that do not have any links
-            const isolatedNodes = filteredCoauthorNodes.filter(function(node) {
-                return !filteredCoauthorLinks.some(function(link) {
-                    return link.source === node || link.target === node;
-                });
+        force.force('group', d3.forceManyBody().strength(function(d) {
+            // Set the strength based on the number of nodes in the same group
+            var sameGroupNodes = network.selectAll(".node").filter(function(node) {
+                return node.group === d.group;
             });
-            // delete the original canvas
-            network.selectAll(".node").remove();
-            network.selectAll(".link").remove();
-            network.selectAll("text").remove();
-            maxId = 0;
+            return -sameGroupNodes.length * 30;
+        }).distanceMax(100));
 
-            
-            filteredCoauthorNodes = filteredCoauthorNodes.filter(function(node) {
-                return !isolatedNodes.includes(node);
+        const topicCircles = network.selectAll(".topic-circle")
+            .data(topics)
+            .enter()
+            .append("circle")
+            .attr("class", "topic-circle")
+            .attr("r", 30)
+            .attr("fill", function(d) { return colorScale(d); })
+            .attr("stroke", "gray")
+            .attr("opacity", 0.1)
+            .attr("cx", function(d) {
+                const topicNodes = network.selectAll(".node").filter(function(node) {
+                    return topics[node.group] === d;
+                });
+                
+                return d3.mean(topicNodes.data(), function(node) { return node.x; });
+            })
+            .attr("cy", function(d) {
+                const topicNodes = svg.selectAll(".node").filter(function(node) {
+                    return node.group && topics[node.group] === d;
+                });
+                return d3.mean(topicNodes.data(), function(node) { return node.y; });
             });
-            // coauthor_graph_link  = filteredCoauthorLinks;
-            // console.log(graph_node);
-            // build new network
-            build_new_svg(filteredCoauthorNodes, filteredCoauthorLinks)
-
-            // remove the tooltip
-            arcs.selectAll("path").remove();
-            arcs.selectAll("text").remove();
-
-        }
- 
-    }
-
-
-    function handleLinkClick(event, d){
-        d3.selectAll('#node_info tbody tr').remove();
-        if (d.count) {
-            var countRow = d3.select('#node_info tbody')
-                    .append('tr');
-            countRow.append('td')
-                    .text('Collaboration count');
-            countRow.append('td')
-                    .text(d.count);
-        }
-        if (show_pub) {
-            var doiRow = d3.select('#node_info tbody')
-                    .append('tr');
-            doiRow.append('td')
-                    .text('DOI');
-            doiRow.append('td')
-                    .text(d.doi);
-        }
-        else {
-            for(let i = 0; i< d.doi.length; i++) {
-                var doiRow = d3.select('#node_info tbody')
-                        .append('tr');
-                doiRow.append('td')
-                        .text('DOI');
-                doiRow.append('td')
-                        .text(d.doi[i]);
-                    
-                if (d.title) {
-                    var titleRow = d3.select('#node_info tbody')
-                            .append('tr');
-                    titleRow.append('td')
-                            .text('Title');
-                    titleRow.append('td')
-                            .text(d.title[i]);
-                }
-                emptyRow = d3.select('#node_info tbody').append('tr');
-                emptyRow .append('td').text('');
-                emptyRow.append('td').text('');
-            }
-        }
-        d3.select('#node-details').style('display', 'block');
-    }
-
-
-    function handleNodeClick(d){
         
-            d3.selectAll('#node_info tbody tr').remove();
-            
-            if (d.label.indexOf("author") != -1) {
-                // Create a new table row for the node label
-                var labelRow = d3.select('#node_info tbody')
-                    .append('tr');
-                labelRow.append('td')
-                    .text('Label');
-                labelRow.append('td')
-                    .text(d.label);
-                
-                var titleRow = d3.select('#node_info tbody')
-                    .append('tr');
-                titleRow.append('td')
-                    .text('Name');
-                titleRow.append('td')
-                    .text(d.title);
-
-                var idRow = d3.select('#node_info tbody')
-                    .append('tr');
-                idRow.append('td')
-                    .text('Scopus id');
-                idRow.append('td')
-                    .text(d.scopus_id);
-
-                var orcidRow = d3.select('#node_info tbody')
-                    .append('tr');
-                orcidRow.append('td')
-                    .text('ORCID');
-                orcidRow.append('td')
-                    .text(d.orcid);
-
-                // Create a new table row for the node description
-                var countryRow = d3.select('#node_info tbody')
-                    .append('tr');
-                countryRow.append('td')
-                    .text('Country');
-                countryRow.append('td')
-                    .text(d.country);
-
-                var affRow = d3.select('#node_info tbody')
-                    .append('tr');
-                affRow.append('td')
-                    .text('Affiliation');
-                affRow.append('td')
-                    .text(d.affiliation);
-            }
-            if (d.label == "publication") {
-                // Create a new table row for the node label
-                var labelRow = d3.select('#node_info tbody')
-                    .append('tr');
-                labelRow.append('td')
-                    .text('Label');
-                labelRow.append('td')
-                    .text(d.label);
-                
-                var titleRow = d3.select('#node_info tbody')
-                    .append('tr');
-                titleRow.append('td')
-                    .text('Title');
-                titleRow.append('td')
-                    .text(d.title);
-
-                var idRow = d3.select('#node_info tbody')
-                    .append('tr');
-                idRow.append('td')
-                    .text('DOI');
-                idRow.append('td')
-                    .text(d.doi);
-
-                var subjectRow = d3.select('#node_info tbody')
-                    .append('tr');
-                subjectRow.append('td')
-                    .text('Subject');
-                subjectRow.append('td')
-                    .text(d.subject);
-
-                var yearRow = d3.select('#node_info tbody')
-                    .append('tr');
-                yearRow.append('td')
-                    .text('Year');
-                yearRow.append('td')
-                    .text(d.year);
-            }
-            if (d.label == "project") {
-                // Create a new table row for the node label
-                var labelRow = d3.select('#node_info tbody')
-                    .append('tr');
-                labelRow.append('td')
-                    .text('Label');
-                labelRow.append('td')
-                    .text(d.label);
-                
-                var titleRow = d3.select('#node_info tbody')
-                    .append('tr');
-                titleRow.append('td')
-                    .text('Title');
-                titleRow.append('td')
-                    .text(d.title);
-
-                var yearRow = d3.select('#node_info tbody')
-                    .append('tr');
-                yearRow.append('td')
-                    .text('Year');
-                yearRow.append('td')
-                    .text(d.year);
-            }
-            if (d.label == "software") {
-                // Create a new table row for the node label
-                var labelRow = d3.select('#node_info tbody')
-                    .append('tr');
-                labelRow.append('td')
-                    .text('Label');
-                labelRow.append('td')
-                    .text(d.label);
-                
-                var titleRow = d3.select('#node_info tbody')
-                    .append('tr');
-                titleRow.append('td')
-                    .text('Title');
-                titleRow.append('td')
-                    .text(d.title);
-
-                var idRow = d3.select('#node_info tbody')
-                    .append('tr');
-                idRow.append('td')
-                    .text('DOI');
-                idRow.append('td')
-                    .text(d.doi);
-
-                var yearRow = d3.select('#node_info tbody')
-                    .append('tr');
-                yearRow.append('td')
-                    .text('Year');
-                yearRow.append('td')
-                    .text(d.year);
-            }
-            // Show the node details table
-            
-            d3.select('#node-details').style('display', 'block');
-                  
-    }
-
-    // function for the circle tooltips
-    function addOrRemoveTooltip(d) {
-
-        // selection.on("click", function(event, d) {
-        //     // info presentation
-        //     handleNodeClick(d);
-
-            // Tooltip
-            
-                // If click another node, hide the previous tootip
-                if (last_clicked_node && last_clicked_node != d.id) {
-                    clicked[last_clicked_node] = false;
-
-                    if(lockked[last_clicked_node]){
-                        last_d.fx = last_d.x;
-                        last_d.fy = last_d.y;
-                    }
-                    else {
-                        last_d.fx = null;
-                        last_d.fy = null;
-                    }
-                    arcs.selectAll("path").remove();
-                    arcs.selectAll("text").remove();
-                }
-
-                var node_id = d.id;
-                var node_label = d.label;
-                var node_radius = d.radius;
-                // get unique_id for Database Selecting function 
-                if (node_label == "publication" ){
-                    var unique_id = d.doi;
-                    // if (d.citation_count != 0) {
-                    //     node_radius =  6 + Math.log(d.citation_count);
-                    // }
-                    // else {node_radius = 6;}
-                }
-                else if (node_label == "author") {
-                    if (d.scopus_id) {
-                        var unique_id = d.scopus_id; }
-                    else {
-                        var unique_id = d.orcid;
-                    }
-
-                    // node_radius = 5 + Math.log(d.link_num);;
-                }
-                else if (node_label == "software"){
-                    var unique_id = d.software_id;
-                    // node_radius = 5;
-                }
-                else if (node_label == "project") {
-                    var unique_id = d.project_id;
-                    // node_radius = 5;
-                }
-
-                // lock node
-                d.fx = d.x;
-                d.fy = d.y;
-
-                var node_x = d.x;
-                var node_y = d.y;
-
-                // present the tooltip of this node
-                show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
-                        
-                
-                last_clicked_node = d.id;
-                last_d = d;
-          
+        // Append topic labels
+        const topicLabels = network.selectAll(".topic-label")
+            .data(topics)
+            .enter()
+            .append("text")
+            .attr("class", "topic-label")
+            .text(function(d) { return d; })
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "middle")
+            .style("font-size", "12px")
+            .style("pointer-events", "none")
+            .attr("x", function(d) {
+                const topicNodes = svg.selectAll(".node").filter(function(node) {
+                    return node.group && topics[node.group] === d;
+                });
+                return d3.mean(topicNodes.data(), function(node) { return node.x; });
+            })
+            .attr("y", function(d) {
+                const topicNodes = svg.selectAll(".node").filter(function(node) {
+                    return node.group && topics[node.group] === d;
+                });
+                return d3.mean(topicNodes.data(), function(node) { return node.y; });
+            });
     }
 
 
-    function node_lock_unlock(node_id) {
-        if (lockked[node_id]) {
-            lockked[node_id] = false;
-        }
-        else {
-            lockked[node_id] = true;
-        }
-
-    }
-    function hide_node(node_id) {
-        // Select the node with the given ID
-        // Select all links with the given node ID as the source or target
-        const filteredNodes = graph_node.filter(node => node.id !== node_id);
-        const filteredLinks = graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
-        const filteredCoauthorNodes = coauthor_graph_node.filter(node => node.id !== node_id);
-        const filteredCoauthorLinks = coauthor_graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
- 
-        // filter isolated nodes that do not have any links
-        const isolatedNodes = filteredNodes.filter(function(node) {
-            return !filteredLinks.some(function(link) {
-                return link.source === node || link.target === node;
-            });
-        });
-        const isolatedCoauthorNodes = filteredCoauthorNodes.filter(function(node) {
-            return !filteredCoauthorLinks.some(function(link) {
-                return link.source === node || link.target === node;
-            });
-        });
-
-        // delete the original canvas
-        network.selectAll(".node").remove();
-        network.selectAll(".link").remove();
-        network.selectAll("text").remove();
-        maxId = 0;
-
-        // Remove isolated nodes from the nodes array
-        graph_node = filteredNodes.filter(function(node) {
-            return !isolatedNodes.includes(node);
-        });
-        graph_link = filteredLinks;
-        coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
-            return !isolatedCoauthorNodes.includes(node);
-        });
-        coauthor_graph_link  = filteredCoauthorLinks;
-        // console.log(graph_node);
-        // build new network
-        if (show_pub) {
-            build_new_svg(graph_node, graph_link)
-        }
-        else {
-            build_new_svg(coauthor_graph_node, coauthor_graph_link)
-        }
-        // remove the tooltip
-        arcs.selectAll("path").remove();
-        arcs.selectAll("text").remove();
-
-    }
-
-    function show_all_link(unique_id, node_label, node_id) {
-
-        const linksToFilter = svg.selectAll(".link")
-                                .filter(function(d) {
-                                    return d.source.id === node_id || d.target.id === node_id;
-                                });
-        if (node_label == "publication") {
-            var linkList = linksToFilter.data().map(function(d) {
-                return d.scopus_id;
-            });
-            var coauthor_id = linksToFilter.data().map(function(d) {
-                if (d.source.id === node_id)
-                    return d.target.id;
-                else if(d.target.id === node_id)
-                    return d.source.id;
-            });
-        }
-        else if (node_label == "author") {
-            var linkList = linksToFilter.data().map(function(d) {
-                return d.doi;
-            });
-            var coauthor_id = node_id;
-        }
-        else {
-            var linkList = linksToFilter.data().map(function(d) {
-                return d.orcid;
-            });
-            var coauthor_id = linksToFilter.data().map(function(d) {
-                return d.index;
-            });
-        }
-
-        d3.json("/show_link?unique_id=" + encodeURIComponent(unique_id) 
-        + "&label=" + encodeURIComponent(node_label)
-        + "&node_id=" + encodeURIComponent(node_id)
-        + "&maxId=" + encodeURIComponent(maxId)
-        + "&linkList=" + encodeURIComponent(linkList)
-        + "&coauthorList=" + encodeURIComponent(coauthor_id)
-        )
-        .then(function(links){
-            network.selectAll(".node").remove();
-            network.selectAll(".link").remove();
-            network.selectAll("text").remove();
-            maxId = 0;
-            arcs.selectAll("path").remove();
-            arcs.selectAll("text").remove();
-            
-            graph_node = graph_node.concat(links.nodes);
-            graph_link = graph_link.concat(links.links);
-            coauthor_graph_node = coauthor_graph_node.concat(links.coauthor_nodes);
-            coauthor_graph_link = coauthor_graph_link.concat(links.coauthor_links);
-
-            // console.log(graph_node);
-            // console.log(graph_link);
-            // console.log(coauthor_graph_node);
-            // console.log(coauthor_graph_link);
 
 
-            if (show_pub) {
-                build_new_svg(graph_node, graph_link);
-            }
-            else {
-                build_new_svg(coauthor_graph_node, coauthor_graph_link);
-            }
-            
-        });
-    }
       
   
     // ############# Initial network ##############
@@ -1561,313 +699,46 @@
         build_new_svg(graph_node, graph_link);
        
     });
-    // ########## refresh #############
-    function refresh(){
-            d3.select("#graph").selectAll("*").remove();
-            svgTranslate = [0, 0];
-            curTranslate = [0, 0];
-            svgScale = 1;
-            isDragging = false;
-            dx = 0; 
-            dy = 0;
-            zx = 0; 
-            zy = 0;
-            
-            clicked = {};
-            lockked = {};
-            last_clicked_node = -1;
-            last_d = {};
-            maxId = 0;
-            graph_node = [];
-            graph_link = [];
-            
-            // Define the SVG canvas
-            svg = d3.select("#graph").append("svg")
-                    .attr("width", width).attr("height", height)
-                    .attr("position", "absolute")
-                    .attr("viewBox", `0 0 ${width} ${height}`)
-                    .attr("pointer-events", "all")
-                    .call(d3.drag()
-                        .on("start", canvas_dragstarted)
-                        .on("drag", canvas_dragged)
-                        .on("end", canvas_dragended))
-                    .call(d3.zoom()
-                        .on("start", zoomstarted)
-                        .on("zoom", zoomed)
-                        .on("end", zoomended))
-                    ;
-
-            network = svg.append('g').attr('class', 'type1');
-            
-            arcs = svg.append('g').attr('class', 'type2')
-                    .selectAll("arcs")
-                    .data([
-                        { start: 0, end: 1/3, label: "hide", icon: '\uf00d'},
-                        { start: 1/3, end: 2/3, label: "link", icon: '\uf047'},
-                        { start: 2/3, end: 1, label: "lock", icon: ['\uf023', '\uf09c'] }
-                    ])
-                    .enter();
-    }
+    
 
 
 
-    // ####################### function #######################
+    // ####################### Search function #######################
     $(document).ready(function(){
 
         // ################### keyword search ###################
-        const form = document.getElementById('topic-search');
-        form.addEventListener('submit', function(event) {
-            // prevent the form from submitting and refreshing the page
-            event.preventDefault(); 
-            // call your function here
+        const form_topic = document.getElementById('topic-search');
+        form_topic.addEventListener('submit', function(event) {
+            event.preventDefault(); // prevent the form from submitting and refreshing the page
+
+            d3.select('#node-details').style('display', 'none');
+            document.getElementById("profile").style.visibility = "hidden";
+            // call field_search() function here
             field_search();
         });
-
-        function field_search(){
-
-            var form = $('#topic-search');
-            var year = form.find("select[name='year']").val();
-            var keyword = form.find("input[name=keyword]").val();
-            refresh();
-
-            d3.json("/search?keyword=" + encodeURIComponent(keyword) + "&year=" + encodeURIComponent(year))
-                .then(function(graph){
-                    if (!graph || graph.length == 0) return;
-
-                    graph_node = graph.nodes;
-                    graph_link = graph.links;
-                    coauthor_graph_node = graph.coauthor_nodes;
-                    coauthor_graph_link = graph.coauthor_links;
-
-                    if (show_pub) {
-                        build_new_svg(graph_node, graph_link);
-                    }
-                    else {
-                        build_new_svg(coauthor_graph_node, coauthor_graph_link);
-                    }
-
-                    document.getElementById("profile").style.visibility = "hidden";
-                    d3.select('#node-details').style('display', 'none');
-
-                    build_new_svg(graph_node,graph_link);
-                });
-            return false;
-        }
-        
-
 
         // ################### ORCID search ######################
         const form_orcid = document.getElementById('author-search');
         form_orcid.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
-            // call your function here
+
             d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            // call author_search() function
             author_search();
-        });
-
-        function author_search(){
-            // Prevent default form submission action
-            // event.preventDefault();   
-            var form = $('#author-search');
-            var orcid = form.find("input[name='orcid']").val();
-            var firstname = form.find("input[name='firstname']").val();
-            var surname = form.find("input[name='surname']").val();
-
-
-            const nameElement = document.getElementById("name-title");
-            nameElement.textContent = name;
-
-            // Update the ORCID link
-            const orcidLinkElement = document.querySelector(".orcid[href]");
-            if (orcid) {
-                orcidLinkElement.style.display = "inline";
-                orcidLinkElement.href = `https://orcid.org/${orcid}`;
-            } else {
-                orcidLinkElement.style.display = "none";
-            }
-
-            // Update the affiliation
-            const affiliationElement = document.getElementById("affiliation");
-            affiliationElement.textContent = affiliation;
-            
-            refresh();
-
-            d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid)+ 
-                    "&firstname=" + encodeURIComponent(firstname) + 
-                    "&surname=" + encodeURIComponent(surname) + 
-                    "&escience=" + escience)
-                .then(function (graph) {
-                    graph_node = graph.nodes;
-                    graph_link = graph.links;
-                    coauthor_graph_node = graph.coauthor_nodes;
-                    coauthor_graph_link = graph.coauthor_links;
-                    
-                    search_author_name = graph["search_author_name"];
-                    works_count = graph['works_count'];
-                    cited_by_count = graph['cited_by_count'];
-                    h_index = graph['h_index'];
-                    ror = graph['ror'];
-                    search_aff_name = graph["search_aff_name"];
-                    search_country = graph["search_country"];
-                    cite_by_year = graph['cite_by_year'];
-                    concept_score = graph["concept_score"];
-
-                    const nameElement = document.getElementById("name-title");
-                    nameElement.textContent = search_author_name;
-
-                    const orcidLinkElement1 = document.getElementById("orcid1");
-                    const orcidLinkElement2 = document.getElementById("orcid2");
-                    const orcidLinkElement3 = document.getElementById("orcid3");
-                    if (orcid) {
-                        orcidLinkElement1.href = 'https://orcid.org/'+orcid;
-                        orcidLinkElement2.href = 'https://orcid.org/'+orcid;
-                        orcidLinkElement3.innerHTML = 'https://orcid.org/'+orcid;
-                    } else {
-                        orcidLinkElement1.style.display = "none";
-                        orcidLinkElement2.style.display = "none";
-                    }
-
-                    const rorElement = document.getElementById("ror");
-                    rorElement.href = ror;
-                    // Update the affiliation
-                    const affiliationElement = document.getElementById("affiliation");
-                    affiliationElement.textContent = search_aff_name+', '+search_country;
-
-                    document.getElementById("work-count-value").textContent = works_count;
-                    document.getElementById("h-index-value").textContent = h_index;
-                    document.getElementById("citation-count-value").textContent = cited_by_count;
-
-                    if (chartexist) {
-                        myBarChart.data.datasets[0].data = [];
-                        myPolarChart.data.datasets[0].data = [];
-                        myBarChart.update();
-                        myPolarChart.update();
-                        chartExists = false;
-                    }
-                    myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
-                    chartexist = true;
-
-                    document.getElementById("profile").style.visibility = "visible";
-                    document.getElementById("person_profile").style.display = "block"
-                    document.getElementById("person_table").style.display = "block";
-                    document.getElementById("pub_table").style.display = "none";
-                    document.getElementById("doi1").style.display = "none";
-                    document.getElementById("doi2").style.display = "none";
-                    document.getElementById("doi3").style.display = "none";
-                    d3.select('#node-details').style('display', 'none');
-
-                    if (show_pub) {
-                        build_new_svg(graph_node, graph_link);
-                    }
-                    else {
-                        build_new_svg(coauthor_graph_node, coauthor_graph_link);
-                    }
-                });
-            return false;
-        }
-
+        }); 
 
         // ################### DOI search ######################
         const form_pub = document.getElementById('pub-search');
         form_pub.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
-            // call your function here
+            
             d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            // call your function here
             pub_search();
             
         });
-
-        function pub_search(){
-            var form = $('#pub-search');
-            var doi = form.find("input[name='doi']").val();
-      
-            refresh();
-
-            d3.json("/pub_search?doi=" + encodeURIComponent(doi))
-                .then(function (graph) {
-                    graph_node = graph.nodes;
-                    graph_link = graph.links;
-
-                    coauthor_graph_node = graph.coauthor_nodes;
-                    coauthor_graph_link = graph.coauthor_links;
-
-                    // make profile
-                    if (chartexist) {
-                            myBarChart.data.datasets[0].data = [];
-                            myPolarChart.data.datasets[0].data = [];
-                            myBarChart.update();
-                            myPolarChart.update();
-                            chartExists = false;
-                        }
-                    if ("title" in graph) {
-                        search_title = graph["title"];
-                        cited_by_count = graph['cited_by_count'];
-                        author_string = graph['author_string'];
-                        author_list = graph['author_list'];
-                        orcid_list = graph['orcid_list'];
-                        pub_date = graph['date'];
-                        source_issn = graph['source_issn'];
-                        cited_by_count = graph['cited_by_count'];
-                        cite_by_year = graph['cite_by_year'];
-                        concept_score = graph["concept_score"];
-
-                        const nameElement = document.getElementById("name-title");
-                        nameElement.textContent = search_title;
-
-                        const doiLinkElement1 = document.getElementById("doi1");
-                        const doiLinkElement2 = document.getElementById("doi2");
-                        const doiLinkElement3 = document.getElementById("doi3");
-                        if (doi) {
-                            doiLinkElement1.href = "https://doi.org/" + doi;
-                            doiLinkElement2.href = "https://doi.org/" + doi;
-                            doiLinkElement3.innerHTML = "https://doi.org/" + doi;
-                        } else {
-                            doiLinkElement1.style.display = "none";
-                            doiLinkElement2.style.display = "none";
-                        }
-                        const authorElement = document.getElementById("pub_authors");
-
-                        orcid_list.forEach(function(name) {
-                            var anchor = document.createElement("a");
-                            anchor.href = "https://example.com/profile/" + name;
-                            anchor.textContent = name;
-                            
-                            // Append the anchor element to the names container
-                            // namesContainer.appendChild(anchor);
-                            });
-                        authorElement.textContent = author_string;
-
-                        document.getElementById("pub-citation-count").textContent = cited_by_count;
-
-                        
-                        myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
-                        chartexist = true;
-
-                        document.getElementById("profile").style.visibility = "visible";
-                        document.getElementById("pub_profile").style.display = "block";
-                        document.getElementById("person_table").style.display = "none";
-                        document.getElementById("pub_table").style.display = "block";
-                        document.getElementById("orcid1").style.display = "none";
-                        document.getElementById("orcid2").style.display = "none";
-                        document.getElementById("orcid3").style.display = "none";
-                    }
-                    else {
-                        document.getElementById("profile").style.visibility = "hidden";
-                    }
-
-                    d3.select('#node-details').style('display', 'none');
-                    
-                    if (show_pub) {
-                        build_new_svg(graph_node, graph_link);
-                    }
-                    else {
-                        build_new_svg(coauthor_graph_node, coauthor_graph_link);
-                    }
-                });
-            return false;
-        }
 
         // ####################### institution search #########################
         const form_aff = document.getElementById('aff-search');
@@ -1878,81 +749,6 @@
             document.getElementById("profile").style.visibility = "hidden";
             aff_search();
         });
-
-        function aff_search(){
-            var form = $('#aff-search');
-            var initial_aff_name = form.find("input[name='aff']").val();
-            // console.log(initial_aff_name);
-            refresh();
-
-            d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
-                // make profile
-                if (JSON.stringify(graph) === '[]') {
-                    return false;
-                }
-
-                search_title = graph["aff_name"];
-                ror = graph["ror"];
-                works_count = graph["works_count"]
-                cited_by_count = graph['cited_by_count'];
-                h_index = graph["h_index"];
-                home_page = graph["home_page"];
-                city = graph["city"];
-                country = graph["country"];
-                cite_by_year = graph['cite_by_year'];
-                concept_score = graph["concept_score"];
-
-                const nameElement = document.getElementById("name-title");
-                nameElement.textContent = search_title;
-
-                const doiLinkElement1 = document.getElementById("doi1");
-                const doiLinkElement2 = document.getElementById("doi2");
-                const doiLinkElement3 = document.getElementById("doi3");
-                if (ror) {
-                    doiLinkElement1.href = ror;
-                    doiLinkElement2.href = ror;
-                    doiLinkElement3.innerHTML = ror;
-                } else {
-                    doiLinkElement1.style.display = "none";
-                    doiLinkElement2.style.display = "none";
-                }
-                
-                document.getElementById("work-count-value").textContent = works_count;
-                document.getElementById("h-index-value").textContent = h_index;
-                document.getElementById("citation-count-value").textContent = cited_by_count;
-
-                
-                myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
-                chartexist = true;
-
-                document.getElementById("profile").style.visibility = "visible";
-                document.getElementById("pub_profile").style.display = "block";
-                document.getElementById("person_table").style.display = "block";
-                document.getElementById("pub_table").style.display = "none";
-
-                document.getElementById("orcid1").style.display = "none";
-                document.getElementById("orcid2").style.display = "none";
-                document.getElementById("orcid3").style.display = "none";
-
-
-                graph_node = graph.nodes;
-                graph_link = graph.links;
-                coauthor_graph_node = graph.coauthor_nodes;
-                coauthor_graph_link = graph.coauthor_links;
-
-                if (show_pub) {
-                    build_new_svg(graph_node, graph_link);
-                }
-                else {
-                    build_new_svg(coauthor_graph_node, coauthor_graph_link);
-                }
-
-            });
-
-       
-            return false;
-        }
-
         
     })
 
@@ -1988,16 +784,16 @@
             const nameElement = document.getElementById("name-title");
             nameElement.textContent = search_title;
 
-            const doiLinkElement1 = document.getElementById("doi1");
-            const doiLinkElement2 = document.getElementById("doi2");
-            const doiLinkElement3 = document.getElementById("doi3");
+            const locationElement = document.getElementById("city-country");
+            locationElement.textContent = city+', '+country;
+
+            const doiLinkElement1 = document.getElementById("ror1");
+            const doiLinkElement2 = document.getElementById("ror2");
             if (ror) {
                 doiLinkElement1.href = ror;
-                doiLinkElement2.href = ror;
-                doiLinkElement3.innerHTML = ror;
+                doiLinkElement2.innerHTML = ror;
             } else {
                 doiLinkElement1.style.display = "none";
-                doiLinkElement2.style.display = "none";
             }
             
             document.getElementById("work-count-value").textContent = works_count;
@@ -2015,12 +811,11 @@
             chartexist = true;
 
             document.getElementById("profile").style.visibility = "visible";
-            document.getElementById("pub_profile").style.display = "block";
+            document.getElementById("person_profile").style.display = "none";
+            document.getElementById("pub_profile").style.display = "none";
+            document.getElementById("aff_profile").style.display = "block";
             document.getElementById("person_table").style.display = "block";
-
-            document.getElementById("orcid1").style.display = "none";
-            document.getElementById("orcid2").style.display = "none";
-            document.getElementById("orcid3").style.display = "none";
+            document.getElementById("pub_table").style.display = "none";
 
         });
 
@@ -2030,8 +825,18 @@
             coauthor_graph_node = graph.coauthor_nodes;
             coauthor_graph_link = graph.coauthor_links;
             
+            
             if (show_pub) {
                 build_new_svg(graph_node, graph_link);
+
+                force.force('group', d3.forceManyBody().strength(function(d) {
+                    // Set the strength based on the number of nodes in the same group
+                    var sameGroupNodes = network.selectAll(".node").filter(function(node) {
+                        return node.group === d.group;
+                    });
+                    return -sameGroupNodes.length * 30;
+                }).distanceMax(100));
+                // show_topics(graph.topics);
             }
             else {
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
@@ -2098,16 +903,16 @@
             const nameElement = document.getElementById("name-title");
             nameElement.textContent = search_title;
 
-            const doiLinkElement1 = document.getElementById("doi1");
-            const doiLinkElement2 = document.getElementById("doi2");
-            const doiLinkElement3 = document.getElementById("doi3");
+            const locationElement = document.getElementById("city-country");
+            locationElement.textContent = city+', '+country;
+
+            const doiLinkElement1 = document.getElementById("ror1");
+            const doiLinkElement2 = document.getElementById("ror2");
             if (ror) {
                 doiLinkElement1.href = ror;
-                doiLinkElement2.href = ror;
-                doiLinkElement3.innerHTML = ror;
+                doiLinkElement2.innerHTML = ror;
             } else {
                 doiLinkElement1.style.display = "none";
-                doiLinkElement2.style.display = "none";
             }
             
             document.getElementById("work-count-value").textContent = works_count;
@@ -2125,12 +930,11 @@
             chartexist = true;
 
             document.getElementById("profile").style.visibility = "visible";
-            document.getElementById("pub_profile").style.display = "block";
+            document.getElementById("person_profile").style.display = "none";
+            document.getElementById("pub_profile").style.display = "none";
+            document.getElementById("aff_profile").style.display = "block";
             document.getElementById("person_table").style.display = "block";
-
-            document.getElementById("doi1").style.display = "none";
-            document.getElementById("doi2").style.display = "none";
-            document.getElementById("doi3").style.display = "none";
+            document.getElementById("pub_table").style.display = "none";
 
             if (show_pub) {
                 build_new_svg(graph_node, graph_link);
