@@ -67,6 +67,7 @@ function build_new_svg(graph_node, graph_link) {
                 .data(graph_link).enter()
                 .append("line").attr("class", "link")
                 .style("stroke-width", d => d.count ? 1/2*d.count : "0.5px")
+                .interrupt('linkTransition')
                 .on("click", handleLinkClick);
     // Append the nodes to the svg
     const node = network.selectAll(".node")
@@ -79,6 +80,7 @@ function build_new_svg(graph_node, graph_link) {
                 // .attr("stroke", "light-grey")
                 .attr("cursor", "pointer")
                 .style("opacity", 0.8)
+                .interrupt('nodeTransition')
                 .call(d3.drag()
                     .on("start", node_dragstarted)
                     .on("drag", node_dragged)

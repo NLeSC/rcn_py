@@ -201,7 +201,11 @@ def get_example_graph():
     #             mimetype="application/json")
     # return Response(dumps({"s": x}),mimetype="application/json")
 
-# 
+
+# Indexing: Make sure that you have created indexes on the title and keywords properties of the Publication nodes. 
+# CREATE INDEX FOR (p:Publication) ON (p.title);
+# CREATE INDEX FOR (p:Publication) ON (p.keywords);
+
 @app.route('/topic-search')
 def get_search_query():
     def work(tx, year, search_query):
@@ -1094,6 +1098,8 @@ def show_esc_graph():
 def openalex_aff_search():
     try:
         aff_name = request.args["aff_name"]
+        start_year = request.args["start_year"]
+        end_year = request.args["end_year"]
     except KeyError:
         return []
     else:
@@ -1123,7 +1129,7 @@ def openalex_aff_search():
                 concept_score['score'].append(c['score'])
 
         # Get works
-        openalex_aff_works = openalex.get_some_works_of_one_institution(aff_name)
+        openalex_aff_works = openalex.get_works_of_one_institution_by_year(aff_name, start_year, end_year)
 
         i = 0
         node_records = []
@@ -1207,7 +1213,193 @@ def openalex_aff_search():
                                'concept_score': concept_score, 'cite_by_year':counts_by_year
                                }),
                     mimetype="application/json")
+    
 
+@app.route("/openalex-aff-search-profile-info")
+def openalex_aff_search_profile_info():
+    try:
+        aff_name = request.args["aff_name"]
+    except KeyError:
+        return []
+    else:
+        aff_result = openalex.find_institution(aff_name)
+        # if fetch no info
+        if aff_result['meta']['count'] == 0:
+            return []
+        
+        aff_info = aff_result['results'][0]
+
+        display_name = aff_info['display_name']
+        ror = aff_info['ror']
+
+        works_count = aff_info['works_count']
+        cite_count = aff_info['cited_by_count']
+        h_index = aff_info['summary_stats']['h_index']
+        
+        home_page = aff_info['homepage_url']
+        city = aff_info['geo']['city']
+        country = aff_info['geo']['country']
+        counts_by_year = aff_info['counts_by_year']
+        concept_score = {}
+        concept_score['concept_name'] = []
+        concept_score['score'] = []
+        for c in aff_info['x_concepts'][0:7]:
+                concept_score['concept_name'].append(c['display_name'])
+                concept_score['score'].append(c['score'])
+        
+        return Response(dumps({"aff_name": display_name, 'ror': ror, 'works_count': works_count, 'cited_by_count':cite_count,
+                               'h_index':h_index, 'home_page': home_page, 'city':city, 'country':country,
+                               'concept_score': concept_score, 'cite_by_year':counts_by_year
+                               }),
+                    mimetype="application/json")
+    
+
+@app.route("/openalex-aff-search-without-profile")
+def openalex_aff_search_without_profile_info():
+    try:
+        aff_name = request.args["aff_name"]
+        pub_size = int(request.args["size"])
+    except KeyError:
+        return []
+    else:
+        # Get works
+        openalex_aff_works = openalex.get_works_of_one_institution(aff_name, pub_size)
+
+        i = 0
+        node_records = []
+        nodes = []
+        rels = []
+        nodes_id_in_rel = []
+        coauthor_nodes = []
+        coauthor_rels = [] 
+
+        for work in openalex_aff_works:
+            target = i
+            node_records.append(work["doi"])
+            if math.isnan(work["cited_by_count"]) or work["cited_by_count"] == 0 :
+                citation_count = 0
+                pub_radius = 6
+            else:
+                citation_count = work["cited_by_count"]
+                pub_radius = 6 + math.log(citation_count)
+
+            nodes.append({"title": work["title"], 
+                        "citation_count": citation_count,
+                        "doi": work["doi"],
+                        "openalex_id": work["id"],
+                        "year": work['publication_year'],
+                        "label": 'publication', 
+                        "id": target,
+                        "color": 'publication',
+                        "radius": pub_radius
+                        })
+            i += 1
+
+            # if pub, then use scopus id
+            coauthor_link = []
+            temp_source = []
+            
+            for au in work['authorships']:
+                try:
+                    source = node_records.index(au['author']['id'])
+                    
+                except ValueError:
+                    node_records.append(au['author']['id'])
+                    source = i
+
+                    # handle empty values
+                    if len(au['institutions']) == 0:
+                        country_code = ''
+                        affiliation_name = ''
+                    else:
+                        country_code = au['institutions'][0]['country_code']
+                        affiliation_name = au['institutions'][0]['display_name']
+
+                    author = {
+                                "title": au['author']['display_name'],
+                                "orcid": au['author']["orcid"],
+                                "openalex_id": au['author']['id'],
+                                "country": country_code,
+                                "affiliation": affiliation_name,
+                                "label": "author",
+                                "id": source,
+                                "color": "author"}
+                    nodes.append(author)
+                    coauthor_nodes.append(author)
+                    i += 1
+                temp_source.append(source)
+                nodes_id_in_rel.append(source)
+                rels.append({"source": source, "target": target, "doi":work["doi"], "openalex_id":au['author']['id']})
+
+            coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
+
+            for l in coauthor_link:
+                coauthor_rels.append({"source": l[0], "target": l[1], "doi":work["doi"], "title": work["title"]})
+
+        nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
+        coauthor_nodes = get_link_count_of_author(coauthor_nodes, nodes_id_in_rel)
+        coauthor_rels = get_link_count_of_rel(coauthor_rels)
+        
+        return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels
+                               }),
+                    mimetype="application/json")
+
+@app.route("/openalex-institution-network")
+def openalex_aff_network():
+    try:
+        aff_name = request.args["aff_name"]
+    except KeyError:
+        return []
+    else:
+        aff_result = openalex.find_institution(aff_name)
+        # if fetch no info
+        if aff_result['meta']['count'] == 0:
+            return []
+        
+        aff_info = aff_result['results'][0]
+
+        display_name = aff_info['display_name']
+        ror = aff_info['ror']
+
+        works_count = aff_info['works_count']
+        cite_count = aff_info['cited_by_count']
+        h_index = aff_info['summary_stats']['h_index']
+        
+        home_page = aff_info['homepage_url']
+        city = aff_info['geo']['city']
+        country = aff_info['geo']['country']
+        counts_by_year = aff_info['counts_by_year']
+        concept_score = {}
+        concept_score['concept_name'] = []
+        concept_score['score'] = []
+        for c in aff_info['x_concepts'][0:7]:
+                concept_score['concept_name'].append(c['display_name'])
+                concept_score['score'].append(c['score'])
+
+        node_list, coauthor_link = openalex.build_institution_network(aff_name)
+        for node in node_list:
+            node['label'] = 'institution'
+            # node['radius'] = 
+
+            coauthor_rels = []
+        for l in coauthor_link:
+            coauthor_rels.append({"source": l[0], "target": l[1]})
+
+        sorted_relationships = [tuple(sorted([r['source'], r['target']])) for r in coauthor_rels]
+        # count the occurrences of each tuple
+        counts = Counter(sorted_relationships)
+        link_result = []
+        for pair, count in counts.items():
+            link_result.append({'source': pair[0], 'target': pair[1], 'count': count})
+
+        # TO BE DONE
+        return Response(dumps({"nodes": node_list, "links": link_result, 
+                               "aff_name": display_name, 'ror': ror, 'works_count': works_count, 'cited_by_count':cite_count,
+                               'h_index':h_index, 'home_page': home_page, 'city':city, 'country':country,
+                               'concept_score': concept_score, 'cite_by_year':counts_by_year
+                               }),
+                    mimetype="application/json")
+    
 
 if __name__ == "__main__":
     # uri = "bolt://localhost:7687"

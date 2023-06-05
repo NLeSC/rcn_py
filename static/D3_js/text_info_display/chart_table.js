@@ -39,21 +39,7 @@ function set_new_chart(cite_by_year,concept_score) {
             }
         },
     };
-    const polaroptions = {
-        legend: {display: false},
-        scale: {
-            ticks: {
-                beginAtZero: true
-            }
-        },
-        plugins: {
-            title: {
-                display: false,
-                text: 'My Polar Area Chart'
-            }
-        },
-        
-    };
+    
     const x_year = [];
     const y_work = [];
     cite_by_year = cite_by_year.reverse()
@@ -84,7 +70,37 @@ function set_new_chart(cite_by_year,concept_score) {
         data: bardata,
         options: bar_options
     });
-            
+
+    var polaroptions = {
+        legend: {display: false},
+        scale: {
+            ticks: {
+                beginAtZero: true
+            }
+        },
+        // title: {
+        //     display: true,
+        //     text: 'My Polar Area Chart',
+        //     fontSize: 10,
+        //     fontColor: '#000',
+        //     fontStyle: 'normal'
+        // },
+        // plugins: {
+        //     title: {
+        //         display: true,
+        //         text: 'Concept link strength',
+        //     },
+        //     // labels: {
+        //     //     render: 'value',
+        //     //     fontSize: 12,
+        //     //     fontStyle: 'bold',
+        //     //     fontColor: '#000',
+        //     //     position: 'outside'
+        //     // }
+    
+        // },
+    };   
+
     const polardata = {
         labels: concept_score['concept_name'],
         datasets: [{

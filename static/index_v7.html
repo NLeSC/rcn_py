@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" />
     <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous"> -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" />
+    
 
     <title>Neo4j RCN</title>    
     <style>
@@ -116,17 +117,11 @@
             left: 0;
             width: 250px;
             padding: 20px;
-            padding-top: 50px;
+            padding-top: 20px;
             border-right: 1px solid #ccc;
             z-index: 3;
         }
-		#graph {
-            top: 50px;
-            margin-left: 150px;
-            padding: 20px;
-            position: fixed;
-            z-index: 1;
-        }
+		
         #menu {
             top: 0;
             height: 50px;
@@ -151,6 +146,7 @@
         }
         #name-title {
             position: relative;
+            max-width: 400px;
         }
         
         .metrics {
@@ -165,24 +161,42 @@
             font-size: 2em;
         }
         #polarchart {
-            position: fixed;
-            right: 250px;
+            position: absolute;
+            top:10px;
+            right: 150px;
         }
+        
         .personal-work {
             position: absolute;
             top: 15px;
-            right: 450px;
+            margin-left: 400px;
+            max-width: 15vw;
         }
         canvas {
             background-color: #f1f1f1;
 	    }
+        .table-container {
+            max-height: 300px;
+            overflow: auto;
+        }
         .table {
             display: table;
-            max-width: 200px;
+            max-width: 100vw;
             margin-top: 10px;
             border: none;
+            width: 100%;
+            border-collapse: collapse;
             border: 1px solid #ddd;
             }
+        .table thead {
+            font-weight: bold;
+            background-color: #c2c2c2;
+        }
+        /* .table td, .table th {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        } */
+
         .row {
             display: table-row;
         }
@@ -192,12 +206,26 @@
             border: 1px solid #ddd;
             text-align: center;
         }
-        .row:first-child {
-            font-weight: bold;
-            background-color: #f2f2f2;
-        }
         #tbody {
             overflow:scroll;
+            overflow-y: auto;
+        }
+        
+        #graph {
+            top: 50px;
+            margin-left: 150px;
+            padding: 20px;
+            position: fixed;
+            z-index: 1;
+        }
+        #loadingNotice {
+            position: absolute;
+            margin-left: 150px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 20px;
+            color: #333;
         }
 
       </style>
@@ -207,6 +235,8 @@
 
     <div id="graph">
     </div>
+
+    <div id="loadingNotice">Generating...</div>
 
     <nav class="navbar navbar-expand-lg  bg-light" id="menu">
             <a class="navbar-brand brand-lg" href="#">Research Collaboration Network</a>
@@ -240,8 +270,8 @@
                     <section class="profile" aria-label="persons information">
                         <div class="information">
                             <div class="header person-details">
-                                <h1 id="name-title" style="max-width: 500px;">
-                                </h1>
+                                <h2 id="name-title" style="max-width: 500px;">
+                                </h2>
                                 
                                 <div class="rendering rendering_person rendering_personorcidrendererportal rendering_person_personorcidrendererportal" id="person_profile" style="display: none;">
                                     <a href="" target="_blank" class="orcid" aria-label="Orcid" title="Orcid" id="orcid1">
@@ -283,37 +313,37 @@
 
                     <section class="personal-work">
                         <div class="table" id="person_table" style="display: none;">
-                            <div class="row">
-                            <div class="cell">H-Index</div>
-                            <div class="cell">Citation Count</div>
-                            <div class="cell">Work Count</div>
+                            <div class="row" >
+                            <div class="cell" style="width: 5vw;" >H-Index</div>
+                            <div class="cell" style="width: 5vw;" >Citation Count</div>
+                            <div class="cell" style="width: 5vw;" >Work Count</div>
                             </div>
                             <div class="row">
-                            <div class="cell" id="h-index-value">0</div>
-                            <div class="cell" id="citation-count-value">0</div>
-                            <div class="cell" id="work-count-value">0</div>
+                            <div class="cell" style="width: 5vw;"  id="h-index-value">0</div>
+                            <div class="cell" style="width: 5vw;"  id="citation-count-value">0</div>
+                            <div class="cell" style="width: 5vw;"  id="work-count-value">0</div>
                             </div>
                         </div>
-
+<!-- 
                         <div class="table" id="pub_table" style="display: none;">
                             <div class="row">
-                            <div class="cell">Citation Count</div>
+                            <div class="cell" style="width: 5vw;"  >Citation Count</div>
                             </div>
                             <div class="row">
-                            <div class="cell" id="pub-citation-count">0</div>
+                            <div class="cell" style="width: 5vw;"  id="pub-citation-count">0</div>
                             </div>
-                        </div>
+                        </div> -->
                     </section>
 
                     <section class="metrics" aria-label="Person metrics section">
                         <div id="polarchart">
-                            <p id="concept_link_score">Concept link strength</p>
-                            <canvas id="myPolarChart" style="max-width:140px; height: 110px;"></canvas>
+                            <!-- <p id="concept_link_score" style="position: relative; right:0px;">Concept link strength</p> -->
+                            <canvas id="myPolarChart" style="max-width:200px; width: 20vw; height: 110px; "></canvas>
                         </div> 
 
                         <div id="barchart">
                             <p id="publication_pear_year">Research activity per year</p>
-                            <canvas id="myBarChart" style="max-width:140px; height: 100px;"></canvas> 
+                            <canvas id="myBarChart" style="max-width:140px; width: 10vw; height: 100px;"></canvas> 
                         </div>
                                  
                     </section>
@@ -366,7 +396,6 @@
                 <option value="2022" selected>2022</option>
             </select>
             <br>
-            <br>
             <button class="button button2" type="submit" id="topic-submit-btn">Search</button>
         </div>
     </form>
@@ -410,18 +439,35 @@
         <label for="affiliation">Search institution:</label>
         <br>
         <input type="text" name="aff" id="aff" placeholder="Netherlands eScience Center" class="form-control" required>
+        
         <br>
+        <br>
+        <!-- <label for="mySlider">No. of publication nodes:</label>
+        <input type="range" id="mySlider" min="25" value="25" step="25">
+        <span id="sliderValue">25</span> -->
+        <label for="year_range">Publication Years:</label>
+        <table id="year_range">
+            <tr>
+                <td>
+                    <input type="text" name="start_year" id="start_year" value="2023" class="form-control" style="max-width: 50px;" required>
+                    to
+                    <input type="text" name="end_year" id="end_year" value="2023" class="form-control" style="max-width: 50px;" required>
+                </td>
+            </tr>
+        </table>
         <br>
         <button class="button button2" type="submit" id="pub-submit-btn">Search</button>
+        <br>
         </div>
+    
     </form>
 
     <label id="error-message" style="visibility: hidden; color: white; background-color: #5a5a5a; padding: 2px;">
         Sorry, we couldn't find a matching node.
     </label>
 
-    <input type="checkbox" id="show_pub" name="show_pub" onchange="check_show_pub()" checked>
-    <label for="show_pub">Show research output nodes</label><br>
+    <label for="show_pub">Show research output nodes</label>
+    <input type="checkbox" id="show_pub" name="show_pub" onchange="check_show_pub()" checked><br>
 
     <form>
         <label for="col_count">
@@ -440,46 +486,44 @@
             <option value="10">10</option>
             <option value="15">15</option>
             <option value="20">20</option>
-            <option value="20">25</option>
-            <option value="20">30</option>
+            <option value="25">25</option>
+            <option value="30">30</option>
         </select>
     </form>
 
-    <input type="checkbox" id="show_topic_color" name="show_topic_color" onchange="node_topic_color()">
-    <label for="show_topic_color">Show node colors for topic clustering</label><br>
+    <!-- <input type="checkbox" id="show_topic_color" name="show_topic_color" onchange="node_topic_color()">
+    <label for="show_topic_color">Show node colors for topic clustering</label><br> -->
    
 </div>
 
   
 
 
-<div class="row justify-content-end">
+<!-- <div class="row justify-content-end"> -->
     <!-- <div class="col-md-3"> -->
-        <div class="panel panel-default">
-            <div id="node-details" style="display:none;">
+        <!-- <div class="panel panel-default"> -->
+            <div id="node-details" style="display: none; height: 600px; overflow: auto; position: absolute; right: 0; top: 210px;">
                 <!-- <div class="panel-heading">Node information</div> -->
-                <table id="node_info" class="table table-striped table-hover"
-                            style="width: 0;
-                            position: fixed;
-                            z-index: 1;
-                            right: 0;
-                            top: 200px;
-                            background-color: #e8e8e8;">
-                    <thead>
-                    <tr>
-                        <th>Property</th>
-                        <th>Value</th>
-                    </tr>
+                    <table id="node_info" class="table table-striped table-hover"
+                                style="width: 0;
+                                position: relative;
+                                z-index: 1;
+                                background-color: #f6f6f6;">
+                        <thead>
+                            <tr>
+                                <th>Property</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
 
-                    </thead>
-
-                    <tbody>
-                    </tbody>
-                </table>
+                        <tbody>
+                        </tbody>
+                    </table>
+                <!-- </div> -->
             </div>
-        </div>
+        <!-- </div> -->
     <!-- </div> -->
-</div>
+<!-- </div> -->
 
 <div style="position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px; z-index: 3;">
     <!-- <h4>Color Legend</h4> -->
@@ -503,17 +547,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<!-- <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0/dist/chartjs-plugin-datalabels.min.js"></script> -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/d3-simple-slider@2.0.0/dist/d3-simple-slider.min.js"></script> -->
 
 <!-- local js files -->
-<script src="/static/JavaScript/item_layout/layout.js"></script>
-<script src="/static/JavaScript/item_layout/profile.js"></script>
-<script src="/static/JavaScript/network/build_graph.js"></script>
-<script src="/static/JavaScript/network/search.js"></script>
-<script src="/static/JavaScript/network/side_bar.js"></script>
-<script src="/static/JavaScript/reaction/canvas_move.js"></script>
-<script src="/static/JavaScript/reaction/node_click.js"></script>
-<script src="/static/JavaScript/reaction/node_move.js"></script>
-<script src="/static/JavaScript/reaction/tooltip.js"></script>
+
+<script src="/static/D3_js/networks/build_graph.js"></script>
+<script src="/static/D3_js/networks/search.js"></script>
+<script src="/static/D3_js/networks/side_bar.js"></script>
+<script src="/static/D3_js/text_info_display/chart_table.js"></script>
+<script src="/static/D3_js/tooltip/tooltip.js"></script>
+<script src="/static/D3_js/zoom_drag/canvas_move.js"></script>
+<script src="/static/D3_js/zoom_drag/node_click.js"></script>
+<script src="/static/D3_js/zoom_drag/node_move.js"></script>
 
 
 
@@ -557,7 +603,7 @@
             .force("charge", d3.forceManyBody().strength(-8))
             .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
             .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
-            .force("collision", d3.forceCollide().radius(function(d) { return 10; }).iterations(1))
+            .force("collision", d3.forceCollide().radius(function(d) { return 10; }).iterations(0.5))
             ;
     
     // A temporary translate for the current position
@@ -583,6 +629,8 @@
 
     var myBarChart, myPolarChart;
     var chartexist = false;
+
+    // var slider_value;
 
     // Define the SVG canvas
     var svg = d3.select("#graph").append("svg")
@@ -697,7 +745,7 @@
         coauthor_graph_node = graph.coauthor_nodes;
         coauthor_graph_link = graph.coauthor_links;
         build_new_svg(graph_node, graph_link);
-       
+        d3.select('#loadingNotice').style('display', 'none');
     });
     
 
@@ -711,10 +759,14 @@
         form_topic.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
 
+            // d3.select('#loadingNotice').style('display', 'block');
             d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
             // call field_search() function here
+            // field_search();
+            // d3.select('#loadingNotice').style('display', 'none');
             field_search();
+
         });
 
         // ################### ORCID search ######################
@@ -722,10 +774,12 @@
         form_orcid.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
 
+            // d3.select('#loadingNotice').style('display', 'block');
             d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
             // call author_search() function
             author_search();
+            // d3.select('#loadingNotice').style('display', 'none');
         }); 
 
         // ################### DOI search ######################
@@ -733,21 +787,44 @@
         form_pub.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             
+            // d3.select('#loadingNotice').style('display', 'block');
             d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
             // call your function here
             pub_search();
-            
+            // d3.select('#loadingNotice').style('display', 'none');
         });
 
         // ####################### institution search #########################
         const form_aff = document.getElementById('aff-search');
+        // const slider = document.getElementById('mySlider');
+        
+        // slider.addEventListener('input', function(){
+        //     const sliderValue = document.getElementById('sliderValue');
+        //     sliderValue.textContent = slider.value;
+        // })
+        // slider.addEventListener('change', function() {
+        //     slider_value = slider.value;
+        //     // Handle the slider value change
+        //     // d3.select('#loadingNotice').style('display', 'block');
+        //     console.log('Slider value:', slider_value);
+        //     var aff_name = document.getElementById("name-title").textContent;
+        //     slider_change(aff_name, slider_value);
+        //     // d3.select('#loadingNotice').style('display', 'none');
+        // });
         form_aff.addEventListener('submit', function(event) {
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             // call your function here
+            
             d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
-            aff_search();
+            // slider.value = 25;
+            var form = $('#aff-search');
+            var initial_aff_name = form.find("input[name='aff']").val();
+            var start_year = form.find("input[name='start_year']").val();
+            var end_year = form.find("input[name='end_year']").val();
+            aff_search(initial_aff_name, start_year, end_year);
+            
         });
         
     })
@@ -761,6 +838,7 @@
         escience = true;
         
         // document.getElementById("button-group").style.display = "none";
+        // d3.select('#loadingNotice').style('display', 'block');
         d3.select('#scopus-search-button').style('display', 'none');
         d3.select('#escience-search-button').style('display', 'block');
         d3.select('#node-details').style('display', 'none');
@@ -768,7 +846,7 @@
         showForm('author-search');
 
         const initial_aff_name = "Netherlands eScience Center"
-        d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
+        d3.json("/openalex-aff-search-profile-info?aff_name=" + initial_aff_name).then(function(graph) {
             // make profile
             search_title = graph["aff_name"];
             ror = graph["ror"];
@@ -815,7 +893,7 @@
             document.getElementById("pub_profile").style.display = "none";
             document.getElementById("aff_profile").style.display = "block";
             document.getElementById("person_table").style.display = "block";
-            document.getElementById("pub_table").style.display = "none";
+            // document.getElementById("pub_table").style.display = "none";
 
         });
 
@@ -843,12 +921,14 @@
             }
             
         });
+        // d3.select('#loadingNotice').style('display', 'none');
     });
 
 
     document.getElementById('scopus').addEventListener('click', function() {
         refresh();
         escience = false;
+        // d3.select('#loadingNotice').style('display', 'block');
         d3.select('#scopus-search-button').style('display', 'block');
         d3.select('#escience-search-button').style('display', 'none');
         d3.select('#node-details').style('display', 'none');
@@ -869,11 +949,16 @@
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
         });
+        // d3.select('#loadingNotice').style('display', 'none');
     });
 
     document.getElementById('openalex').addEventListener('click', function() {
         refresh();
+        // const slider = document.getElementById('mySlider');
+        // slider.value = 25;
+
         escience = false;
+        // d3.select('#loadingNotice').style('display', 'block');
         d3.select('#scopus-search-button').style('display', 'none');
         d3.select('#escience-search-button').style('display', 'none');
         d3.select('#node-details').style('display', 'none');
@@ -881,7 +966,8 @@
         showForm('aff-search');
 
         const initial_aff_name = "Netherlands eScience Center"
-        d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
+        d3.json("/openalex-aff-search?aff_name=" + initial_aff_name +
+        "&start_year=2023&end_year=2023").then(function(graph) {
 
             graph_node = graph.nodes;
             graph_link = graph.links;
@@ -899,6 +985,7 @@
             country = graph["country"];
             cite_by_year = graph['cite_by_year'];
             concept_score = graph["concept_score"];
+            // slider.max = works_count;
 
             const nameElement = document.getElementById("name-title");
             nameElement.textContent = search_title;
@@ -934,7 +1021,7 @@
             document.getElementById("pub_profile").style.display = "none";
             document.getElementById("aff_profile").style.display = "block";
             document.getElementById("person_table").style.display = "block";
-            document.getElementById("pub_table").style.display = "none";
+            // document.getElementById("pub_table").style.display = "none";
 
             if (show_pub) {
                 build_new_svg(graph_node, graph_link);
@@ -943,6 +1030,7 @@
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
         });
+        // d3.select('#loadingNotice').style('display', 'none');
     });
 
 

@@ -1,7 +1,44 @@
-// import build_graph from './build_graph.js';
+// ######## Show selected search field,
+// ######## such as: topic, author, publication, institution
+
+function showForm(formId) {
+    // Get all forms
+    const forms = document.querySelectorAll('.navbar-form');
+
+    // Loop through each form
+    forms.forEach(form => {
+      if (form.id === formId) {
+        form.classList.add('active'); // Show selected form
+      } else {
+        form.classList.remove('active'); // Hide other forms
+      }
+    });
+  }
+
+// ######## In the Author Search Form, 
+// ######## If the name search box is checked, the orcid input item will be hidden,
+// ######## If the orcid serach box is checked, the firstname and surname input item will be hidden.
+function toggleSearchInput(inputName) {
+      var authorSurNameInput = document.getElementById("surname");
+      var authorFirstNameInput = document.getElementById("firstname");
+      var orcidInput = document.getElementById("orcid");
+      
+      if (inputName === "author-name") {
+        authorSurNameInput.style.display = "block";
+        authorFirstNameInput.style.display = "block";
+        orcidInput.style.display = "none";
+      } else {
+        authorSurNameInput.style.display = "none";
+        authorFirstNameInput.style.display = "none";
+        orcidInput.style.display = "block";
+      }
+    }
+
+
+
 
 // ################### keyword search ###################
-function field_search(){
+function field_search(callback){
 
     var form = $('#topic-search');
     var year = form.find("select[name='year']").val();
@@ -24,6 +61,9 @@ function field_search(){
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
         });
+    if (typeof callback === 'function') {
+            callback();
+        }
     return false;
 }
 
@@ -116,7 +156,7 @@ function author_search(){
             document.getElementById("pub_profile").style.display = "none";
             document.getElementById("aff_profile").style.display = "none";
             document.getElementById("person_table").style.display = "block";
-            document.getElementById("pub_table").style.display = "none";
+            // document.getElementById("pub_table").style.display = "none";
             d3.select('#node-details').style('display', 'none');
 
             if (show_pub) {
@@ -217,7 +257,7 @@ function pub_search(){
                   }
 
                 // set values in the table
-                document.getElementById("pub-citation-count").textContent = cited_by_count;
+                // document.getElementById("pub-citation-count").textContent = cited_by_count;
 
                 
                 myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
@@ -228,7 +268,7 @@ function pub_search(){
                 document.getElementById("pub_profile").style.display = "block";
                 document.getElementById("aff_profile").style.display = "none";
                 document.getElementById("person_table").style.display = "none";
-                document.getElementById("pub_table").style.display = "block";
+                // document.getElementById("pub_table").style.display = "none";
             }
             else {
                 document.getElementById("profile").style.visibility = "hidden";
@@ -248,13 +288,11 @@ function pub_search(){
 
 
 // ####################### institution search #########################
-function aff_search(){
-    var form = $('#aff-search');
-    var initial_aff_name = form.find("input[name='aff']").val();
-
+function aff_search(aff_name, start_year, end_year){
     refresh();
 
-    d3.json("/openalex-aff-search?aff_name=" + initial_aff_name).then(function(graph) {
+    d3.json("/openalex-aff-search?aff_name=" + aff_name + "&start_year=" + start_year + "&end_year=" + end_year)
+    .then(function(graph) {
         // make profile
         if (JSON.stringify(graph) === '[]') {
             return false;
@@ -271,21 +309,22 @@ function aff_search(){
         cite_by_year = graph['cite_by_year'];
         concept_score = graph["concept_score"];
 
+        // const slider = document.getElementById('mySlider');
+        // slider.max = works_count;
+
         const nameElement = document.getElementById("name-title");
         nameElement.textContent = search_title;
 
         const locationElement = document.getElementById("city-country");
-        locationElement.style.display = "block";
         locationElement.textContent = city+', '+country;
 
-        const doiLinkElement1 = document.getElementById("doi1");
-        const doiLinkElement2 = document.getElementById("doi2");
+        const doiLinkElement1 = document.getElementById("ror1");
+        const doiLinkElement2 = document.getElementById("ror2");
         if (ror) {
             doiLinkElement1.href = ror;
             doiLinkElement2.innerHTML = ror;
         } else {
             doiLinkElement1.style.display = "none";
-            doiLinkElement2.style.display = "none";
         }
         
         document.getElementById("work-count-value").textContent = works_count;
@@ -301,7 +340,7 @@ function aff_search(){
         document.getElementById("pub_profile").style.display = "none";
         document.getElementById("aff_profile").style.display = "block";
         document.getElementById("person_table").style.display = "block";
-        document.getElementById("pub_table").style.display = "none";
+        // document.getElementById("pub_table").style.display = "none";
         d3.select('#node-details').style('display', 'none');
 
         graph_node = graph.nodes;
@@ -321,6 +360,29 @@ function aff_search(){
     return false;
 }
 
+function slider_change(aff_name, size){
+    refresh();
+
+    d3.json("/openalex-aff-search-without-profile?aff_name=" + aff_name + "&size=" + size).then(function(graph) {
+        // make profile
+        if (JSON.stringify(graph) === '[]') {
+            return false;
+        }
+        graph_node = graph.nodes;
+        graph_link = graph.links;
+        coauthor_graph_node = graph.coauthor_nodes;
+        coauthor_graph_link = graph.coauthor_links;
+
+        if (show_pub) {
+            build_new_svg(graph_node, graph_link);
+        }
+        else {
+            build_new_svg(coauthor_graph_node, coauthor_graph_link);
+        }
+    })
+
+
+}
 
 // ################## Check & highlight node #################
 function Find_node(option) {
@@ -377,4 +439,29 @@ function checkNodeExists(search_orcid_value, search_name_value, search_doi_value
         return false;
     }
 
+}
+
+
+// Empty the input field that is not in this stage
+function resetFields(option) {
+    if (option === "topic") {
+        for (const i of ["orcid", "firstname", "surname", "doi", "aff"]) {
+            document.getElementById(i).value = "";
+        }
+    }
+    else if (option === "author") {
+        for (const i of ["keyword", "doi", "aff"]) {
+            document.getElementById(i).value = "";
+        }
+    }
+    else if (option === "publication") {
+        for (const i of ["keyword", "orcid", "firstname", "surname", "aff"]) {
+            document.getElementById(i).value = "";
+        }
+    }
+    else if (option === "affiliation") {
+        for (const i of ["keyword", "orcid", "firstname", "surname", "doi"]) {
+            document.getElementById(i).value = "";
+        }
+    }
 }
