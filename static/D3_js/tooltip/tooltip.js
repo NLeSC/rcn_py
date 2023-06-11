@@ -53,10 +53,11 @@ function addOrRemoveTooltip(d) {
             var node_x = d.x;
             var node_y = d.y;
 
+            console.log(node_x,node_y);
+
             // present the tooltip of this node
             show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
                     
-            
             last_clicked_node = d.id;
             last_d = d;
       

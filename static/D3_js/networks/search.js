@@ -350,11 +350,21 @@ function aff_search(aff_name, start_year, end_year){
 
         if (show_pub) {
             build_new_svg(graph_node, graph_link);
+
+            var filteredNodes = graph_node.filter(node => node.group !== undefined);
+            // Add a custom force to cluster nodes based on their group
+            var simulation = d3.forceSimulation(filteredNodes)
+                                .force("group", groupForce(filteredNodes).strength(0.1))
+
+            simulation.on("tick", tick).alphaDecay(0.05);
+            simulation.alpha(1).restart();
         }
         else {
             build_new_svg(coauthor_graph_node, coauthor_graph_link);
         }
 
+        // CLustering node colors
+        node_topic_color();
     });
 
     return false;

@@ -52,6 +52,7 @@ function refresh(){
 function build_new_svg(graph_node, graph_link) {
 
     force_node = graph_node;
+    // Delete the fixed settings
     for (var i = 0; i < force_node.length; i++) {
         delete force_node[i].fx;
         delete force_node[i].fy;
@@ -180,4 +181,5 @@ function build_new_svg(graph_node, graph_link) {
     }).alphaDecay(0.05);
 
     force.alpha(1).restart();
+
 }

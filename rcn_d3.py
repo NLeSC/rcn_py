@@ -656,7 +656,11 @@ def get_pub_search():
         coauthor_nodes = []
         coauthor_rels = [] 
 
-        record = results[0]
+        if results:
+            record = results[0]
+        else:
+            return 
+        
         target = i
         if record["cited"]:
             if math.isnan(record["cited"]):
@@ -1129,7 +1133,8 @@ def openalex_aff_search():
                 concept_score['score'].append(c['score'])
 
         # Get works
-        openalex_aff_works = openalex.get_works_of_one_institution_by_year(aff_name, start_year, end_year)
+        works = openalex.get_works_of_one_institution_by_year(aff_name, start_year, end_year)
+        topic_names, openalex_aff_works = topic_modeling.openalex_build_corpus(works, 5)
 
         i = 0
         node_records = []
@@ -1158,7 +1163,9 @@ def openalex_aff_search():
                         "label": 'publication', 
                         "id": target,
                         "color": 'publication',
-                        "radius": pub_radius
+                        "radius": pub_radius,
+                        "group": work["group_id"],
+                        "topic_name": work['topic_name']
                         })
             i += 1
 
@@ -1209,8 +1216,8 @@ def openalex_aff_search():
         
         return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
                                "aff_name": display_name, 'ror': ror, 'works_count': works_count, 'cited_by_count':cite_count,
-                               'h_index':h_index, 'home_page': home_page, 'city':city, 'country':country,
-                               'concept_score': concept_score, 'cite_by_year':counts_by_year
+                               'h_index': h_index, 'home_page': home_page, 'city': city, 'country': country,
+                               'concept_score': concept_score, 'cite_by_year': counts_by_year, "topic_names": topic_names
                                }),
                     mimetype="application/json")
     

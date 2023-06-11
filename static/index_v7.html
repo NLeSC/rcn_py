@@ -70,11 +70,11 @@
         white-space: nowrap; /* Prevent menu item from wrapping */
         }
         
-        svg {
+        /* svg {
             position: absolute;
             left: -50%;
             top: -50%;
-        }
+        } */
         .button {
             background-color: #75a0c1;
             border: none;
@@ -342,8 +342,8 @@
                         </div> 
 
                         <div id="barchart">
-                            <p id="publication_pear_year">Research activity per year</p>
-                            <canvas id="myBarChart" style="max-width:140px; width: 10vw; height: 100px;"></canvas> 
+                            <p id="publication_per_year">Research activity per year</p>
+                            <canvas id="myBarChart" style="max-width:140px; width: 10vw; height: 90px;"></canvas> 
                         </div>
                                  
                     </section>
@@ -581,8 +581,14 @@
   
 
 <style type="text/css">
-    .node { stroke: #b1b1b1; stroke-width: 1.5px; }
-    
+    /* .node { stroke: #b1b1b1; stroke-width: 1.5px; } */
+    .topic-label {
+        font-size: 8px; /* Adjust the font size as needed */
+        background-color: #000000; /* Set the background color for the labels */
+        color: #ffffff; /* Set the text color for the labels */
+        padding: 4px; /* Adjust the padding as needed */
+        white-space: nowrap; /* Prevent line breaks */
+    }
     .node.publication { fill: #8398cd; stroke: #6379b2;}
     .node.project { fill: #94bf91; stroke: #71ac6e;}
     .node.software { fill: #c093bd; stroke: #b07bae;}
@@ -597,7 +603,7 @@
 
 <script type="text/javascript">
     // ####################### initial #######################
-    const width = window.innerWidth*2, height =  window.innerHeight*2;
+    const width = window.innerWidth, height =  window.innerHeight;
 
     const force = d3.forceSimulation()
             .force("charge", d3.forceManyBody().strength(-8))
@@ -665,73 +671,244 @@
     
 
     
-    function show_topics(topics) {
+    function show_topics(nodes, topic_names) {
         // Define a color scale for the topic circles
         // var colorScale = d3.scaleOrdinal()
         //                     .domain(topics)
         //                     .range(['#ffe599', '#f9cb9c', '#ea9999', '#cfe2f3', '#a2c4c9', '#c9a2c4',
         //                     '#c4c9a2', '#bfe9b0', '#dce9b0', '#b0bfe9', '#e9dab0', '#e9beb0',
         //                     '#c082a1', '#4d79a6', '#e69138' ]); // Specify colors for each topic
-        const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+        
+        var filteredNodes = nodes.filter(node => node.group !== undefined);
+
+        // Add a custom force to cluster nodes based on their group
+        var simulation = d3.forceSimulation(filteredNodes)
+                        .force("group", groupForce(filteredNodes).strength(0.1))
+
+        simulation.on("tick", tick).alphaDecay(0.05);
+        simulation.alpha(1).restart();
+
+
+        // Group the nodes based on their group property
+        var groups = d3.group(filteredNodes, d => d.group);
+
+        // Compute the centroid of each group
+        var groupCentroids = Array.from(groups, ([group, filteredNodes]) => ({
+            group: group,
+            x: d3.mean(filteredNodes, d => d.x)+width/2,
+            y: d3.mean(filteredNodes, d => d.y)+height/2
+        }));
+
+        console.log(groupCentroids);
+        var labelNodes = groupCentroids.map(d => ({
+            id: `label_${d.group}`,
+            name: `${topic_names[d.group]}`,
+            group: d.group,
+            x: d.x,
+            y: d.y
+        }));
+
+        var group_num = Array.apply(null, {length: 7}).map(Number.call, Number);
+        var colorScale = d3.scaleOrdinal()
+            .domain(group_num)
+            .range(['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff' ]);
+        var bgColorScale = d3.scaleOrdinal()
+            .domain(group_num)
+            .range(['#d47777', '#c99c65', '#bdbf67', '#75b567', '#57b4bd', '#668ac4', '#7d71c9' ]);
+        
+
+        // Set the label node's text to the corresponding topic ID
+        var labelSelection = svg.selectAll(".topic-label")
+                                .data(labelNodes)
+                                .enter()
+                                .append("g")
+                                .attr('class', 'topic-label');
+                            
+        labelSelection
+            .append("rect")
+            .attr("class", "label-background")
+            .attr("x", d => d.x - 20) // Adjust the positioning as needed
+            .attr("y", d => d.y - 10) // Adjust the positioning as needed
+            .attr("width", 40) // Adjust the width as needed
+            .attr("height", 20) // Adjust the height as needed
+            .style("fill", d => colorScale(Number(d.group))) // Set the background color
+            .style("opacity", 0.7) // Set the opacity value as desired
+            .style("stroke", d => bgColorScale(Number(d.group))) // Set the border color
+            .style("stroke-width", "1px") // Set the border width;
+
+        labelSelection
+            .append("text")
+            .attr("text-anchor", "middle")
+            .style('font-size', '8px')
+            .attr("x", d => d.x)
+            .attr("y", d => d.y)
+            .text(d => "Topic " + d.group);
+
+        // group scope
+        groups.forEach((groupNodes, group) => {
+            var minX = d3.min(groupNodes, d => d.y);
+            var maxX = d3.max(groupNodes, d => d.y);
+            var minY = d3.min(groupNodes, d => d.x);
+            var maxY = d3.max(groupNodes, d => d.x);
+            console.log(minX,maxX,minY,maxY,group);
+            console.log(width/2 + minX, height/2 + minY)
+            console.log(width/2 + maxX, height/2 + maxY)
+            // Draw the rectangle scope
+            network.append("rect")
+                .attr("class", "group-scope")
+                .attr("x", width/2 + minX)
+                .attr("y", height/2 + minY)
+                .attr("width", (maxX - minX))
+                .attr("height", (maxY - minY))
+                .style("fill", "none") // Set the fill color or use "none" for no fill
+                .style("stroke", "red") // Set the stroke color
+                .style("stroke-width", "2px"); // Set the stroke width
+        });
+                
+// var drag = d3.drag()
+//   .on('start', dragStarted)
+//   .on('drag', dragged)
+//   .on('end', dragEnded);
+
+//         svg.selectAll('.topic-label').call(drag);
+                                
+
+// // Create draggable foreignObject elements for the labels
+// var labels = svg.selectAll('.topic-label')
+//   .data(labelNodes)
+//   .enter()
+//   .append('foreignObject')
+//   .attr('class', 'topic-label')
+//   .attr('x', function(d) { return d.x - 50; })
+//   .attr('y', function(d) { return d.y - 20; })
+//   .attr('width', 100)
+//   .attr('height', 40)
+//   .call(drag);
+
+// // Add text elements inside the foreignObject elements
+// labels.append('xhtml:div')
+//   .style('text-align', 'center')
+//   .style('width', '100%')
+//   .style('height', '100%')
+//   .style('font-size', '5px')
+//   .style('background-color', function(d) { return getColor(d.group); })
+//   .style('padding', '5px')
+//   .style('opacity', '0.8')
+//   .html(function(d) { return "Topic "+d.group; });
+
+
+        
+
+        node_topic_color();
         
         // Append circles and labels for each topic cluster
         // Append topic circles
 
-        force.force('group', d3.forceManyBody().strength(function(d) {
-            // Set the strength based on the number of nodes in the same group
-            var sameGroupNodes = network.selectAll(".node").filter(function(node) {
-                return node.group === d.group;
-            });
-            return -sameGroupNodes.length * 30;
-        }).distanceMax(100));
+        // force.force('group', d3.forceManyBody().strength(function(d) {
+        //     // Set the strength based on the number of nodes in the same group
+        //     var sameGroupNodes = network.selectAll(".node").filter(function(node) {
+        //         return node.group === d.group;
+        //     });
+        //     return -sameGroupNodes.length * 30;
+        // }).distanceMax(100));
 
-        const topicCircles = network.selectAll(".topic-circle")
-            .data(topics)
-            .enter()
-            .append("circle")
-            .attr("class", "topic-circle")
-            .attr("r", 30)
-            .attr("fill", function(d) { return colorScale(d); })
-            .attr("stroke", "gray")
-            .attr("opacity", 0.1)
-            .attr("cx", function(d) {
-                const topicNodes = network.selectAll(".node").filter(function(node) {
-                    return topics[node.group] === d;
-                });
+        // const topicCircles = network.selectAll(".topic-circle")
+        //     .data(topics)
+        //     .enter()
+        //     .append("circle")
+        //     .attr("class", "topic-circle")
+        //     .attr("r", 30)
+        //     .attr("fill", function(d) { return colorScale(d); })
+        //     .attr("stroke", "gray")
+        //     .attr("opacity", 0.1)
+        //     .attr("cx", function(d) {
+        //         const topicNodes = network.selectAll(".node").filter(function(node) {
+        //             return topics[node.group] === d;
+        //         });
                 
-                return d3.mean(topicNodes.data(), function(node) { return node.x; });
-            })
-            .attr("cy", function(d) {
-                const topicNodes = svg.selectAll(".node").filter(function(node) {
-                    return node.group && topics[node.group] === d;
-                });
-                return d3.mean(topicNodes.data(), function(node) { return node.y; });
-            });
+        //         return d3.mean(topicNodes.data(), function(node) { return node.x; });
+        //     })
+        //     .attr("cy", function(d) {
+        //         const topicNodes = svg.selectAll(".node").filter(function(node) {
+        //             return node.group && topics[node.group] === d;
+        //         });
+        //         return d3.mean(topicNodes.data(), function(node) { return node.y; });
+        //     });
         
-        // Append topic labels
-        const topicLabels = network.selectAll(".topic-label")
-            .data(topics)
-            .enter()
-            .append("text")
-            .attr("class", "topic-label")
-            .text(function(d) { return d; })
-            .attr("text-anchor", "middle")
-            .attr("alignment-baseline", "middle")
-            .style("font-size", "12px")
-            .style("pointer-events", "none")
-            .attr("x", function(d) {
-                const topicNodes = svg.selectAll(".node").filter(function(node) {
-                    return node.group && topics[node.group] === d;
-                });
-                return d3.mean(topicNodes.data(), function(node) { return node.x; });
-            })
-            .attr("y", function(d) {
-                const topicNodes = svg.selectAll(".node").filter(function(node) {
-                    return node.group && topics[node.group] === d;
-                });
-                return d3.mean(topicNodes.data(), function(node) { return node.y; });
-            });
+        // // Append topic labels
+        // const topicLabels = network.selectAll(".topic-label")
+        //     .data(topics)
+        //     .enter()
+        //     .append("text")
+        //     .attr("class", "topic-label")
+        //     .text(function(d) { return d; })
+        //     .attr("text-anchor", "middle")
+        //     .attr("alignment-baseline", "middle")
+        //     .style("font-size", "12px")
+        //     .style("pointer-events", "none")
+        //     .attr("x", function(d) {
+        //         const topicNodes = svg.selectAll(".node").filter(function(node) {
+        //             return node.group && topics[node.group] === d;
+        //         });
+        //         return d3.mean(topicNodes.data(), function(node) { return node.x; });
+        //     })
+        //     .attr("y", function(d) {
+        //         const topicNodes = svg.selectAll(".node").filter(function(node) {
+        //             return node.group && topics[node.group] === d;
+        //         });
+        //         return d3.mean(topicNodes.data(), function(node) { return node.y; });
+        //     });
     }
+    function tick() {
+        network.selectAll('.link')
+        .attr("x1", function (d) { return d.source.x })
+        .attr("y1", function (d) { return d.source.y })
+        .attr("x2", function (d) { return d.target.x })
+        .attr("y2", function (d) { return d.target.y })
+        
+        network.selectAll('.node')
+        .attr("cx", function (d) { return d.x })
+        .attr("cy", function (d) { return d.y })
+
+        network.selectAll('text')
+        .attr('x', d => d.x).attr('y', d => d.y);
+    }
+    function groupForce(nodes) {
+        var strength = 0.1;
+        var nodesByGroup;
+
+        function force() {
+            for (var i = 0, n = nodes.length; i < n; ++i) {
+                var node = nodes[i];
+                var groupNodes = nodesByGroup.get(node.group);
+
+                // Calculate the center of the group
+                var groupCenter = {
+                    x: d3.mean(groupNodes, d => d.x),
+                    y: d3.mean(groupNodes, d => d.y)
+                };
+
+                // Apply force to attract nodes towards the group center
+                node.vx += (groupCenter.x - node.x) * strength;
+                node.vy += (groupCenter.y - node.y) * strength;
+            }
+        }
+
+        force.initialize = function(_) {
+            nodesByGroup = d3.group(_, d => d.group);
+        };
+
+        force.strength = function(_) {
+            return arguments.length ? (strength = +_, force) : strength;
+        };
+
+        return force;
+    }
+
+
+
+
+
 
 
 
@@ -973,6 +1150,7 @@
             graph_link = graph.links;
             coauthor_graph_node = graph.coauthor_nodes;
             coauthor_graph_link = graph.coauthor_links;
+            topic_names = graph.topic_names;
 
             // make profile
             search_title = graph["aff_name"];
@@ -1025,10 +1203,25 @@
 
             if (show_pub) {
                 build_new_svg(graph_node, graph_link);
+
+                var filteredNodes = graph_node.filter(node => node.group !== undefined);
+                // Add a custom force to cluster nodes based on their group
+                var simulation = d3.forceSimulation(filteredNodes)
+                                .force("group", groupForce(filteredNodes).strength(0.1))
+
+                simulation.on("tick", tick).alphaDecay(0.05);
+                simulation.alpha(1).restart();
             }
             else {
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
+
+            // clustering
+            // show_topics(graph_node, topic_names);
+            node_topic_color();
+            
+            
+
         });
         // d3.select('#loadingNotice').style('display', 'none');
     });

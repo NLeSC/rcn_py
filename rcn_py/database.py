@@ -1,3 +1,7 @@
+# There are the SQLite DB functions
+# Not used in the later development
+# Was Replaced by Neo4j graph database
+
 import sqlite3
 from itertools import combinations
 
@@ -11,7 +15,6 @@ from rcn_py import orcid
     author info table
     publication table
 """
-
 
 def insert_database(db_path, orcid_id, fullname):
     if len(orcid_id) == 0:

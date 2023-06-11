@@ -1,55 +1,20 @@
 import requests
-from neo4j import GraphDatabase
-import requests
 import time
-from itertools import combinations
 from rcn_py import orcid
+from rcn_py import scopus
 
 
 # Get Scopus Author ID from ORCID
-# This function solves the problem of overlap between the RSD and Scopus databases
+# This function is able to solve the problem of overlap between the RSD and Scopus databases
 # And also return author's preferred name
 # MYAPIKEY = "3d120b6ddb7d069272dfc2bc68af4028"
-def get_scopus_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
-    time.sleep(0.5)
-    
-    url = "http://api.elsevier.com/content/search/author?query=ORCID%28"+orcid+"%29"
-
-    header = {'Accept' : 'application/json', 
-            'X-ELS-APIKey' : MYAPIKEY}
-    resp = requests.get(url, headers=header)
-    results = resp.json()
-
-    if 'service-error' in results.keys():
-        return '', '', ''
-    elif 'search-results' not in results.keys():
-        return '', '', ''
-    elif 'error-response' in results.keys():
-        time.sleep(1)
-        get_scopus_info_from_orcid(orcid)
-    elif 'error' in results['search-results']['entry'][0].keys():
-        return '', '', ''
-    else:
-        scopus_author_id = results['search-results']['entry'][0]['dc:identifier'].split(':')[-1]
-
-        # Get preferred name (instead of initials)
-        name = results['search-results']['entry'][0]['preferred-name']
-        preferred_name  = name['given-name'] + ' ' + name['surname']
-
-        # Get scopus profile links
-        links = results['search-results']['entry'][0]["link"]
-        for l in links:
-            if l['@ref'] == 'scopus-author':
-                author_link = l['@href']
-
-        return scopus_author_id, preferred_name, author_link
     
 
 def get_scopus_result(authors, scopus_id_dict, preferred_name_dict, author_link_dict):
     
     for author in authors:
         if author['orcid'] and (author['orcid'] not in scopus_id_dict):
-            scopus_id, preferred_name, author_link = get_scopus_info_from_orcid(author['orcid'])
+            scopus_id, preferred_name, author_link = scopus.get_scopus_info_using_orcid(author['orcid'])
 
             scopus_id_dict[author['orcid']] = scopus_id
             preferred_name_dict[author['orcid']] = preferred_name
@@ -97,11 +62,13 @@ def create_person_nodes(tx, authors, scopus_id_dict, preferred_name_dict, author
                 preferred_name = preferred_name_dict[author['orcid']] 
                 scopus_link = author_link_dict[author['orcid']]
             else:
-                author_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(author['orcid'])
+                author_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_using_orcid(author['orcid'])
         
             if len(preferred_name) == 0:
                 preferred_name = author['name']
 
+            # We need to identify the unique id of the node,
+            # When we want to create a new node, we need do MATCH to check whether the node is already in the DB
             if author['affiliation'] is None:
                 if len(author_scopus_id) == 0:
                     tx.run("""
@@ -210,7 +177,7 @@ def create_author_project_edge(tx, authors, scopus_id_dict, preferred_name_dict,
             author_scopus_id = scopus_id_dict[author['orcid']]
             preferred_name = preferred_name_dict[author['orcid']] 
         else:
-            author_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(author['orcid'])
+            author_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_using_orcid(author['orcid'])
         # scopus_link = author_link_dict[author['orcid']]
 
         if len(preferred_name) == 0:
@@ -259,7 +226,7 @@ def create_author_software_edge(tx, contributors, scopus_id_dict, preferred_name
             contributor_scopus_id = scopus_id_dict[contributor['orcid']]
             preferred_name = preferred_name_dict[contributor['orcid']] 
         else:
-            contributor_scopus_id, preferred_name, scopus_link = get_scopus_info_from_orcid(contributor['orcid'])
+            contributor_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_using_orcid(contributor['orcid'])
         # scopus_link = author_link_dict[contributor['orcid']]
               
         if len(preferred_name) == 0:

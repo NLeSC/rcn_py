@@ -188,6 +188,9 @@ def publication_keywords(doi):
     pub_info = get_pub_info_by_doi(doi)
     corpus = []
     concepts = pub_info["results"][0]["concepts"]
-    for n in concepts[:10]:
-        corpus.append(n["display_name"])
+    if concepts:
+        for n in concepts[:10]:
+            corpus.append(n["display_name"])
+    else:
+        corpus.append("")
     return corpus

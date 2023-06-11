@@ -1,23 +1,15 @@
 import itertools
 
 import networkx as nx
-import nltk
 import pandas as pd
 from crossref.restful import Works
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
 from pyvis.network import Network
 from scholarly import scholarly
 
 from rcn_py import orcid
 
-nltk.download("stopwords")
-nltk.download("wordnet")
-stop_words = set(stopwords.words("english"))
-wnl = WordNetLemmatizer()
 
-
-def get_scholar_data(fullname, folderpath):
+def scholar_author_info(fullname):
     # Search author info by their name
     search_query_author = scholarly.search_author(fullname)
     author = scholarly.fill(next(search_query_author))
@@ -44,11 +36,11 @@ def get_scholar_data(fullname, folderpath):
     pub_df["authors"] = coauthor_name
     pub_df["abstarct"] = abstract
 
-    pub_df.to_csv(folderpath + "/" + fullname + "_scholar.csv")
+    # pub_df.to_csv(folderpath + "/" + fullname + "_scholar.csv")
     return pub_df
 
 
-def get_crossref_data_by_orcid(orcid_id):
+def crossref_author_by_orcid(orcid_id):
     # Extract author info using ORCID
     orcid_record = orcid.query_orcid_for_record(orcid_id)
     if orcid_record is False:
@@ -90,7 +82,7 @@ def get_crossref_data_by_orcid(orcid_id):
 
 
 # Store all publication info of one person
-def get_crossref_data_by_name(fullname, folderpath):
+def crossref_author_by_name(fullname):
     # Extract author info using ORCID
     orcid_id = orcid.name_to_orcid_id(fullname)
     orcid_record = orcid.query_orcid_for_record(orcid_id)
@@ -129,53 +121,51 @@ def get_crossref_data_by_name(fullname, folderpath):
     pub_df["abstarct"] = abstract
     pub_df["author_orcid"] = coauthor_orcid
 
-    pub_df.to_csv(folderpath + "/" + fullname + "_crossref.csv")
+    # pub_df.to_csv(folderpath + "/" + fullname + "_crossref.csv")
     return pub_df
 
 
-# Get all publications of all coauthors and do de-duplication
-def coauthor_data_from_csv(fullname, folderpath):
-    orcid_id = orcid.name_to_orcid_id(fullname)
-    df = pd.read_csv(folderpath + "/" + fullname + "_crossref.csv")
+# Get all publications of all coauthors of the author, and do de-duplication
+def coauthor_data_crossref(orcid_id):
+    df = crossref_author_by_orcid(orcid_id)
+   
     authors_list = df["author_orcid"]
     frames = []
     frames.append(df)
     for coauthors_id in authors_list:
-        coauthors_id = coauthors_id.strip("[")
-        coauthors_id = coauthors_id.strip("]")
-        coauthors_id = coauthors_id.split(",")
+        # coauthors_id = coauthors_id.strip("[")
+        # coauthors_id = coauthors_id.strip("]")
+        # coauthors_id = coauthors_id.split(",")
         for id in coauthors_id:
             id = id.strip("' ")
             orcid_record = orcid.query_orcid_for_record(id)
             if orcid_record["person"]["addresses"]["address"]:
-                country = orcid_record["person"]["addresses"]["address"][0]["country"][
-                    "value"
-                ]
+                country = orcid_record["person"]["addresses"]["address"][0]["country"]["value"]
             else:
                 country = ""
             if country == "NL":
                 if id != orcid_id:
-                    df2 = get_crossref_data_by_orcid(id)
+                    df2 = crossref_author_by_orcid(id)
                     if not df2.empty:
                         frames.append(df2)
     new_df = pd.concat(frames)
     new_df2 = new_df.drop_duplicates(subset=["doi"], keep="first", ignore_index=True)
-    new_df2.to_csv(folderpath + "/" + fullname + "_coauthors_allpub.csv")
+    # new_df2.to_csv(folderpath + "/" + fullname + "_coauthors_allpub.csv")
     return new_df2
 
 
 # Read out all co-authorship relationships from stored publication data
-def get_links_from_csv(fullname, folderpath):
-    all_df = pd.read_csv(folderpath + "/" + fullname + "_coauthors_allpub.csv")
+def get_links_from_coauthor_rel(orcid_id):
+    all_df = coauthor_data_crossref(orcid_id)
     authors_list = all_df["author_orcid"]
     links = []
     for coauthors_id in authors_list:
-        res = coauthors_id.strip("[")
-        res = res.strip("]")
-        res = res.split(",")
+        # res = coauthors_id.strip("[")
+        # res = res.strip("]")
+        # res = res.split(",")
 
-        if len(res) >= 2:
-            links = links + list(itertools.combinations(res, 2))
+        if len(coauthors_id) >= 2: # Only choose the paper that has 2+ authors
+            links = links + list(itertools.combinations(coauthors_id, 2)) # make coauthor pairs
     edge_data = pd.DataFrame()
     sources = []
     targets = []
@@ -184,14 +174,14 @@ def get_links_from_csv(fullname, folderpath):
         targets.append(link[1].strip("' "))
     edge_data["source"] = sources
     edge_data["target"] = targets
-    edge_data.to_csv(folderpath + "/" + fullname + "_coauthors_link.csv")
+    # edge_data.to_csv(folderpath + "/" + fullname + "_coauthors_link.csv")
     return edge_data, links
 
 
 # Group the authors in the stored data, 
 # and generate the node dictionary that will be used to build the network
-def assign_group_node(fullname, folderpath):
-    all_df = pd.read_csv(folderpath + "/" + fullname + "_coauthors_allpub.csv")
+def assign_group_node(orcid_id):
+    all_df = coauthor_data_crossref(orcid_id)
     dois = all_df["doi"]
     authors_orcid = all_df["author_orcid"]
     authors_name = all_df["authors"]
@@ -202,12 +192,12 @@ def assign_group_node(fullname, folderpath):
     name = []
     group = []
     for i in range(len(authors_orcid)):
-        authors_orcid[i] = authors_orcid[i].strip("[")
-        authors_orcid[i] = authors_orcid[i].strip("]")
-        authors_orcid[i] = authors_orcid[i].split(",")
-        authors_name[i] = authors_name[i].strip("[")
-        authors_name[i] = authors_name[i].strip("]")
-        authors_name[i] = authors_name[i].split(",")
+        # authors_orcid[i] = authors_orcid[i].strip("[")
+        # authors_orcid[i] = authors_orcid[i].strip("]")
+        # authors_orcid[i] = authors_orcid[i].split(",")
+        # authors_name[i] = authors_name[i].strip("[")
+        # authors_name[i] = authors_name[i].strip("]")
+        # authors_name[i] = authors_name[i].split(",")
 
         for j in range(len(authors_orcid[i])):
             temp_orcid = authors_orcid[i][j].strip("' ")
@@ -227,10 +217,10 @@ def assign_group_node(fullname, folderpath):
 
     return new_node_data
 
-
-def build_network_by_datafile(fullname, folderpath, outputpath):
-    node_data = assign_group_node(fullname, folderpath)
-    edge_data, link = get_links_from_csv(fullname, folderpath)
+# Simple networkX & pyvis visualization
+def build_networkx(orcid_id):
+    node_data = assign_group_node(orcid_id)
+    edge_data, link = get_links_from_coauthor_rel(orcid_id)
     weights = []
     for i in link:
         weights.append(link.count(i))
@@ -258,6 +248,7 @@ def build_network_by_datafile(fullname, folderpath, outputpath):
     graph = nx.from_pandas_edgelist(edge_data, edge_attr=True)
     nx.set_node_attributes(graph, node_attrs)
 
+    fullname = orcid.from_orcid_to_name(orcid_id)
     lastname = fullname.split(" ")[-1]
     N.from_nx(graph)
     N.show(lastname + "_datafile.html")

@@ -119,12 +119,12 @@ function handleNodeClick(d){
             idRow.append('td')
                 .text(d.doi);
 
-            // var subjectRow = d3.select('#node_info tbody')
-            //     .append('tr');
-            // subjectRow.append('td')
-            //     .text('Subject');
-            // subjectRow.append('td')
-            //     .text(d.subject);
+            var subjectRow = d3.select('#node_info tbody')
+                .append('tr');
+            subjectRow.append('td')
+                .text('Group');
+            subjectRow.append('td')
+                .text("Topic "+ d.group + ": " +d.topic_name);
 
             var yearRow = d3.select('#node_info tbody')
                 .append('tr');

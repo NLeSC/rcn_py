@@ -1,44 +1,6 @@
 import os
-import requests
 import pandas as pd
 from neo4j import GraphDatabase
-import time
-
-# As its name
-def get_orcid_from_scopus(scopus_id, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
-
-    url = "http://api.elsevier.com/content/search/author?query=AU-ID%28"+scopus_id+"%29"
-
-    header = {'Accept' : 'application/json', 
-                'X-ELS-APIKey' : MYAPIKEY}
-    resp = requests.get(url, headers=header)
-    results = resp.json()
-
-    if 'service-error' in results.keys():
-        return 
-    elif 'error-response' in results.keys():
-        time.sleep(1)
-        get_orcid_from_scopus(scopus_id)
-
-    elif 'error' in results['search-results']['entry'][0].keys():
-        return '', '', ''
-    else:
-        if "orcid" in results['search-results']['entry'][0].keys():
-            orcid = results["search-results"]["entry"][0]["orcid"]
-        else:
-            orcid = ''
-
-        # Get preferred name (instead of initials)
-        name = results['search-results']['entry'][0]['preferred-name']
-        preferred_name  = name['given-name'] + ' ' + name['surname']
-
-        # Get scopus profile links
-        links = results['search-results']['entry'][0]["link"]
-        for l in links:
-            if l['@ref'] == 'scopus-author':
-                author_link = l['@href']
-
-        return orcid, preferred_name, author_link
 
 
 # Add constraint for author nodes and publication nodes
