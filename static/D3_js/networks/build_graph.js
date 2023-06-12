@@ -62,6 +62,12 @@ function build_new_svg(graph_node, graph_link) {
                     .id(function(d) { return d.id; })
                     .distance(d => d.count ? 50/d.count : 50)
                     );
+    // Add an additional force for nodes without links
+    // var repulsiveForce = d3.forceManyBody()
+    //                 .strength(-200) 
+                  
+    // force.force("repulsion", repulsiveForce);
+                  
 
     // Append the links to the svg
     const link = network.selectAll(".link")
