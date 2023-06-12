@@ -5,9 +5,9 @@ from rcn_py import data_storage
 
 
 # pyvis
-def pyvis_network_by_datafile(fullname, folderpath, outputpath):
-    node_data = data_storage.assign_group_node(fullname, folderpath)
-    edge_data, link = data_storage.get_links_from_csv(fullname, folderpath)
+def pyvis_network_by_datafile(orcid_id):
+    node_data = data_storage.assign_group_node(orcid_id)
+    edge_data, link = data_storage.get_links_from_coauthor_rel(orcid_id)
     all_node_in_link = (
         edge_data["source"].values.tolist() + edge_data["target"].values.tolist()
     )
@@ -68,15 +68,14 @@ def pyvis_network_by_datafile(fullname, folderpath, outputpath):
     d.update((x, 100 * y) for x, y in d.items())
     nx.set_node_attributes(graph, d, "size")
 
-    lastname = fullname.split(" ")[-1]
     N.from_nx(graph)
-    N.show(lastname + "_datafile.html")
+    N.show("test_datafile.html")
 
 
 # gephi
-def gephi_network_by_datafile(fullname, folderpath, outputpath):
-    node_data = data_storage.assign_group_node(fullname, folderpath)
-    edge_data, link = data_storage.get_links_from_csv(fullname, folderpath)
+def gephi_network_by_datafile(orcid_id):
+    node_data = data_storage.assign_group_node(orcid_id)
+    edge_data, link = data_storage.get_links_from_csv(orcid_id)
     weights = []
 
     all_node_in_link = (
@@ -126,7 +125,7 @@ def gephi_network_by_datafile(fullname, folderpath, outputpath):
     # graph = nx.from_pandas_edgelist(edge_data, edge_attr=True)
     # nx.set_node_attributes(graph, node_attrs)
 
-    lastname = fullname.split(" ")[-1]
-    out_path = outputpath + "/" + lastname + ".gexf"
+    
+    out_path = orcid_id + ".gexf"
 
     nx.write_gexf(G, out_path)

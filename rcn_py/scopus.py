@@ -1,21 +1,8 @@
 import itertools
-import re
-import time
-
-import gensim
-import nltk
-import numpy as np
 import pandas as pd
-from gensim import corpora
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
 from pybliometrics.scopus import AuthorRetrieval, AuthorSearch
 from pyvis.network import Network
-
-nltk.download("stopwords")
-nltk.download("wordnet")
-stop_words = set(stopwords.words("english"))
-wnl = WordNetLemmatizer()
+from rcn_py import topic_modeling
 
 
 def get_hindex(au_id):
@@ -34,69 +21,11 @@ def filter_country(author_list, country_code):
     return filtered_authors
 
 
-def clean_text(text):
-    text = text.replace("\n", " ")
-    text = re.sub(r"-", " ", text)
-    text = re.sub(r"\d+/\d+/\d+", "", text)
-    text = re.sub(r"[0-2]?[0-9]:[0-6][0-9]", "", text)
-    text = re.sub(r"[\w]+@[\.\w]+", "", text)
-    text = re.sub(
-        r"/[a-zA-Z]*[:\//\]*[A-Za-z0-9\-_]+\.+[A-Za-z0-9\.\/%&=\?\-_]+/i", "", text
-    )
-    pure_text = ""
-    for letter in text:
-        # Leave only letters and spaces
-        if letter.isalpha() or letter == " ":
-            letter = letter.lower()
-            pure_text += letter
-
-    corpus_lst = [
-        wnl.lemmatize(word) for word in pure_text.split() if word not in stop_words
-    ]
-    return corpus_lst
-
-
-def lda_cluster(docs):
-    cleaned_abs_corpus = []
-    for i in range(len(docs)):
-        if docs.description[i]:
-            cleaned_abs_corpus.append(clean_text(docs.description[i]))
-        else:
-            cleaned_abs_corpus.append(clean_text(docs.title[i]))
-
-    num_topics = 4
-    dictionary = corpora.Dictionary(cleaned_abs_corpus)
-    corpus = [dictionary.doc2bow(text) for text in cleaned_abs_corpus]
-
-    time.time()
-    passes = 150
-    np.random.seed(1)
-
-    lda_model = gensim.models.LdaMulticore(
-        corpus=corpus,
-        id2word=dictionary,
-        num_topics=num_topics,
-        chunksize=4000,
-        batch=True,
-        minimum_probability=0.001,
-        iterations=350,
-        passes=passes,
-    )
-    group = []
-    for i in range(len(cleaned_abs_corpus)):
-        scores = []
-        for j1, j2 in lda_model[corpus[i]]:
-            scores.append(j2)
-        group.append(scores.index(max(scores)))
-    docs["group"] = group
-    return docs
-
-
-def nld_coauthor(author_id, depth, node_retrieved):
+def coauthor_depth(author_id, depth, node_retrieved):
     au = AuthorRetrieval(author_id)
     docs = pd.DataFrame(au.get_documents())
     # Get clusters of docs
-    docs = lda_cluster(docs)
+    docs = topic_modeling.lda_cluster(docs)
     # Access to documents for the last five years
     # new_docs = docs[(docs.coverDate > '2018')]
     au_id = docs.author_ids
@@ -132,7 +61,7 @@ def nld_coauthor(author_id, depth, node_retrieved):
         if depth > 0:
             for j in sorted_new_coauid:
                 if j not in node_retrieved:
-                    nld_coauthor(j, depth - 1, node_retrieved)
+                    coauthor_depth(j, depth - 1, node_retrieved)
     return all_node, link, au_group
 
 
@@ -143,7 +72,7 @@ def get_coauthor(author_first, author_last, depth):
     author_id = s.authors[0].eid.split("-")[-1]
 
     node_retrieved = []
-    node, link, au_group = nld_coauthor(author_id, depth, node_retrieved)
+    node, link, au_group = coauthor_depth(author_id, depth, node_retrieved)
     sources = []
     targets = []
     weights = []

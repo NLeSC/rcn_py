@@ -9,11 +9,7 @@ from crossref.restful import Works
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer, WordNetLemmatizer
 from pyvis.network import Network
-
-# # nltk.download("omw-1.4")
-# nltk.download("stopwords")
-# # nltk.download("wordnet")
-# stop_words = set(stopwords.words("english"))
+from rcn_py import topic_modeling
 ps = PorterStemmer()
 
 
@@ -222,45 +218,6 @@ def orcid_get_coauthors(full_name):
     return new_df, coauthor_links
 
 
-def clean_text(text):
-    # nltk.download("omw-1.4")
-    nltk.download("stopwords")
-    # nltk.download("wordnet")
-    stop_words = set(stopwords.words("english"))
-
-    text = text.replace("\n", " ")
-    text = re.sub(r"-", " ", text)
-    text = re.sub(r"\d+/\d+/\d+", "", text)
-    text = re.sub(r"[0-2]?[0-9]:[0-6][0-9]", "", text)
-    text = re.sub(r"[\w]+@[\.\w]+", "", text)
-    text = re.sub(
-        r"/[a-zA-Z]*[:\//\]*[A-Za-z0-9\-_]+\.+[A-Za-z0-9\.\/%&=\?\-_]+/i", "", text
-    )
-    pure_text = ""
-    for letter in text:
-        # Leave only letters and spaces
-        if letter.isalpha() or letter == " ":
-            letter = letter.lower()
-            pure_text += letter
-
-    corpus_lst = [ps.stem(word) for word in pure_text.split() if word not in stop_words]
-    return corpus_lst
-
-
-def lemmatize_stemming(text):
-    return ps.stem(WordNetLemmatizer().lemmatize(text, pos="v"))
-
-
-# Tokenize and lemmatize
-def preprocess(text):
-    result = []
-    for token in gensim.utils.simple_preprocess(text):
-        if token not in gensim.parsing.preprocessing.STOPWORDS and len(token) > 3:
-            result.append(lemmatize_stemming(token))
-
-    return result
-
-
 def orcid_lda_cluster(dois):
     cleaned_abs_corpus = []
     clusters = {}
@@ -268,9 +225,9 @@ def orcid_lda_cluster(dois):
     for i in dois:
         w = works.doi(i)
         if "abstract" in w.keys():
-            cleaned_abs_corpus.append(preprocess(w["abstract"]))
+            cleaned_abs_corpus.append(topic_modeling.preprocess(w["abstract"]))
         elif "title" in w.keys() and w["title"]:
-            cleaned_abs_corpus.append(preprocess(w["title"][0]))
+            cleaned_abs_corpus.append(topic_modeling.preprocess(w["title"][0]))
         else:
             cleaned_abs_corpus.append([])
 
