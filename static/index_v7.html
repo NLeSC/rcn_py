@@ -212,7 +212,7 @@
         }
         
         #graph {
-            top: 50px;
+            top: -200px;
             margin-left: 150px;
             padding: 20px;
             position: fixed;
@@ -442,9 +442,7 @@
         
         <br>
         <br>
-        <!-- <label for="mySlider">No. of publication nodes:</label>
-        <input type="range" id="mySlider" min="25" value="25" step="25">
-        <span id="sliderValue">25</span> -->
+        
         <label for="year_range">Publication Years:</label>
         <table id="year_range">
             <tr>
@@ -490,6 +488,10 @@
             <option value="30">30</option>
         </select>
     </form>
+
+    <label for="mySlider">Force strength:</label>
+    <input type="range" id="mySlider" min="5" max="200" value="10" step="1">
+    <span id="sliderValue">10</span>
 
     <!-- <input type="checkbox" id="show_topic_color" name="show_topic_color" onchange="node_topic_color()">
     <label for="show_topic_color">Show node colors for topic clustering</label><br> -->
@@ -595,7 +597,7 @@
     .node.author_highlight { fill: #e97c66; stroke: #cc6753;}
     .node.first_coauthor { fill: #e3b7c8; stroke: #c092a4;}
     .node.second_coauthor { fill: #fff493; stroke: #9c9c9c;}
-    .node.author { fill: #BBB; stroke: #9c9c9c; }
+    .node.author { fill: #BBB; stroke: #ffffff; }
     .link { stroke: #999; stroke-opacity: .6; stroke-width: 0.8px; }
 </style>
 
@@ -603,15 +605,19 @@
 
 <script type="text/javascript">
     // ####################### initial #######################
-    const width = window.innerWidth, height =  window.innerHeight;
+    var container = document.getElementById("graph");
+    container.style.transform = "scale(0.8)";
+
+    const width = window.innerWidth, height =  window.innerWidth;
 
     const force = d3.forceSimulation()
-            .force("charge", d3.forceManyBody().strength(-8))
+            .force("charge", d3.forceManyBody().strength(-10))
             .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(50))
             .force("center", d3.forceCenter().x(width / 2).y(height / 2).strength(0.5))
             .force("collision", d3.forceCollide().radius(function(d) { return 10; }).iterations(0.5))
             ;
     
+
     // A temporary translate for the current position
     var escience = false;
     var svgTranslate = [0, 0];
@@ -923,6 +929,40 @@
         coauthor_graph_link = graph.coauthor_links;
         build_new_svg(graph_node, graph_link);
         d3.select('#loadingNotice').style('display', 'none');
+    });
+
+
+    function updateSimulationStrength(strength) {
+        force.force("charge").strength(strength);
+
+        // Add an additional force for nodes without links
+        var repulsiveForce = d3.forceManyBody()
+                    .strength(strength*2)        
+        force.force("repulsion", repulsiveForce);
+        
+        force.alpha(1).restart(); // Restart the simulation to apply the changes
+        force.on("tick", tick);
+
+        
+    }
+    
+
+
+    const slider = document.getElementById('mySlider');
+        
+    slider.addEventListener('input', function(){
+        const sliderValue = document.getElementById('sliderValue');
+        sliderValue.textContent = slider.value;
+    })
+    slider.addEventListener('change', function() {
+        slider_value = slider.value * -1;
+        // Handle the slider value change
+        
+        console.log('Slider value:', slider_value);
+        updateSimulationStrength(slider_value);
+        // var aff_name = document.getElementById("name-title").textContent;
+        // slider_change(aff_name, slider_value);
+        
     });
     
 
