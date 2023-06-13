@@ -16,11 +16,13 @@ from crossref.restful import Works
 
 ps = PorterStemmer()
 
+
 def clean_text(text):
+    # Download NLTK stopwords
     nltk.download("stopwords")
-    # nltk.download("wordnet")
     stop_words = set(stopwords.words("english"))
 
+    # Remove special characters and patterns from the text
     text = text.replace("\n", " ")
     text = re.sub(r"-", " ", text)
     text = re.sub(r"\d+/\d+/\d+", "", text)
@@ -31,16 +33,19 @@ def clean_text(text):
     )
     pure_text = ""
     for letter in text:
-        # Leave only letters and spaces
+        # Keep only letters and spaces
         if letter.isalpha() or letter == " ":
             letter = letter.lower()
             pure_text += letter
 
+    # Stem the words and remove stopwords
     corpus_lst = [ps.stem(word) for word in pure_text.split() if word not in stop_words]
     return corpus_lst
 
+
 # LDA model for Scopus and RSD data (title + description)
 def lda_cluster_description(docs):
+    # Clean and preprocess the text data
     cleaned_abs_corpus = []
     for i in range(len(docs)):
         if docs.description[i]:
@@ -56,6 +61,7 @@ def lda_cluster_description(docs):
     passes = 150
     np.random.seed(1)
 
+    # Apply LDA topic modeling
     lda_model = gensim.models.LdaMulticore(
         corpus=corpus,
         id2word=dictionary,
@@ -66,12 +72,16 @@ def lda_cluster_description(docs):
         iterations=350,
         passes=passes,
     )
+
     group = []
+    # Assign documents to the most relevant topic
     for i in range(len(cleaned_abs_corpus)):
         scores = []
         for j1, j2 in lda_model[corpus[i]]:
             scores.append(j2)
         group.append(scores.index(max(scores)))
+
+    # Assign the computed groups to the documents
     docs["group"] = group
     return docs
 
@@ -93,6 +103,8 @@ def orcid_lda_cluster(dois):
     cleaned_abs_corpus = []
     clusters = {}
     works = Works()
+
+    # Preprocess the abstracts or titles
     for i in dois:
         w = works.doi(i)
         if "abstract" in w.keys():
@@ -102,23 +114,28 @@ def orcid_lda_cluster(dois):
         else:
             cleaned_abs_corpus.append([])
 
+    # Create a dictionary and corpus
     dictionary = gensim.corpora.Dictionary(cleaned_abs_corpus)
     corpus = [dictionary.doc2bow(text) for text in cleaned_abs_corpus]
 
+    # Apply LDA topic modeling
     lda_model = gensim.models.LdaMulticore(
         corpus, num_topics=8, id2word=dictionary, passes=10, workers=2
     )
 
     idx2topics = {}
+    # Store the topic keywords for each topic index
     for idx, topic in lda_model.print_topics(-1):
         idx2topics[idx] = topic
 
     for i in range(len(cleaned_abs_corpus)):
         scores = []
         topics = []
+        # Get the topic distribution for the document
         for j1, j2 in lda_model[corpus[i]]:
             topics.append(j1)
             scores.append(j2)
+            # Assign the document to the most relevant topic based on the highest score
             clusters[dois[i]] = scores.index(max(scores))
 
     return clusters, idx2topics

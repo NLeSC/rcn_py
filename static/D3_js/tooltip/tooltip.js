@@ -20,33 +20,27 @@ function addOrRemoveTooltip(d) {
             var node_id = d.id;
             var node_label = d.label;
             var node_radius = d.radius;
-            // get unique_id for Database Selecting function 
+
+            // Get unique_id for Database Selecting function
+            var unique_id;
             if (node_label == "publication" ){
-                var unique_id = d.doi;
-                // if (d.citation_count != 0) {
-                //     node_radius =  6 + Math.log(d.citation_count);
-                // }
-                // else {node_radius = 6;}
+                unique_id = d.doi;
             }
             else if (node_label == "author") {
                 if (d.scopus_id) {
-                    var unique_id = d.scopus_id; }
+                    unique_id = d.scopus_id; }
                 else {
-                    var unique_id = d.orcid;
+                    unique_id = d.orcid;
                 }
-
-                // node_radius = 5 + Math.log(d.link_num);;
             }
             else if (node_label == "software"){
-                var unique_id = d.software_id;
-                // node_radius = 5;
+                unique_id = d.software_id;
             }
             else if (node_label == "project") {
-                var unique_id = d.project_id;
-                // node_radius = 5;
+                unique_id = d.project_id;
             }
 
-            // lock node
+            // fix the position of the node
             d.fx = d.x;
             d.fy = d.y;
 
@@ -55,7 +49,7 @@ function addOrRemoveTooltip(d) {
 
             console.log(node_x,node_y);
 
-            // present the tooltip of this node
+            // Present the tooltip of this node
             show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
                     
             last_clicked_node = d.id;

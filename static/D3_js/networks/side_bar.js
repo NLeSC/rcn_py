@@ -2,6 +2,7 @@
 function check_show_pub() {
     var checkbox = document.getElementById("show_pub");
     if (checkbox.checked) {
+        // Clear the existing network elements
         network.selectAll(".node").remove();
         network.selectAll(".link").remove();
         network.selectAll("text").remove();
@@ -10,9 +11,11 @@ function check_show_pub() {
         arcs.selectAll("text").remove();
 
         show_pub = true;
+        // Show SVG using data with publication nodes
         build_new_svg(graph_node, graph_link);
        
     } else {
+        // Clear the existing network elements
         network.selectAll(".node").remove();
         network.selectAll(".link").remove();
         network.selectAll("text").remove();
@@ -21,6 +24,7 @@ function check_show_pub() {
         arcs.selectAll("text").remove();
 
         show_pub = false;
+        // Show SVG using data without publication nodes
         build_new_svg(coauthor_graph_node, coauthor_graph_link);
     }
 }

@@ -426,6 +426,10 @@ function Find_node(option) {
     } 
 }
 
+function hideMessage() {
+    document.getElementById("error-message").style.visibility = "hidden"; // Hide the label
+}
+
 function checkNodeExists(search_orcid_value, search_name_value, search_doi_value) {
     // Iterate over the nodes in the network
     const NodeToFind = svg.selectAll(".node")

@@ -39,7 +39,7 @@ function set_new_chart(cite_by_year,concept_score) {
             }
         },
     };
-    
+    // Prepare data for the bar chart
     const x_year = [];
     const y_work = [];
     cite_by_year = cite_by_year.reverse()
@@ -53,7 +53,7 @@ function set_new_chart(cite_by_year,concept_score) {
         }
     }
 
-    // Set data
+    // Set data for the bar chart
     var bardata = {
         labels: x_year,
         datasets: [{
@@ -63,7 +63,7 @@ function set_new_chart(cite_by_year,concept_score) {
             borderWidth: 1
         }]
     };
-    // Initialize chart
+    // Initialize bar chart
     var ctx = document.getElementById('myBarChart').getContext('2d');
     myBarChart = new Chart(ctx, {
         type: 'bar',
@@ -71,6 +71,7 @@ function set_new_chart(cite_by_year,concept_score) {
         options: bar_options
     });
 
+    // Set options for the polar chart
     var polaroptions = {
         legend: {display: false},
         scale: {
@@ -78,29 +79,9 @@ function set_new_chart(cite_by_year,concept_score) {
                 beginAtZero: true
             }
         },
-        // title: {
-        //     display: true,
-        //     text: 'My Polar Area Chart',
-        //     fontSize: 10,
-        //     fontColor: '#000',
-        //     fontStyle: 'normal'
-        // },
-        // plugins: {
-        //     title: {
-        //         display: true,
-        //         text: 'Concept link strength',
-        //     },
-        //     // labels: {
-        //     //     render: 'value',
-        //     //     fontSize: 12,
-        //     //     fontStyle: 'bold',
-        //     //     fontColor: '#000',
-        //     //     position: 'outside'
-        //     // }
-    
-        // },
     };   
 
+    // Set data for the polar chart
     const polardata = {
         labels: concept_score['concept_name'],
         datasets: [{
@@ -118,6 +99,7 @@ function set_new_chart(cite_by_year,concept_score) {
         }]
     };
 
+    // Initialize polar chart
     var polar_ctx = document.getElementById('myPolarChart').getContext('2d');
     myPolarChart = new Chart(polar_ctx, {
                     type: 'polarArea',

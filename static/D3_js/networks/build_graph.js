@@ -1,21 +1,28 @@
 // ########## refresh #############
 // remove and initialize the properties of the d3 svg
 function refresh(){
-
+    // Remove existing elements
     d3.select("#graph").selectAll("*").remove();
+
+    // Reset translation and scale variables
     svgTranslate = [0, 0];
     curTranslate = [0, 0];
     svgScale = 1;
+
+    // Reset dragging-related variables
     isDragging = false;
     dx = 0; 
     dy = 0;
     zx = 0; 
     zy = 0;
     
+    // Reset clicked and locked nodes
     clicked = {};
     lockked = {};
     last_clicked_node = -1;
     last_d = {};
+
+    // Reset graph-related variables
     maxId = 0;
     graph_node = [];
     graph_link = [];
@@ -36,8 +43,10 @@ function refresh(){
                 .on("end", zoomended))
             ;
 
+    // Create group for network elements
     network = svg.append('g').attr('class', 'type1');
     
+    // Create group for arc elements
     arcs = svg.append('g').attr('class', 'type2')
             .selectAll("arcs")
             .data([
@@ -48,35 +57,35 @@ function refresh(){
             .enter();
 }
 
-
+// This function is responsible for building the SVG elements for the graph visualization 
+// based on the provided graph_node and graph_link data.
 function build_new_svg(graph_node, graph_link) {
 
+    // Set force layout nodes
     force_node = graph_node;
-    // Delete the fixed settings
+
+    // Remove fixed positions
     for (var i = 0; i < force_node.length; i++) {
         delete force_node[i].fx;
         delete force_node[i].fy;
     }
+
+    // Set force layout with link force
     force.nodes(force_node)
         .force("link", d3.forceLink(graph_link)
                     .id(function(d) { return d.id; })
                     .distance(d => d.count ? 50/d.count : 50)
                     );
-    // Add an additional force for nodes without links
-    // var repulsiveForce = d3.forceManyBody()
-    //                 .strength(-200) 
-                  
-    // force.force("repulsion", repulsiveForce);
-                  
 
-    // Append the links to the svg
+    // Append links to the svg
     const link = network.selectAll(".link")
                 .data(graph_link).enter()
                 .append("line").attr("class", "link")
                 .style("stroke-width", d => d.count ? 1/2*d.count : "0.5px")
                 .interrupt('linkTransition')
                 .on("click", handleLinkClick);
-    // Append the nodes to the svg
+
+    // Append nodes to the svg
     const node = network.selectAll(".node")
                 .data(graph_node).enter()
                 .append("circle")
@@ -84,7 +93,6 @@ function build_new_svg(graph_node, graph_link) {
                 .attr("r", function (d) { 
                     return d.radius;
                  })
-                // .attr("stroke", "light-grey")
                 .attr("cursor", "pointer")
                 .style("opacity", 0.8)
                 .interrupt('nodeTransition')
@@ -93,6 +101,7 @@ function build_new_svg(graph_node, graph_link) {
                     .on("drag", node_dragged)
                     .on("end", node_dragended));
 
+    // Append labels to the nodes
     const text = network.selectAll("text")
                 .data(graph_node).enter()
                 .append('text')
@@ -111,13 +120,19 @@ function build_new_svg(graph_node, graph_link) {
                     .on("drag", node_dragged)
                     .on("end", node_dragended));
 
+    // Add title attribute to nodes
+    node.append("title")
+                .text(function (d) { return d.title; });
+
+
     // Get current max node ID (for node expand button)
     graph_node.forEach(node => {
         if (node.id > maxId) {
             maxId = node.id;
         } 
     });  
-              
+           
+    // Set click event on nodes and labels
     node.on("click", function(event, d) {
         if (clicked[d.id]) {
             arcs.selectAll("path").remove();
@@ -164,12 +179,8 @@ function build_new_svg(graph_node, graph_link) {
         }
     });
     
-    // html title attribute
-    node.append("title")
-                .text(function (d) { return d.title; });
 
-
-    // force feed algo ticks
+    // Force layout tick function
     force.on("tick", function() {
         network.selectAll('.link')
         .attr("x1", function (d) { return d.source.x })
