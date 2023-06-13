@@ -1,6 +1,3 @@
-import os
-import pandas as pd
-from neo4j import GraphDatabase
 
 
 # Add constraint for Person nodes and Publication nodes
