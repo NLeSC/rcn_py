@@ -1,13 +1,10 @@
-import re
 from itertools import combinations
 
 import gensim
-import nltk
 import pandas as pd
 import requests
 from crossref.restful import Works
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer, WordNetLemmatizer
+from nltk.stem import PorterStemmer
 from pyvis.network import Network
 from rcn_py import topic_modeling
 ps = PorterStemmer()
