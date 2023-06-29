@@ -39,7 +39,7 @@ function toggleSearchInput(inputName) {
 
 // ################### keyword search ###################
 function field_search(callback){
-
+    
     var form = $('#topic-search');
     var year = form.find("select[name='year']").val();
     var keyword = form.find("input[name=keyword]").val();
@@ -64,7 +64,8 @@ function field_search(callback){
     if (typeof callback === 'function') {
             callback();
         }
-    return false;
+    
+    
 }
 
 
@@ -96,10 +97,10 @@ function author_search(){
     
     refresh();
 
-    d3.json("/orcid_search?orcid=" + encodeURIComponent(orcid)+ 
+    d3.json("/author_search?orcid=" + encodeURIComponent(orcid)+ 
             "&firstname=" + encodeURIComponent(firstname) + 
             "&surname=" + encodeURIComponent(surname) + 
-            "&escience=" + escience)
+            "&rsd=" + rsd)
         .then(function (graph) {
             if (!graph || graph.length == 0) return;
 
@@ -165,6 +166,10 @@ function author_search(){
             else {
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
+            
+            ResetNodeType();
+            d3.select('#toggle-buttons').style('display', 'block');
+            
         });
     return false;
 }
@@ -282,6 +287,10 @@ function pub_search(){
             else {
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
+            if(rsd) {
+                ResetNodeType();
+                d3.select('#toggle-buttons').style('display', 'block');
+            }
         });
     return false;
 }
@@ -365,6 +374,22 @@ function aff_search(aff_name, start_year, end_year){
 
         // CLustering node colors
         node_topic_color();
+
+        // New topic legend
+        var topic_colors = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
+
+        d3.select('#legend').style('display', 'none');
+        d3.select("#legend_list").html("");
+
+        for(var i=0; i<5; i++){
+            var list_item = '<li style="margin-bottom:5px;"><span style="background-color:' + topic_colors[i] + 
+                '; width:10px; height:10px; display:inline-block; margin-right:5px;"></span>' + topic_names[i] + '</li>';
+            d3.select("#legend_list").html(function(d) {
+                return d3.select(this).html() + list_item;
+            });
+        }
+            
+        d3.select("#topic_cluster_legend").style("display", "block");
     });
 
     return false;

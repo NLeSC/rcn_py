@@ -82,19 +82,18 @@ function set_new_chart(cite_by_year,concept_score) {
     };   
 
     // Set data for the polar chart
+    // 'rgba(54, 162, 235, 0.5)',
+    //         'rgba(255, 206, 86, 0.5)',
+    //         'rgba(75, 192, 192, 0.5)',
+    //         'rgba(229, 159, 132, 0.5)',
+    //         'rgba(201, 162, 217, 0.5)',
+    //         'rgba(81, 255, 183, 0.5)'
     const polardata = {
         labels: concept_score['concept_name'],
         datasets: [{
         data: concept_score['score'],
-        backgroundColor: [
-            'rgba(255, 99, 132, 0.5)',
-            'rgba(54, 162, 235, 0.5)',
-            'rgba(255, 206, 86, 0.5)',
-            'rgba(75, 192, 192, 0.5)',
-            'rgba(229, 159, 132, 0.5)',
-            'rgba(201, 162, 217, 0.5)',
-            'rgba(81, 255, 183, 0.5)'
-        ],
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderColor: 'rgba(255, 99, 132, 1)',
         borderWidth: 1
         }]
     };

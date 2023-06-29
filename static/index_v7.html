@@ -8,14 +8,14 @@
     <!-- CSS stylesheets -->
     <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" /> -->
     <link rel="stylesheet" href="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.min.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" />
     
     <!-- Title -->
-    <title>Neo4j RCN</title>    
+    <title>RCN</title>    
 
     <!-- Inline styles -->
     <style>
@@ -55,11 +55,11 @@
         white-space: nowrap; /* Prevent menu item from wrapping */
         }
         
-        /* svg {
+        svg {
             position: absolute;
             left: -50%;
             top: -50%;
-        } */
+        }
         .button {
             background-color: #75a0c1;
             border: none;
@@ -94,6 +94,25 @@
             background-color: #d68b81;
             color: white;
         }
+        .button3 {
+            background-color: #75a0c1;
+            border: none;
+            color: white;
+            /* padding: 0px 0px; */
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            border-radius: 8px;
+            margin: 6px ;
+            cursor: pointer;
+            transition-duration: 0.3s;
+        }
+        .button3:hover {
+            background-color: #5883a4;
+            color: white;
+        }
+        
         #sidebar {
             background-color: #f1f1f1;
             height: 100%;
@@ -192,7 +211,7 @@
         }
         
         #graph {
-            top: -200px;
+            top: 50px;
             margin-left: 150px;
             padding: 20px;
             position: fixed;
@@ -208,26 +227,34 @@
             color: #333;
         }
 
+        #intro_title {
+            font-size: 32px; /* adjust size as needed */
+        }
+        #intro p {
+            font-size: 16px; /* adjust size as needed */
+            margin-right: 500px;
+        }
+
       </style>
 </head>
 
 <body>
 
-    <div id="graph">
+    <div id="graph" style="display: none;">
     </div>
 
-    <div id="loadingNotice">Generating...</div>
+    <div id="loadingNotice" style="display: none;">Generating...</div>
 
     <nav class="navbar navbar-expand-lg  bg-light" id="menu">
-            <a class="navbar-brand brand-lg" href="#">Research Collaboration Network</a>
+            <a class="navbar-brand brand-lg">Research Collaboration Network</a>
                     
             <div class="collapse navbar-collapse" id="menu_list">
                     <ul class="navbar-nav">
                         <li class="nav-item active">
-                            <a class="nav-link nav-lg" href="#">Home <span class="sr-only">(current)</span></a>
+                            <a class="nav-link nav-lg" id="home_page">Home <span class="sr-only">(current)</span></a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link nav-lg" id="escience" data-menu="escience">eScience</a>
+                            <a class="nav-link nav-lg" id="escience" data-menu="escience">RSD</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link nav-lg" id="scopus" data-menu="scopus">Scopus</a>
@@ -238,6 +265,34 @@
                     </ul>
             </div>
     </nav>
+
+    <div id="home" style="display: flex; flex-direction: column; align-items: center;">
+        <div id="intro" style="margin-top: 100px; margin-left: 30px;">
+            <h1 id="intro_title">Welcome to Research Collaboration Network</h1>
+            <br>
+            <p>
+                Utilizing comprehensive data from the prestigious Research Software Directory, Scopus, and OpenAlex, 
+                our service is dedicated to the visualization of research collaborations. 
+                Our primary features include advanced network search capabilities, which allow users to discover new 
+                research collaborations, and network generation functions, offering a unique visualization of complex 
+                research connections. 
+            </p>
+            <p>
+                By integrating our datasets and networks, users can explore a vast array of collaborative opportunities, 
+                tracking trends, and patterns in research development.
+            </p>
+        </div>
+    
+        <div id="start"  style="display: flex; flex-direction: column; justify-content: center; align-items: center; margin-top: 100px;">
+            <h2 style="margin-bottom: 20px;"> Start here: </h2>
+            <div>
+                <button class="button3" onclick="RSD_network()">RSD</button>
+                <button class="button3" onclick="Scopus_network()">Scopus</button>
+                <button class="button3" onclick="Openalex_network()">OpenAlex</button>
+            </div>
+        </div>
+    </div>
+    
 
 
     <div id="profile">
@@ -335,7 +390,7 @@
 
 
 
-<div id="sidebar">
+<div id="sidebar" style="display: none;">
     <div class="sidebar-header" id="scopus-search-button">
         <div class="button-group">
             <button class="button button1" onclick="showForm('topic-search')">Topic</button>
@@ -466,7 +521,7 @@
         </select>
     </form>
 
-    <label for="mySlider">Force strength:</label>
+    <label for="mySlider">Repulsive force strength:</label>
     <input type="range" id="mySlider" min="5" max="200" value="10" step="1">
     <span id="sliderValue">10</span>
 
@@ -474,6 +529,13 @@
     <label for="show_topic_color">Show node colors for topic clustering</label><br> -->
    
 </div>
+
+<div id="toggle-buttons" style="display: none; z-index: 2; position: relative; margin-top: 200px; margin-left: 250px;">
+    <button id="publicationButton" class="button button1" style="background-color: #8398cd; color: white; border: 2px solid #8398cd;" onclick="toggleNodeType('publication')">Publication</button>
+    <button id="projectButton" class="button button1" style="background-color: #94bf91; color: white; border: 2px solid #94bf91;" onclick="toggleNodeType('project')">Project</button>
+    <button id="softwareButton" class="button button1" style="background-color: #c093bd; color: white; border: 2px solid #c093bd;" onclick="toggleNodeType('software')">Software</button>
+</div>
+
 
   
 
@@ -496,15 +558,24 @@
     </table>
 </div>
 
-<div style="position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px; z-index: 3;">
+<div id="legend" style="display: none; position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px; z-index: 3;">
     <ul style="list-style:none; padding:0;">
-        <li style="margin-bottom:5px;"><span style="background-color:#BBB; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Author</li>
-        <li style="margin-bottom:5px;"><span style="background-color:#e97c66; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Selected author</li>
-        <li style="margin-bottom:5px;"><span style="background-color:#e3b7c8; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Co-author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#BBB; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>General Author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#e97c66; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Selected Author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#e3b7c8; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Co-Author</li>
         <li style="margin-bottom:5px;"><span style="background-color:#8398cd; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Publication</li>
         <li style="margin-bottom:5px;"><span style="background-color:#94bf91; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Project</li>
         <li><span style="background-color:#c093bd; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>Software</li>
     </ul>
+</div>
+
+<div id="topic_cluster_legend" style="display: none; position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px; z-index: 3;">
+        <ul id="legend_list" style="list-style:none; padding:0;"></ul>
+        <!-- <li style="margin-bottom:5px;"><span style="background-color:#BBB; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>General Author</li>
+        <li style="margin-bottom:5px;"><span style="background-color:#ffadad; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li>
+        <li style="margin-bottom:5px;"><span style="background-color:#fdffb6; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li>
+        <li style="margin-bottom:5px;"><span style="background-color:#caffbf; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li>
+        <li style="margin-bottom:5px;"><span style="background-color:#9bf6ff; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li> -->
 </div>
 
 
@@ -572,7 +643,7 @@
     container.style.transform = "scale(0.8)";
 
     // Define the width and height of the SVG canvas
-    const width = window.innerWidth, height =  window.innerWidth;
+    const width = window.innerWidth*2, height =  window.innerHeight*2;
 
     // Create the force simulation with initial forces
     const force = d3.forceSimulation()
@@ -583,7 +654,7 @@
             ;
     
     // Variables for translating and scaling the SVG canvas
-    var escience = false;
+    var rsd = false;
     var svgTranslate = [0, 0];
     var curTranslate = [0, 0];
     var svgScale = 1;
@@ -611,7 +682,16 @@
     var myBarChart, myPolarChart;
     var chartexist = false;
 
+    var selectedNodeTypes = {
+                publication: true,
+                project: true,
+                software: true,
+                author:true
+        };
     // var slider_value;
+
+    var start, end;
+    let renderStart;
 
     // Define the SVG canvas
     var svg = d3.select("#graph").append("svg")
@@ -643,8 +723,6 @@
             .enter();
             
     
-    
-
     
     function show_topics(nodes, topic_names) {
         // Filter nodes to include only those with a defined group
@@ -820,6 +898,12 @@
     
 
     // ############# Initial network ##############
+    d3.select('#home').style('display', 'none');
+    d3.select('#sidebar').style('display', 'block');
+    d3.select('#graph').style('display', 'block');
+    d3.select('#loadingNotice').style('display', 'block');
+    d3.select('#legend').style('display', 'block');
+    
     d3.json("/graph").then(function(graph) {
         graph_node = graph.nodes;
         graph_link = graph.links;
@@ -829,6 +913,90 @@
         d3.select('#loadingNotice').style('display', 'none');
     });
 
+    // d3.select('#home').style('display', 'block');
+    // d3.select('#sidebar').style('display', 'none');
+    // d3.select('#graph').style('display', 'none');
+    // d3.select('#loadingNotice').style('display', 'none');
+    // d3.select('#legend').style('display', 'none');
+
+    document.getElementById('home_page').addEventListener('click', function() {
+        // Refresh the page or perform necessary actions
+        refresh();
+        d3.select('#home').style('display', 'block');
+        d3.select('#sidebar').style('display', 'none');
+        d3.select('#graph').style('display', 'none');
+        d3.select('#loadingNotice').style('display', 'none');
+        d3.select('#legend').style('display', 'none');
+        d3.select('#topic_cluster_legend').style('display', 'none');
+        d3.select('#profile').style('visibility', 'hidden');
+    });
+
+
+    function toggleNodeVisibility() {
+        // Filter nodes based on the selected types
+        console.log(graph_node);
+        var filteredNodes = graph_node.filter(node => selectedNodeTypes[node.label]);
+        console.log(filteredNodes);
+        // Filter links based on the selected types
+        // A link is included if both its source and target nodes are included
+        let new_graph_Link = graph_link.filter(link => 
+            selectedNodeTypes[link.source.label] && selectedNodeTypes[link.target.label]
+        );
+
+        // node without links 
+        const isolatedNodes = filteredNodes.filter(function(node) {
+            return !new_graph_Link.some(function(link) {
+                return link.source === node || link.target === node;
+            });
+        });
+        const new_graph_node = filteredNodes.filter(function(node) {
+            return !isolatedNodes.includes(node);
+        });
+        refresh();
+        build_new_svg(new_graph_node, new_graph_Link);
+        // var simulation = d3.forceSimulation(filteredNodes)
+        //                 .force("group", groupForce(filteredNodes).strength(0.1))
+
+        // simulation.on("tick", tick).alphaDecay(0.05);
+        // simulation.alpha(1).restart();
+
+    }
+
+    function toggleNodeType(nodeType) {
+        // Toggle the visibility of the node in the network
+        // Flip the selected state of the node type
+        selectedNodeTypes[nodeType] = !selectedNodeTypes[nodeType];
+        toggleNodeVisibility(nodeType);
+
+        // Change the color of the button to indicate whether the node is visible
+        var button = document.getElementById(nodeType + 'Button');
+        if (selectedNodeTypes[nodeType]) {          // Visible
+            if (nodeType === 'publication')
+                button.style.backgroundColor = '#8398cd';
+            else if (nodeType === 'project')
+                button.style.backgroundColor = '#94bf91';
+            else if(nodeType === 'software')
+                button.style.backgroundColor = '#c093bd';
+        } else {
+            button.style.backgroundColor = 'lightgray'; // Hidden
+        }
+    }
+
+    function ResetNodeType() {
+        // Change the color of the button to make the node is visible
+        selectedNodeTypes['publication'] = true;
+        var publication_button = document.getElementById('publicationButton');
+        publication_button.style.backgroundColor = '#8398cd'
+
+        selectedNodeTypes['project'] = true;
+        var project_button = document.getElementById('projectButton');
+        project_button.style.backgroundColor = '#94bf91'
+
+        selectedNodeTypes['software'] = true;
+        var software_button = document.getElementById('softwareButton');
+        software_button.style.backgroundColor = '#c093bd'
+
+    }
 
 
 
@@ -838,21 +1006,35 @@
         // ################### keyword search ###################
         const form_topic = document.getElementById('topic-search');
         form_topic.addEventListener('submit', function(event) {
+            renderStart = performance.now();
+            // console.time('Execution Time');
             event.preventDefault(); // prevent the form from submitting and refreshing the page
 
             d3.select('#node-details').style('display', 'none');
+            d3.select('#toggle-buttons').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
-            field_search();
+            const slider = document.getElementById('mySlider');
+            slider.value = 10;
 
+            field_search();
+            
+            // end = Date.now();
+            // console.log(`Execution time: ${end - start} ms`);
+            // console.timeEnd('Execution Time');
         });
 
         // ################### ORCID search ######################
         const form_orcid = document.getElementById('author-search');
         form_orcid.addEventListener('submit', function(event) {
+            renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
 
             d3.select('#node-details').style('display', 'none');
+            d3.select('#toggle-buttons').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            const slider = document.getElementById('mySlider');
+            slider.value = 10;
+            
             // call author_search() function
             author_search();
         }); 
@@ -860,10 +1042,15 @@
         // ################### DOI search ######################
         const form_pub = document.getElementById('pub-search');
         form_pub.addEventListener('submit', function(event) {
+            renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             
             d3.select('#node-details').style('display', 'none');
+            d3.select('#toggle-buttons').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            const slider = document.getElementById('mySlider');
+            slider.value = 10;
+
             pub_search();
         });
 
@@ -871,6 +1058,7 @@
         const form_aff = document.getElementById('aff-search');
         
         form_aff.addEventListener('submit', function(event) {
+            renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             
             d3.select('#node-details').style('display', 'none');
@@ -880,6 +1068,9 @@
             var initial_aff_name = form.find("input[name='aff']").val();
             var start_year = form.find("input[name='start_year']").val();
             var end_year = form.find("input[name='end_year']").val();
+            const slider = document.getElementById('mySlider');
+            slider.value = 10;
+
             aff_search(initial_aff_name, start_year, end_year);
             
         });
@@ -887,21 +1078,7 @@
     })
 
 
-
-
-    // ################### eScience ###################
-    // Add event listener to the 'escience' element
-    document.getElementById('escience').addEventListener('click', function() {
-        // Refresh the page or perform necessary actions
-        refresh();
-        escience = true;
-        
-        // Hide and show specific elements based on the clicked event
-        d3.select('#scopus-search-button').style('display', 'none');
-        d3.select('#escience-search-button').style('display', 'block');
-        d3.select('#node-details').style('display', 'none');
-        document.getElementById("profile").style.visibility = "hidden";
-        showForm('author-search');
+    function RSD_network() {
 
         // Set the initial affiliation name
         const initial_aff_name = "Netherlands eScience Center"
@@ -988,18 +1165,40 @@
             }
             
         });
+
+        const slider = document.getElementById('mySlider');
+        slider.value = 10;
+
+        ResetNodeType();
+        d3.select('#toggle-buttons').style('display', 'block');
+    }
+
+
+    // ################### eScience ###################
+    // Add event listener to the 'escience' element
+    document.getElementById('escience').addEventListener('click', function() {
+        d3.select('#home').style('display', 'none');
+        d3.select('#sidebar').style('display', 'block');
+        d3.select('#graph').style('display', 'block');
+        d3.select("#topic_cluster_legend").style("display", "none");
+        d3.select('#legend').style('display', 'block');
+        
+        // Refresh the page or perform necessary actions
+        refresh();
+        rsd = true;
+        
+        // Hide and show specific elements based on the clicked event
+        d3.select('#scopus-search-button').style('display', 'none');
+        d3.select('#escience-search-button').style('display', 'block');
+        d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        showForm('author-search');
+
+        RSD_network();
     });
 
 
-    document.getElementById('scopus').addEventListener('click', function() {
-        // Perform actions when the 'scopus' element is clicked
-        refresh();
-        escience = false;
-        d3.select('#scopus-search-button').style('display', 'block');
-        d3.select('#escience-search-button').style('display', 'none');
-        d3.select('#node-details').style('display', 'none');
-        document.getElementById("profile").style.visibility = "hidden";
-        showForm('topic-search');
+    function Scopus_network() {
 
         // Fetch graph data using a specific URL
         d3.json("/graph").then(function(graph) {
@@ -1019,18 +1218,36 @@
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
         });
-    });
+        
+    }
 
-    document.getElementById('openalex').addEventListener('click', function() {
-        // Perform when the 'openalex' element is clicked
+    document.getElementById('scopus').addEventListener('click', function() {
+
+        d3.select('#home').style('display', 'none');
+        d3.select('#sidebar').style('display', 'block');
+        d3.select('#graph').style('display', 'block');
+        d3.select('#toggle-buttons').style('display', 'none');
+        d3.select("#topic_cluster_legend").style("display", "none");
+        d3.select("#legend").style("display", "block");
+        
+        // Perform actions when the 'scopus' element is clicked
         refresh();
-
-        escience = false;
-        d3.select('#scopus-search-button').style('display', 'none');
+        rsd = false;
+        d3.select('#scopus-search-button').style('display', 'block');
         d3.select('#escience-search-button').style('display', 'none');
         d3.select('#node-details').style('display', 'none');
         document.getElementById("profile").style.visibility = "hidden";
-        showForm('aff-search');
+        
+        const slider = document.getElementById('mySlider');
+        slider.value = 10;
+        showForm('topic-search');
+
+        Scopus_network();
+      
+    });
+
+
+    function Openalex_network() {
 
         const initial_aff_name = "Netherlands eScience Center"
         d3.json("/openalex-aff-search?aff_name=" + initial_aff_name +
@@ -1112,9 +1329,58 @@
             // clustering color
             node_topic_color();
 
-        });
-    });
+            // New topic legend
+            var topic_colors = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
 
+            d3.select('#legend').style('display', 'none');
+            d3.select("#legend_list").html("");
+
+            for(var i=0; i<5; i++){
+                var list_item = '<li style="margin-bottom:5px;"><span style="background-color:' + topic_colors[i] + 
+                    '; width:10px; height:10px; display:inline-block; margin-right:5px;"></span>' + topic_names[i] + '</li>';
+                d3.select("#legend_list").html(function(d) {
+                    return d3.select(this).html() + list_item;
+                });
+            }
+            
+            d3.select("#topic_cluster_legend").style("display", "block");
+
+            // Reset the force slider
+            const slider = document.getElementById('mySlider');
+            slider.value = 10;
+
+        });
+        
+    }
+    document.getElementById('openalex').addEventListener('click', function() {
+
+        d3.select('#home').style('display', 'none');
+        d3.select('#sidebar').style('display', 'block');
+        d3.select('#graph').style('display', 'block');
+        
+        // Visibility of the nodes
+        selectedNodeTypes = {
+                publication: true,
+                project: true,
+                software: true,
+                author:true
+        };
+        d3.select('#toggle-buttons').style('display', 'none');
+        
+        // Perform when the 'openalex' element is clicked
+        refresh();
+
+        rsd = false;
+        d3.select('#scopus-search-button').style('display', 'none');
+        d3.select('#escience-search-button').style('display', 'none');
+        d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        showForm('aff-search');
+
+        Openalex_network();
+    
+    });
+    
 
 
 </script>

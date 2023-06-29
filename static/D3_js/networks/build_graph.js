@@ -24,8 +24,9 @@ function refresh(){
 
     // Reset graph-related variables
     maxId = 0;
-    graph_node = [];
-    graph_link = [];
+
+    // graph_node = [];
+    // graph_link = [];
     
     // Define the SVG canvas
     svg = d3.select("#graph").append("svg")
@@ -57,10 +58,18 @@ function refresh(){
             .enter();
 }
 
+function refresh_button_situation() {
+    selectedNodeTypes = {
+        publication: true,
+        project: true,
+        software: true,
+        author: true
+    };
+}
+
 // This function is responsible for building the SVG elements for the graph visualization 
 // based on the provided graph_node and graph_link data.
 function build_new_svg(graph_node, graph_link) {
-
     // Set force layout nodes
     force_node = graph_node;
 
@@ -83,6 +92,7 @@ function build_new_svg(graph_node, graph_link) {
                 .append("line").attr("class", "link")
                 .style("stroke-width", d => d.count ? 1/2*d.count : "0.5px")
                 .interrupt('linkTransition')
+                .attr("cursor", "pointer")
                 .on("click", handleLinkClick);
 
     // Append nodes to the svg
@@ -108,6 +118,9 @@ function build_new_svg(graph_node, graph_link) {
                 .text(function(d){
                     if (d.label == "author") {
                         return d.title;
+                    }
+                    else {
+                        return d.title.substring(0,15) + '...'
                     }
                 })
                 .style('font-size', d => `${d.radius / 2}px`)
@@ -198,5 +211,6 @@ function build_new_svg(graph_node, graph_link) {
     }).alphaDecay(0.05);
 
     force.alpha(1).restart();
-
+    const renderTime = performance.now() - renderStart;
+    console.log(`Render time: ${renderTime}ms`);
 }

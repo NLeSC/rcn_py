@@ -1,10 +1,45 @@
 import itertools
+import time
+import requests
 import pandas as pd
 from pybliometrics.scopus import AuthorRetrieval, AuthorSearch
 from pyvis.network import Network
 from rcn_py import topic_modeling
 
+def get_scopus_info_from_orcid(orcid, MYAPIKEY="3d120b6ddb7d069272dfc2bc68af4028"):
+    time.sleep(0.5)
+    
+    url = "http://api.elsevier.com/content/search/author?query=ORCID%28"+orcid+"%29"
 
+    header = {'Accept' : 'application/json', 
+            'X-ELS-APIKey' : MYAPIKEY}
+    resp = requests.get(url, headers=header)
+    results = resp.json()
+
+    if 'service-error' in results.keys():
+        return '', '', ''
+    elif 'search-results' not in results.keys():
+        return '', '', ''
+    elif 'error-response' in results.keys():
+        time.sleep(1)
+        get_scopus_info_from_orcid(orcid)
+    elif 'error' in results['search-results']['entry'][0].keys():
+        return '', '', ''
+    else:
+        scopus_author_id = results['search-results']['entry'][0]['dc:identifier'].split(':')[-1]
+
+        # Get preferred name (instead of initials)
+        name = results['search-results']['entry'][0]['preferred-name']
+        preferred_name  = name['given-name'] + ' ' + name['surname']
+
+        # Get scopus profile links
+        links = results['search-results']['entry'][0]["link"]
+        for l in links:
+            if l['@ref'] == 'scopus-author':
+                author_link = l['@href']
+
+        return scopus_author_id, preferred_name, author_link
+    
 def get_hindex(au_id):
     au = AuthorRetrieval(au_id)
     return au.h_index

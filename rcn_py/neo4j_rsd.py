@@ -1,5 +1,4 @@
 import requests
-import time
 from rcn_py import orcid
 from rcn_py import scopus
 
@@ -34,7 +33,7 @@ def get_scopus_result(authors, scopus_id_dict, preferred_name_dict, author_link_
         # If the author has an ORCID and it's not already in the Scopus ID dictionary
         if author['orcid'] and (author['orcid'] not in scopus_id_dict):
             # use the ORCID to get the Scopus ID, preferred name, and author link for the author
-            scopus_id, preferred_name, author_link = scopus.get_scopus_info_using_orcid(author['orcid'])
+            scopus_id, preferred_name, author_link = scopus.get_scopus_info_from_orcid(author['orcid'])
             # Add the newly fetched information to their respective dictionaries
             scopus_id_dict[author['orcid']] = scopus_id
             preferred_name_dict[author['orcid']] = preferred_name
@@ -106,13 +105,13 @@ def create_person_nodes(tx, authors, scopus_id_dict, preferred_name_dict, author
         if author['orcid']:
 
             # If the author's ORCID is in the Scopus ID dictionary, get their Scopus ID, preferred name, and Scopus link
-            # Otherwise, fetch this information using the get_scopus_info_using_orcid function
+            # Otherwise, fetch this information using the get_scopus_info_from_orcid function
             if author['orcid'] in scopus_id_dict:
                 author_scopus_id = scopus_id_dict[author['orcid']]
                 preferred_name = preferred_name_dict[author['orcid']] 
                 scopus_link = author_link_dict[author['orcid']]
             else:
-                author_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_using_orcid(author['orcid'])
+                author_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_from_orcid(author['orcid'])
         
             # If no preferred name is returned, use the author's name as their preferred name
             if len(preferred_name) == 0:
@@ -251,7 +250,7 @@ def create_author_project_edge(tx, authors, scopus_id_dict, preferred_name_dict)
             preferred_name = preferred_name_dict[author['orcid']] 
         # If not present, get the Scopus id, preferred name and Scopus link using the author's ORCID.
         else:
-            author_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_using_orcid(author['orcid'])
+            author_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_from_orcid(author['orcid'])
 
         # If the preferred name is empty, use the author's name.
         if len(preferred_name) == 0:
@@ -312,7 +311,7 @@ def create_author_software_edge(tx, contributors, scopus_id_dict, preferred_name
             preferred_name = preferred_name_dict[contributor['orcid']] 
         # If the ORCID is not in the dictionary, get the Scopus id, preferred name, and Scopus link using the ORCID.
         else:
-            contributor_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_using_orcid(contributor['orcid'])
+            contributor_scopus_id, preferred_name, scopus_link = scopus.get_scopus_info_from_orcid(contributor['orcid'])
               
         # If the preferred name is empty, use the contributor's name.
         if len(preferred_name) == 0:
