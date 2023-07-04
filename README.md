@@ -11,7 +11,6 @@ This research collaboration web application leverages data from multiple researc
 
 - [Installation](#installation)
 - [Usage](#usage)
-- [Running](#running)
 - [License](#license)
 
 ## Installation
