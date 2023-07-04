@@ -194,9 +194,22 @@ function hide_node(node_id) {
     else {
         build_new_svg(coauthor_graph_node, coauthor_graph_link)
     }
+
+    if (cluster) {
+
+        // Make the nodes in the same group be together
+        var PubNodes = graph_node.filter(node => node.group !== undefined);
+        // Add a custom force to cluster nodes based on their group
+        var simulation = d3.forceSimulation(PubNodes)
+                        .force("group", groupForce(PubNodes).strength(0.1))
+        simulation.on("tick", tick).alphaDecay(0.05);
+        simulation.alpha(1).restart();
+    }
+
     // If we hide the node, then remove the tooltip of this node.
     arcs.selectAll("path").remove();
     arcs.selectAll("text").remove();
+    d3.select('#node-details').style('display', 'none');
 
 }
 
@@ -251,6 +264,7 @@ function show_all_link(unique_id, node_label, node_id) {
         maxId = 0;
         arcs.selectAll("path").remove();
         arcs.selectAll("text").remove();
+        d3.select('#node-details').style('display', 'none');
         
         graph_node = graph_node.concat(links.nodes);
         graph_link = graph_link.concat(links.links);
@@ -262,6 +276,17 @@ function show_all_link(unique_id, node_label, node_id) {
         }
         else {
             build_new_svg(coauthor_graph_node, coauthor_graph_link);
+        }
+
+        if (cluster) {
+
+            // Make the nodes in the same group be together
+            var filteredNodes = graph_node.filter(node => node.group !== undefined);
+            // Add a custom force to cluster nodes based on their group
+            var simulation = d3.forceSimulation(filteredNodes)
+                            .force("group", groupForce(filteredNodes).strength(0.1))
+            simulation.on("tick", tick).alphaDecay(0.05);
+            simulation.alpha(1).restart();
         }
         
     });

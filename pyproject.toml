@@ -37,13 +37,14 @@ dependencies = [
   "d3graph",
   "neo4j",
   "flask",
+  "scikit-learn",
 ]
 dynamic = ["version"]
 
 [project.urls]
-Documentation = "https://github.com/unknown/rcn-py#readme"
-Issues = "https://github.com/unknown/rcn-py/issues"
-Source = "https://github.com/unknown/rcn-py"
+Documentation = "https://github.com/NLeSC/rcn_py#readme"
+Issues = "https://github.com/NLeSC/rcn_py/issues"
+Source = "https://github.com/NLeSC/rcn_py"
 
 [tool.hatch.version]
 path = "rcn_py/__about__.py"

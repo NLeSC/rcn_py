@@ -194,23 +194,129 @@ function build_new_svg(graph_node, graph_link) {
     
 
     // Force layout tick function
-    force.on("tick", function() {
-        network.selectAll('.link')
-        .attr("x1", function (d) { return d.source.x })
-        .attr("y1", function (d) { return d.source.y })
-        .attr("x2", function (d) { return d.target.x })
-        .attr("y2", function (d) { return d.target.y })
-        
-        network.selectAll('.node')
-        .attr("cx", function (d) { return d.x })
-        .attr("cy", function (d) { return d.y })
-
-        network.selectAll('text')
-        .attr('x', d => d.x).attr('y', d => d.y);
-
-    }).alphaDecay(0.05);
+    force.on("tick", tick).alphaDecay(0.05);
 
     force.alpha(1).restart();
-    const renderTime = performance.now() - renderStart;
-    console.log(`Render time: ${renderTime}ms`);
+
+    if (cluster) {
+        // clustering color
+        node_topic_color();
+    }
+
+    // const renderTime = performance.now() - renderStart;
+    // console.log(`Render time: ${renderTime}ms`);
+}
+
+
+function tick() {
+    network.selectAll('.link')
+    .attr("x1", function (d) { return d.source.x })
+    .attr("y1", function (d) { return d.source.y })
+    .attr("x2", function (d) { return d.target.x })
+    .attr("y2", function (d) { return d.target.y })
+    
+    network.selectAll('.node')
+    .attr("cx", function (d) { return d.x })
+    .attr("cy", function (d) { return d.y })
+
+    network.selectAll('text')
+    .attr('x', d => d.x).attr('y', d => d.y);
+}
+
+
+function node_topic_color() {
+    // var checkbox = document.getElementById("show_topic_color");
+    var nodes = network.selectAll(".node");
+    // if (checkbox.checked){
+        // Remove the additional classes from the nodes
+        nodes.classed('author', false);
+        nodes.classed('publication', false);
+        nodes.classed('project', false);
+        nodes.classed('software', false);
+        nodes.classed('author_highlight', false);
+        nodes.classed('first_coauthor', false);
+        nodes.classed('second_coauthor', false);
+
+        var group_num = Array.apply(null, {length: 7}).map(Number.call, Number);
+        
+        var colorScale = d3.scaleOrdinal()
+            .domain(group_num)
+            .range(['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff' ]); // Specify colors for each topic
+
+        var bgColorScale = d3.scaleOrdinal()
+            .domain(group_num)
+            .range(['#d47777', '#c99c65', '#bdbf67', '#75b567', '#57b4bd', '#668ac4', '#7d71c9' ]);
+
+        nodes.attr('fill', function(d) { if (d.group !== undefined) return colorScale(d.group); 
+                                        else {return '#BBB';} });
+        nodes.attr('stroke', function(d) { if (d.group !== undefined) return bgColorScale(d.group); 
+                                        else {return '#9c9c9c';} });
+ 
+}
+
+
+function toggleNodeVisibility() {
+    // Filter nodes based on the selected types
+    console.log(graph_node);
+    var filteredNodes = graph_node.filter(node => selectedNodeTypes[node.label]);
+    console.log(filteredNodes);
+    // Filter links based on the selected types
+    // A link is included if both its source and target nodes are included
+    let new_graph_Link = graph_link.filter(link => 
+        selectedNodeTypes[link.source.label] && selectedNodeTypes[link.target.label]
+    );
+
+    // node without links 
+    const isolatedNodes = filteredNodes.filter(function(node) {
+        return !new_graph_Link.some(function(link) {
+            return link.source === node || link.target === node;
+        });
+    });
+    const new_graph_node = filteredNodes.filter(function(node) {
+        return !isolatedNodes.includes(node);
+    });
+    refresh();
+    build_new_svg(new_graph_node, new_graph_Link);
+    // var simulation = d3.forceSimulation(filteredNodes)
+    //                 .force("group", groupForce(filteredNodes).strength(0.1))
+
+    // simulation.on("tick", tick).alphaDecay(0.05);
+    // simulation.alpha(1).restart();
+
+}
+
+function toggleNodeType(nodeType) {
+    // Toggle the visibility of the node in the network
+    // Flip the selected state of the node type
+    selectedNodeTypes[nodeType] = !selectedNodeTypes[nodeType];
+    toggleNodeVisibility(nodeType);
+
+    // Change the color of the button to indicate whether the node is visible
+    var button = document.getElementById(nodeType + 'Button');
+    if (selectedNodeTypes[nodeType]) {          // Visible
+        if (nodeType === 'publication')
+            button.style.backgroundColor = '#8398cd';
+        else if (nodeType === 'project')
+            button.style.backgroundColor = '#94bf91';
+        else if(nodeType === 'software')
+            button.style.backgroundColor = '#c093bd';
+    } else {
+        button.style.backgroundColor = 'lightgray'; // Hidden
+    }
+}
+
+function ResetNodeType() {
+    // Change the color of the button to make the node is visible
+    selectedNodeTypes['publication'] = true;
+    var publication_button = document.getElementById('publicationButton');
+    publication_button.style.backgroundColor = '#8398cd'
+
+    selectedNodeTypes['project'] = true;
+    var project_button = document.getElementById('projectButton');
+    project_button.style.backgroundColor = '#94bf91'
+
+    selectedNodeTypes['software'] = true;
+    var software_button = document.getElementById('softwareButton');
+    software_button.style.backgroundColor = '#c093bd'
+
 }

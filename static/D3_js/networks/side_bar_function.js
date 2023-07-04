@@ -11,8 +11,26 @@ function check_show_pub() {
         arcs.selectAll("text").remove();
 
         show_pub = true;
+
+        ResetNodeType();
+
+        // Make the selection disabled, 
+        // because networks with publications only contain Author->Publication links
+        document.getElementById('col_count').value = 1;
+        document.getElementById('col_count').disabled = true;
+
         // Show SVG using data with publication nodes
         build_new_svg(graph_node, graph_link);
+        if (cluster) {
+
+            // Make the nodes in the same group be together
+            var filteredNodes = graph_node.filter(node => node.group !== undefined);
+            // Add a custom force to cluster nodes based on their group
+            var simulation = d3.forceSimulation(filteredNodes)
+                            .force("group", groupForce(filteredNodes).strength(0.1))
+            simulation.on("tick", tick).alphaDecay(0.05);
+            simulation.alpha(1).restart();
+        }
        
     } else {
         // Clear the existing network elements
@@ -24,43 +42,12 @@ function check_show_pub() {
         arcs.selectAll("text").remove();
 
         show_pub = false;
+        document.getElementById('col_count').disabled = false;
         // Show SVG using data without publication nodes
         build_new_svg(coauthor_graph_node, coauthor_graph_link);
     }
 }
 
-function node_topic_color() {
-    // var checkbox = document.getElementById("show_topic_color");
-    var nodes = network.selectAll(".node");
-    // if (checkbox.checked){
-        // Remove the additional classes from the nodes
-        nodes.classed('author', false);
-        nodes.classed('publication', false);
-        nodes.classed('project', false);
-        nodes.classed('software', false);
-        nodes.classed('author_highlight', false);
-        nodes.classed('first_coauthor', false);
-        nodes.classed('second_coauthor', false);
-
-        var group_num = Array.apply(null, {length: 7}).map(Number.call, Number);
-        
-        var colorScale = d3.scaleOrdinal()
-            .domain(group_num)
-            .range(['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff' ]); // Specify colors for each topic
-
-        var bgColorScale = d3.scaleOrdinal()
-            .domain(group_num)
-            .range(['#d47777', '#c99c65', '#bdbf67', '#75b567', '#57b4bd', '#668ac4', '#7d71c9' ]);
-
-        nodes.attr('fill', function(d) { if (d.group !== undefined) return colorScale(d.group); 
-                                        else {return '#BBB';} });
-        nodes.attr('stroke', function(d) { if (d.group !== undefined) return bgColorScale(d.group); 
-                                        else {return '#9c9c9c';} });
-    // } 
-    // else {
-    //     nodes.attr("class", function (d) { return "node "+d.color; })
-    // }
-}
 
 function collaMin() {
     var collaboration_min = document.getElementById("col_count").value;
@@ -79,13 +66,11 @@ function collaMin() {
         network.selectAll(".link").remove();
         network.selectAll("text").remove();
         maxId = 0;
-
         
         filteredCoauthorNodes = filteredCoauthorNodes.filter(function(node) {
             return !isolatedNodes.includes(node);
         });
-        // coauthor_graph_link  = filteredCoauthorLinks;
-        // console.log(graph_node);
+        
         // build new network
         build_new_svg(filteredCoauthorNodes, filteredCoauthorLinks)
 

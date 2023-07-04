@@ -1,3 +1,5 @@
+import sys
+sys.path.append('./rcn_py')
 import requests
 import orcid
 import itertools

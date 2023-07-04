@@ -503,7 +503,7 @@
         <label for="col_count">
             Collaboration minimum: 
         </label>
-        <select name="col_count" id="col_count" onchange="collaMin()" size="1">
+        <select name="col_count" id="col_count" onchange="collaMin()" size="1" disabled>
             <option value="1" selected>1</option>
             <option value="2">2</option>
             <option value="3">3</option>
@@ -571,11 +571,6 @@
 
 <div id="topic_cluster_legend" style="display: none; position:fixed; bottom:0; left:0; width:250px; background-color:lightgray; padding:20px; z-index: 3;">
         <ul id="legend_list" style="list-style:none; padding:0;"></ul>
-        <!-- <li style="margin-bottom:5px;"><span style="background-color:#BBB; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span>General Author</li>
-        <li style="margin-bottom:5px;"><span style="background-color:#ffadad; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li>
-        <li style="margin-bottom:5px;"><span style="background-color:#fdffb6; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li>
-        <li style="margin-bottom:5px;"><span style="background-color:#caffbf; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li>
-        <li style="margin-bottom:5px;"><span style="background-color:#9bf6ff; width:15px; height:15px; display:inline-block; display:inline-block; margin-right:5px;"></span></li> -->
 </div>
 
 
@@ -592,13 +587,14 @@
 <!-- local js files -->
 
 <script src="/static/D3_js/networks/build_graph.js"></script>
-<script src="/static/D3_js/networks/search.js"></script>
-<script src="/static/D3_js/networks/side_bar.js"></script>
-<script src="/static/D3_js/text_info_display/chart_table.js"></script>
-<script src="/static/D3_js/tooltip/tooltip.js"></script>
-<script src="/static/D3_js/zoom_drag/canvas_move.js"></script>
-<script src="/static/D3_js/zoom_drag/node_click.js"></script>
-<script src="/static/D3_js/zoom_drag/node_move.js"></script>
+<script src="/static/D3_js/networks/search_function.js"></script>
+<script src="/static/D3_js/networks/side_bar_function.js"></script>
+<script src="/static/D3_js/profile/chart_table.js"></script>
+<script src="/static/D3_js/profile/profile.js"></script>
+<script src="/static/D3_js/interaction/tooltip.js"></script>
+<script src="/static/D3_js/interaction/canvas_move.js"></script>
+<script src="/static/D3_js/interaction/info_table.js"></script>
+<script src="/static/D3_js/interaction/node_move.js"></script>
 
 
 
@@ -655,6 +651,7 @@
     
     // Variables for translating and scaling the SVG canvas
     var rsd = false;
+    var cluster = false;
     var svgTranslate = [0, 0];
     var curTranslate = [0, 0];
     var svgScale = 1;
@@ -724,112 +721,6 @@
             
     
     
-    function show_topics(nodes, topic_names) {
-        // Filter nodes to include only those with a defined group
-        var filteredNodes = nodes.filter(node => node.group !== undefined);
-
-        // Add a custom force to cluster nodes based on their group
-        var simulation = d3.forceSimulation(filteredNodes)
-                        .force("group", groupForce(filteredNodes).strength(0.1))
-
-        simulation.on("tick", tick).alphaDecay(0.05);
-        simulation.alpha(1).restart();
-
-
-        // Group the nodes based on their group property
-        var groups = d3.group(filteredNodes, d => d.group);
-
-        // Compute the centroid of each group
-        var groupCentroids = Array.from(groups, ([group, filteredNodes]) => ({
-            group: group,
-            x: d3.mean(filteredNodes, d => d.x)+width/2,
-            y: d3.mean(filteredNodes, d => d.y)+height/2
-        }));
-
-        console.log(groupCentroids);
-
-        // Create label nodes with topic names
-        var labelNodes = groupCentroids.map(d => ({
-            id: `label_${d.group}`,
-            name: `${topic_names[d.group]}`,
-            group: d.group,
-            x: d.x,
-            y: d.y
-        }));
-
-        // Define color scales for the label background and border
-        var group_num = Array.apply(null, {length: 7}).map(Number.call, Number);
-        var colorScale = d3.scaleOrdinal()
-            .domain(group_num)
-            .range(['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff' ]);
-        var bgColorScale = d3.scaleOrdinal()
-            .domain(group_num)
-            .range(['#d47777', '#c99c65', '#bdbf67', '#75b567', '#57b4bd', '#668ac4', '#7d71c9' ]);
-        
-
-        // Append the label nodes to the SVG canvas
-        var labelSelection = svg.selectAll(".topic-label")
-                                .data(labelNodes)
-                                .enter()
-                                .append("g")
-                                .attr('class', 'topic-label');
-                            
-        labelSelection
-            .append("rect")
-            .attr("class", "label-background")
-            .attr("x", d => d.x - 20) // Adjust the positioning as needed
-            .attr("y", d => d.y - 10) // Adjust the positioning as needed
-            .attr("width", 40) // Adjust the width as needed
-            .attr("height", 20) // Adjust the height as needed
-            .style("fill", d => colorScale(Number(d.group))) // Set the background color
-            .style("opacity", 0.7) // Set the opacity value as desired
-            .style("stroke", d => bgColorScale(Number(d.group))) // Set the border color
-            .style("stroke-width", "1px") // Set the border width;
-
-        labelSelection
-            .append("text")
-            .attr("text-anchor", "middle")
-            .style('font-size', '8px')
-            .attr("x", d => d.x)
-            .attr("y", d => d.y)
-            .text(d => "Topic " + d.group);
-
-        // Draw the group scope rectangles
-        groups.forEach((groupNodes, group) => {
-            var minX = d3.min(groupNodes, d => d.y);
-            var maxX = d3.max(groupNodes, d => d.y);
-            var minY = d3.min(groupNodes, d => d.x);
-            var maxY = d3.max(groupNodes, d => d.x);
-            // console.log(minX,maxX,minY,maxY,group);
-            network.append("rect")
-                .attr("class", "group-scope")
-                .attr("x", width/2 + minX)
-                .attr("y", height/2 + minY)
-                .attr("width", (maxX - minX))
-                .attr("height", (maxY - minY))
-                .style("fill", "none") // Set the fill color or use "none" for no fill
-                .style("stroke", "red") // Set the stroke color
-                .style("stroke-width", "2px"); // Set the stroke width
-        });
-        node_topic_color();        
-    }
-
-
-    function tick() {
-        network.selectAll('.link')
-        .attr("x1", function (d) { return d.source.x })
-        .attr("y1", function (d) { return d.source.y })
-        .attr("x2", function (d) { return d.target.x })
-        .attr("y2", function (d) { return d.target.y })
-        
-        network.selectAll('.node')
-        .attr("cx", function (d) { return d.x })
-        .attr("cy", function (d) { return d.y })
-
-        network.selectAll('text')
-        .attr('x', d => d.x).attr('y', d => d.y);
-    }
-    
     function groupForce(nodes) {
         var strength = 0.1;
         var nodesByGroup;
@@ -866,7 +757,7 @@
         return force;
     }
 
-
+    // ######################### Slider ############################
     function updateSimulationStrength(strength) {
         force.force("charge").strength(strength);
 
@@ -897,7 +788,7 @@
     });
     
 
-    // ############# Initial network ##############
+    // ##################### Initial network ######################
     d3.select('#home').style('display', 'none');
     d3.select('#sidebar').style('display', 'block');
     d3.select('#graph').style('display', 'block');
@@ -932,71 +823,7 @@
     });
 
 
-    function toggleNodeVisibility() {
-        // Filter nodes based on the selected types
-        console.log(graph_node);
-        var filteredNodes = graph_node.filter(node => selectedNodeTypes[node.label]);
-        console.log(filteredNodes);
-        // Filter links based on the selected types
-        // A link is included if both its source and target nodes are included
-        let new_graph_Link = graph_link.filter(link => 
-            selectedNodeTypes[link.source.label] && selectedNodeTypes[link.target.label]
-        );
-
-        // node without links 
-        const isolatedNodes = filteredNodes.filter(function(node) {
-            return !new_graph_Link.some(function(link) {
-                return link.source === node || link.target === node;
-            });
-        });
-        const new_graph_node = filteredNodes.filter(function(node) {
-            return !isolatedNodes.includes(node);
-        });
-        refresh();
-        build_new_svg(new_graph_node, new_graph_Link);
-        // var simulation = d3.forceSimulation(filteredNodes)
-        //                 .force("group", groupForce(filteredNodes).strength(0.1))
-
-        // simulation.on("tick", tick).alphaDecay(0.05);
-        // simulation.alpha(1).restart();
-
-    }
-
-    function toggleNodeType(nodeType) {
-        // Toggle the visibility of the node in the network
-        // Flip the selected state of the node type
-        selectedNodeTypes[nodeType] = !selectedNodeTypes[nodeType];
-        toggleNodeVisibility(nodeType);
-
-        // Change the color of the button to indicate whether the node is visible
-        var button = document.getElementById(nodeType + 'Button');
-        if (selectedNodeTypes[nodeType]) {          // Visible
-            if (nodeType === 'publication')
-                button.style.backgroundColor = '#8398cd';
-            else if (nodeType === 'project')
-                button.style.backgroundColor = '#94bf91';
-            else if(nodeType === 'software')
-                button.style.backgroundColor = '#c093bd';
-        } else {
-            button.style.backgroundColor = 'lightgray'; // Hidden
-        }
-    }
-
-    function ResetNodeType() {
-        // Change the color of the button to make the node is visible
-        selectedNodeTypes['publication'] = true;
-        var publication_button = document.getElementById('publicationButton');
-        publication_button.style.backgroundColor = '#8398cd'
-
-        selectedNodeTypes['project'] = true;
-        var project_button = document.getElementById('projectButton');
-        project_button.style.backgroundColor = '#94bf91'
-
-        selectedNodeTypes['software'] = true;
-        var software_button = document.getElementById('softwareButton');
-        software_button.style.backgroundColor = '#c093bd'
-
-    }
+    
 
 
 
@@ -1085,56 +912,7 @@
         // Fetch JSON data using a specific URL
         d3.json("/openalex-aff-search-profile-info?aff_name=" + initial_aff_name).then(function(graph) {
             // Extract data from the retrieved JSON object
-            search_title = graph["aff_name"];
-            ror = graph["ror"];
-            works_count = graph["works_count"]
-            cited_by_count = graph['cited_by_count'];
-            h_index = graph["h_index"];
-            home_page = graph["home_page"];
-            city = graph["city"];
-            country = graph["country"];
-            cite_by_year = graph['cite_by_year'];
-            concept_score = graph["concept_score"];
-
-            // Update specific elements on the page with the retrieved data
-            const nameElement = document.getElementById("name-title");
-            nameElement.textContent = search_title;
-
-            const locationElement = document.getElementById("city-country");
-            locationElement.textContent = city+', '+country;
-
-            const doiLinkElement1 = document.getElementById("ror1");
-            const doiLinkElement2 = document.getElementById("ror2");
-            
-            if (ror) {
-                doiLinkElement1.href = ror;
-                doiLinkElement2.innerHTML = ror;
-            } else {
-                doiLinkElement1.style.display = "none";
-            }
-            
-            document.getElementById("work-count-value").textContent = works_count;
-            document.getElementById("h-index-value").textContent = h_index;
-            document.getElementById("citation-count-value").textContent = cited_by_count;
-
-            // Update or create charts based on the retrieved data
-            if (chartexist) {
-                        myBarChart.data.datasets[0].data = [];
-                        myPolarChart.data.datasets[0].data = [];
-                        myBarChart.update();
-                        myPolarChart.update();
-                        chartExists = false;
-            }
-            myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
-            chartexist = true;
-
-            // Show or hide specific elements on the page
-            document.getElementById("profile").style.visibility = "visible";
-            document.getElementById("person_profile").style.display = "none";
-            document.getElementById("pub_profile").style.display = "none";
-            document.getElementById("aff_profile").style.display = "block";
-            document.getElementById("person_table").style.display = "block";
-
+            inst_profile(graph);
         });
 
         d3.json("/escience").then(function(graph) {
@@ -1157,13 +935,11 @@
                     });
                     return -sameGroupNodes.length * 30;
                 }).distanceMax(100));
-                // show_topics(graph.topics);
             }
             else {
                 // Build the SVG using the coauthor graph data
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
-            
         });
 
         const slider = document.getElementById('mySlider');
@@ -1186,6 +962,7 @@
         // Refresh the page or perform necessary actions
         refresh();
         rsd = true;
+        cluster = false;
         
         // Hide and show specific elements based on the clicked event
         d3.select('#scopus-search-button').style('display', 'none');
@@ -1194,6 +971,7 @@
         document.getElementById("profile").style.visibility = "hidden";
         showForm('author-search');
 
+        // Show the profile of eScence Center and its network in 2023
         RSD_network();
     });
 
@@ -1233,6 +1011,7 @@
         // Perform actions when the 'scopus' element is clicked
         refresh();
         rsd = false;
+        cluster = false;
         d3.select('#scopus-search-button').style('display', 'block');
         d3.select('#escience-search-button').style('display', 'none');
         d3.select('#node-details').style('display', 'none');
@@ -1253,61 +1032,16 @@
         d3.json("/openalex-aff-search?aff_name=" + initial_aff_name +
         "&start_year=2023&end_year=2023").then(function(graph) {
             // Extract the required data from the retrieved JSON object
+
+            // Show the profile of the institution
+            inst_profile(graph);
+
+            // Get the node data and the link data of the network
             graph_node = graph.nodes;
             graph_link = graph.links;
             coauthor_graph_node = graph.coauthor_nodes;
             coauthor_graph_link = graph.coauthor_links;
             topic_names = graph.topic_names;
-
-            // Extract profile information
-            search_title = graph["aff_name"];
-            ror = graph["ror"];
-            works_count = graph["works_count"]
-            cited_by_count = graph['cited_by_count'];
-            h_index = graph["h_index"];
-            home_page = graph["home_page"];
-            city = graph["city"];
-            country = graph["country"];
-            cite_by_year = graph['cite_by_year'];
-            concept_score = graph["concept_score"];
-
-            // Update the profile elements with the retrieved information
-            const nameElement = document.getElementById("name-title");
-            nameElement.textContent = search_title;
-
-            const locationElement = document.getElementById("city-country");
-            locationElement.textContent = city+', '+country;
-
-            const doiLinkElement1 = document.getElementById("ror1");
-            const doiLinkElement2 = document.getElementById("ror2");
-            if (ror) {
-                doiLinkElement1.href = ror;
-                doiLinkElement2.innerHTML = ror;
-            } else {
-                doiLinkElement1.style.display = "none";
-            }
-            
-            document.getElementById("work-count-value").textContent = works_count;
-            document.getElementById("h-index-value").textContent = h_index;
-            document.getElementById("citation-count-value").textContent = cited_by_count;
-
-            // Update or create the bar and polar charts
-            if (chartexist) {
-                        myBarChart.data.datasets[0].data = [];
-                        myPolarChart.data.datasets[0].data = [];
-                        myBarChart.update();
-                        myPolarChart.update();
-                        chartExists = false;
-            }
-            myBarChart, myPolarChart= set_new_chart(cite_by_year, concept_score);
-            chartexist = true;
-
-            // Show the profile elements and hide others
-            document.getElementById("profile").style.visibility = "visible";
-            document.getElementById("person_profile").style.display = "none";
-            document.getElementById("pub_profile").style.display = "none";
-            document.getElementById("aff_profile").style.display = "block";
-            document.getElementById("person_table").style.display = "block";
 
             // Check if the 'show_pub' flag is true
             if (show_pub) {
@@ -1326,10 +1060,10 @@
                 build_new_svg(coauthor_graph_node, coauthor_graph_link);
             }
 
-            // clustering color
-            node_topic_color();
+            // // clustering color
+            // node_topic_color();
 
-            // New topic legend
+            // Set a new topic legend
             var topic_colors = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
 
             d3.select('#legend').style('display', 'none');
@@ -1342,7 +1076,6 @@
                     return d3.select(this).html() + list_item;
                 });
             }
-            
             d3.select("#topic_cluster_legend").style("display", "block");
 
             // Reset the force slider
@@ -1371,6 +1104,7 @@
         refresh();
 
         rsd = false;
+        cluster = true;
         d3.select('#scopus-search-button').style('display', 'none');
         d3.select('#escience-search-button').style('display', 'none');
         d3.select('#node-details').style('display', 'none');

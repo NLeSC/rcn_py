@@ -42,6 +42,32 @@ def get_scopus_result(authors, scopus_id_dict, preferred_name_dict, author_link_
     # Return the updated dictionaries
     return scopus_id_dict, preferred_name_dict, author_link_dict
 
+# Add constraint forPerson nodes, Product nodes and Software nodes
+def rsd_add_constraint(tx):
+    """
+    This function is used to add constraints to the nodes in a Neo4j database. 
+    It ensures that the 'id'/'doi' property of Project/Software nodes and the 'orcid' property of Person nodes are unique.
+    """
+
+    # This Cypher command creates a unique constraint on the 'project_id' property of Project nodes.
+    # If a constraint by the name 'proj_id' does not exist, it will be created.
+    tx.run("""
+            CREATE CONSTRAINT proj_id IF NOT EXISTS
+            FOR (p:Project) REQUIRE p.doi IS UNIQUE
+            """)
+    # This Cypher command creates a unique constraint on the 'soft_doi' property of Software nodes.
+    # If a constraint by the name 'soft_doi' does not exist, it will be created.
+    tx.run("""
+            CREATE CONSTRAINT soft_doi IF NOT EXISTS
+            FOR (s:Software) REQUIRE s.doi IS UNIQUE
+            """)
+    # This Cypher command creates a unique constraint on the 'scopus_id' property of Person nodes.
+    # If a constraint by the name 'scopus_id' does not exist, it will be created.
+    tx.run("""
+            CREATE CONSTRAINT orcid IF NOT EXISTS
+            FOR (n:Person) REQUIRE n.orcid IS UNIQUE
+            """)
+
 def request_rsd_data():
     """
     This function sends GET requests to the RSD API to retrieve data about

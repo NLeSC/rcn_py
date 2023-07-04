@@ -151,9 +151,12 @@ def get_example_graph():
         node_records[record["doi"]] = i
 
         # If there is no 'citation count' property, then the node size will be the default size
-        if math.isnan(record["cited"]): 
+        if not record["cited"]:
             citation_count = 0
-            pub_radius = 6
+            pub_radius = 6 
+        elif math.isnan(record["cited"]):
+            citation_count = 0
+            pub_radius = 6 
         else:
             citation_count = record["cited"]
             pub_radius = 6 + math.log(citation_count)
@@ -285,9 +288,12 @@ def get_search_query():
             node_records[record["doi"]] = i
 
             # If there is no 'citation count' property, then the node size will be the default size
-            if math.isnan(record["cited"]):
+            if not record["cited"]:
                 citation_count = 0
-                pub_radius = 6
+                pub_radius = 6 
+            elif math.isnan(record["cited"]):
+                citation_count = 0
+                pub_radius = 6 
             else:
                 citation_count = record["cited"]
                 pub_radius = 6 + math.log(citation_count)
@@ -424,18 +430,18 @@ def author_search():
     else:
         if rsd:
             db = get_db("rsd")
-            # OpenAlex can be used to add more results (todo)
         else:
             db = get_db("neo4j")
         
+        # If we have the fullname but no orcid, try to get orcid by fullname first
         if (not orcid) or (firstname and surname):
             orcid = orcid_py.name_to_orcid_id(firstname+' '+surname)
         if orcid:
-            # rsd data
+            # Try to connect to the Scopus data 
             scopus_id = scopus.get_scopus_info_from_orcid(orcid)[0]
             results = db.execute_read(get_coauthor_byID, scopus_id, orcid)
 
-            # openAlex
+            # OpenAlex profile information
             openalex_search = openalex.search_user_by_orcid(orcid)
 
             search_author_name = openalex_search["display_name"]
@@ -453,17 +459,17 @@ def author_search():
                 concept_score['concept_name'].append(c['display_name'])
                 concept_score['score'].append(c['score'])
 
-
+        # If all the attampt above failed, use the author's name.
         elif firstname and surname:
             namelist = []
             namelist.append(firstname + ' ' + surname)
             namelist.append(surname + ' ' + firstname[0]+ ".")
             namelist.append(firstname[0]+ ". "+surname)
             results = db.execute_read(get_coauthor_byName, namelist)       
-        
         else:
             return []
         
+        # Start generating the nodes and links list in the network
         nodes = []
         rels = []
         node_records = {}
@@ -475,7 +481,8 @@ def author_search():
         for record in results:
             target = i
             node_records[record['doi']] = i
-            # Citation Count
+
+            # If there is no 'citation count' property, then the node size will be the default size
             if not record["cited"]:
                 citation_count = 0
                 pub_radius = 6 
@@ -499,16 +506,18 @@ def author_search():
             i += 1
             temp_source = []
             coauthor_link = []
-
+            # For every author of one publication:
             for index in range(len(record["name"])):
-                    # Get coauthor info from DB
+                    # If there is a new author, save the information
                     name = record["name"][index]
                     country = record["country"][index]
                     aff = record["affiliation"][index]
 
+                    # If the author node is exactly who we are searching for, set it a different color
                     if (record["author_scopus_id"][index] == scopus_id and record["author_scopus_id"][index]) or (record["author_orcid"][index] == orcid and record["author_orcid"][index]):
                         author_color = "author_highlight"
                     else:
+                        # Others will be the first-layer coauthor
                         author_color = "first_coauthor"
 
                     try:
@@ -520,6 +529,7 @@ def author_search():
                             source = node_records[name]
                        
                     except KeyError:
+                        # Save the most unique feature into the record list.
                         if len(record["author_orcid"][index]) != 0:
                             node_records[record["author_orcid"][index]] = i
                         elif len(record["author_scopus_id"][index]) != 0:
@@ -539,19 +549,26 @@ def author_search():
                         nodes.append(author)
                         coauthor_nodes.append(author)
                         i += 1
+
+                    # Save all the id of the coauthors of the paper in a list 
                     temp_source.append(source)
+                    # Save all the authors in the network in the list
                     nodes_id_in_rel.append(source)
+                    # Author -> Publication relationships
                     rels.append({"source": source, "target": target, "doi":record["doi"], 
                                  "scopus_id": record["author_scopus_id"][index],
                                  "orcid": record["author_orcid"][index]})
-            
+                    
+            # Put the author ids in paris to get coauthorship links
             coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
-
+            # Author -> Author relationships
             for l in coauthor_link:
                 coauthor_rels.append({"source": l[0], "target": l[1], "doi":record["doi"], "title": record["title"]})
 
+        # Count how many times the node occurs in the network
         nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
         coauthor_nodes = get_link_count_of_author(coauthor_nodes, nodes_id_in_rel)
+        # Count how many times two author have collaborated
         coauthor_rels = get_link_count_of_rel(coauthor_rels)
             
         return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
@@ -563,6 +580,9 @@ def author_search():
 
 
 # ################################ Publication DOI search ################################
+'''
+Use DOI to search for publications
+'''
 @app.route('/pub_search')
 def get_pub_search():
     def doi_search(tx, doi):
@@ -596,6 +616,8 @@ def get_pub_search():
     else:
         if "https://doi.org/" in doi:
             doi = doi.replace("https://doi.org/",'')
+
+        # Openalex profile information
         openalex_pub_result = openalex.get_pub_info_by_doi(doi)
         if openalex_pub_result['meta']['count'] != 0:
             author_list = []
@@ -625,23 +647,25 @@ def get_pub_search():
         else:
             openalex_data = False
 
-        
+        # Start generating nodes and links in the network
         db = get_db("neo4j")
         results = db.execute_read(doi_search, doi)
         
-
         nodes = []
         rels = []
         i = 0
         coauthor_nodes = []
         coauthor_rels = [] 
 
+        # Get the first result
         if results:
             record = results[0]
         else:
             return 
         
         target = i
+
+        # If there is no 'citation count' property, then the node size will be the default size
         if record["cited"]:
             if math.isnan(record["cited"]):
                 citation_count = 0
@@ -665,6 +689,8 @@ def get_pub_search():
         i += 1
         temp_source = []
         coauthor_link = []
+
+        # For every author of one publication:
         for a in range(len(record["author_scopus_id"])):
             source = i
 
@@ -680,13 +706,21 @@ def get_pub_search():
                         }
             nodes.append(author)
             coauthor_nodes.append(author)
+
+            # Save all the id of the coauthors of the paper in a list 
             temp_source.append(source)
             i += 1
+
+            # Author -> Publication relationships
             rels.append({"source": source, "target": target, "doi":doi, "scopus_id": record["author_scopus_id"][a]})
+
+        # Put the author ids in paris to get coauthorship links
         coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
+        # Author -> Author relationships
         for l in coauthor_link:
             coauthor_rels.append({"source": l[0], "target": l[1], "count": 1,"doi":doi, "title": record["title"]})
 
+    # If there is return data from OpenAlex, then make the profile, if else, then only show the network
     if openalex_data:
         return Response(dumps({"nodes": nodes, "links": rels, "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
                            "title": title, 'doi': doi, 'author_string': author_string, 'author_list':author_list,
@@ -698,9 +732,15 @@ def get_pub_search():
                     mimetype="application/json")
 
 
+# ################################ Expand the network ################################
+'''
+Get all the nodes and links connected by a node from the database.
+There are several scenario: 
+If the node is an author: get all the works of the author
+If the node is a research work (publication/software/project), get all the authors of this work
+'''
 @app.route('/show_link')
 def show_link():
-
     def person_node(tx, unique_id):
         return list(tx.run("""
             MATCH (n:Person)-[r]->(p) 
@@ -787,8 +827,9 @@ def show_link():
         if len(coauthorID) != 0:
             coauthorID= list(map(int, coauthorID))
 
-
         db = get_db("neo4j")
+
+        # Publication, then create new author nodes
         if node_label == "publication":
             results = db.execute_read(pub_node, unique_id)
             coauthor_link = []
@@ -812,9 +853,10 @@ def show_link():
                 coauthor_rels.append({"source": l[0], "target": l[1], "count": 1, "doi":unique_id})
             coauthor_nodes = nodes
             
-
-
+        # Author, then create new publication/software/project nodes
         if node_label == "author":
+            if "https://orcid.org/" in unique_id:
+                unique_id = unique_id.replace("https://orcid.org/",'')
             results = db.execute_read(person_node, unique_id)
             for record in results:
                 if record['doi'] not in link_list:
@@ -844,6 +886,7 @@ def show_link():
                         "radius": pub_radius})
                     rels.append({"source": node_id, "target": max_id, "doi": record["doi"], "scopus_id": unique_id})
 
+        # Project/Software
         if node_label == "project" or node_label == "software":
             if node_label == "project":
                 results = db.execute_read(project_node, unique_id)
@@ -866,7 +909,10 @@ def show_link():
                     nodes.append(author)
                     coauthorID.append(max_id)
                     rels.append({"source": max_id, "target": node_id, "id": unique_id, "orcid": record['orcid']})
+
+            # Put the author ids in paris to get coauthorship links
             coauthor_link = coauthor_link+list(itertools.combinations(coauthorID, 2))
+            # Author -> Author relationship
             for l in coauthor_link:
                 coauthor_rels.append({"source": l[0], "target": l[1], "count": 1, "id": unique_id})
             coauthor_nodes = nodes
@@ -909,13 +955,6 @@ def show_esc_graph():
         
     db = get_db("rsd")
     results = db.execute_read(work)
-    groups, topics = topic_modeling.build_corpus(results, 7, 2)
-
-    # preprocess topic lists
-    topic_strings = []
-    for t in topics:
-        topic_strings.append(t[0]+', '+t[1]+', '+t[2])
-
 
     nodes = []
     rels = []
@@ -927,10 +966,12 @@ def show_esc_graph():
         
     
     i = 0
-    pub_i = 0
+    # For every work in the results
     for record in results:
         target = i
         node_records[record["doi"]] = i
+
+        # If there is no 'citation count' property, then the node size will be the default size
         if record["cited"]:
             if math.isnan(record["cited"]):
                 citation_count = 0
@@ -941,6 +982,7 @@ def show_esc_graph():
         else:
             citation_count = 0
             pub_radius = 6
+
         nodes.append({"title": record["title"], 
                       "citation_count": citation_count,
                       "doi": record["doi"],
@@ -949,15 +991,13 @@ def show_esc_graph():
                       "subject": record["subject"],
                       "year": record["year"],
                       "label": record["label"], 
-                      "group": int(groups[pub_i]),
                       "id": target,
                       "color": record["label"],
                       "radius": pub_radius
                       })
         i += 1
-        pub_i += 1
 
-        # if pub, then use scopus id
+        # if the work is publication, then use scopus id
         coauthor_link = []
         temp_source = []
         
@@ -990,22 +1030,27 @@ def show_esc_graph():
                 nodes.append(author)
                 coauthor_nodes.append(author)
                 i += 1
+
+            # Save all the id of the coauthors of the paper in a list
             temp_source.append(source)
             nodes_id_in_rel.append(source)
+            # Author -> Publication relationships
             rels.append({"source": source, "target": target, "doi":record["doi"], "scopus_id": record["scopus_id"][n], "orcid":record["orcid"][n]})
 
+        # Put the author ids in paris to get coauthorship links
         coauthor_link = coauthor_link+list(itertools.combinations(temp_source, 2))
-
+        # Author -> Author relationships
         for l in coauthor_link:
             coauthor_rels.append({"source": l[0], "target": l[1], "doi":record["doi"], "title": record["title"]})
 
+    # Count how many times the node occurs in the network
     nodes = get_link_count_of_author(nodes, nodes_id_in_rel)
     coauthor_nodes = get_link_count_of_author(coauthor_nodes, nodes_id_in_rel)
+    # Count how many times two author have collaborated
     coauthor_rels = get_link_count_of_rel(coauthor_rels)
         
     return Response(dumps({"nodes": nodes, "links": rels, 
-                           "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels,
-                           "topics": topic_strings}),
+                           "coauthor_nodes": coauthor_nodes, "coauthor_links": coauthor_rels}),
                     mimetype="application/json")
 
 
@@ -1145,7 +1190,9 @@ def openalex_aff_search():
                                }),
                     mimetype="application/json")
     
-
+'''
+Only get the profile information 
+'''
 @app.route("/openalex-aff-search-profile-info")
 def openalex_aff_search_profile_info():
     try:
@@ -1184,7 +1231,9 @@ def openalex_aff_search_profile_info():
                                }),
                     mimetype="application/json")
     
-
+'''
+Only get the network data (without the profile information)
+'''
 @app.route("/openalex-aff-search-without-profile")
 def openalex_aff_search_without_profile_info():
     try:
@@ -1275,8 +1324,9 @@ def openalex_aff_search_without_profile_info():
                                }),
                     mimetype="application/json")
 
+# institution search
 @app.route("/openalex-institution-network")
-def openalex_aff_network():
+def openalex_inst_network():
     try:
         aff_name = request.args["aff_name"]
     except KeyError:
@@ -1310,8 +1360,7 @@ def openalex_aff_network():
         node_list, coauthor_link = openalex.build_institution_network(aff_name)
         for node in node_list:
             node['label'] = 'institution'
-            # node['radius'] = 
-
+           
             coauthor_rels = []
         for l in coauthor_link:
             coauthor_rels.append({"source": l[0], "target": l[1]})
