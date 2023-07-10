@@ -1,4 +1,4 @@
-function author_profile(graph) {
+function author_profile(graph, orcid) {
 
     search_author_name = graph["search_author_name"];
     works_count = graph['works_count'];
@@ -51,7 +51,7 @@ function author_profile(graph) {
     d3.select('#node-details').style('display', 'none');
 }
 
-function pub_profile(graph) {
+function pub_profile(graph, doi) {
     if (chartexist) {
         myBarChart.data.datasets[0].data = [];
         myPolarChart.data.datasets[0].data = [];

@@ -1,4 +1,7 @@
 function handleLinkClick(event, d){
+    arcs.selectAll("path").remove();
+    arcs.selectAll("text").remove();
+    
     d3.selectAll('#node_info tbody tr').remove();
     if (d.count) {
         var countRow = d3.select('#node_info tbody')
@@ -57,7 +60,7 @@ function handleLinkClick(event, d){
 
 function handleNodeClick(d){
     
-        console.log(d.id);
+        console.log("ID:" + d.id);
         d3.selectAll('#node_info tbody tr').remove();
         
         if (d.label.indexOf("author") != -1) {

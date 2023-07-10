@@ -3,6 +3,7 @@
 function refresh(){
     // Remove existing elements
     d3.select("#graph").selectAll("*").remove();
+    d3.select('#node-details').style('display', 'none');
 
     // Reset translation and scale variables
     svgTranslate = [0, 0];
@@ -25,9 +26,6 @@ function refresh(){
     // Reset graph-related variables
     maxId = 0;
 
-    // graph_node = [];
-    // graph_link = [];
-    
     // Define the SVG canvas
     svg = d3.select("#graph").append("svg")
             .attr("width", width).attr("height", height)
@@ -95,6 +93,10 @@ function build_new_svg(graph_node, graph_link) {
                 .attr("cursor", "pointer")
                 .on("click", handleLinkClick);
 
+    // Filter author_nodes and work_nodes
+    // var AuthorNodes = graph_node.filter(node => node.label.indexOf("author") != -1);
+    // var OtherNodes = graph_node.filter(node => node.label.indexOf("author") == -1);
+
     // Append nodes to the svg
     const node = network.selectAll(".node")
                 .data(graph_node).enter()
@@ -105,12 +107,11 @@ function build_new_svg(graph_node, graph_link) {
                  })
                 .attr("cursor", "pointer")
                 .style("opacity", 0.8)
-                .interrupt('nodeTransition')
                 .call(d3.drag()
                     .on("start", node_dragstarted)
                     .on("drag", node_dragged)
                     .on("end", node_dragended));
-
+                    
     // Append labels to the nodes
     const text = network.selectAll("text")
                 .data(graph_node).enter()
@@ -137,16 +138,16 @@ function build_new_svg(graph_node, graph_link) {
     node.append("title")
                 .text(function (d) { return d.title; });
 
-
     // Get current max node ID (for node expand button)
     graph_node.forEach(node => {
         if (node.id > maxId) {
             maxId = node.id;
         } 
     });  
-           
+         
     // Set click event on nodes and labels
     node.on("click", function(event, d) {
+        // If it is alrealy clicked
         if (clicked[d.id]) {
             arcs.selectAll("path").remove();
             arcs.selectAll("text").remove();
@@ -161,6 +162,7 @@ function build_new_svg(graph_node, graph_link) {
             d3.select('#node-details').style('display', 'none');
             clicked[d.id] = false;
         }
+        // Or, show the tooltip and its info table
         else {
             addOrRemoveTooltip(d);
             handleNodeClick(d);
@@ -168,7 +170,8 @@ function build_new_svg(graph_node, graph_link) {
             clicked[d.id] = true;
         }
     });
-       
+
+    // 'test' here is the title of every node, it is on the upper layer of the node
     text.on("click", function(event, d) {
         if (clicked[d.id]) {
             arcs.selectAll("path").remove();
@@ -202,6 +205,14 @@ function build_new_svg(graph_node, graph_link) {
         // clustering color
         node_topic_color();
     }
+
+    // Reset the link forces and the slider setting
+    document.getElementById('mySlider').value = 10;
+    document.getElementById('sliderValue').textContent = 10;
+    updateSimulationStrength(-10);
+
+    filtered_coauthor_graph_link = graph_link;
+    filtered_coauthor_graph_node = graph_node;
 
     // const renderTime = performance.now() - renderStart;
     // console.log(`Render time: ${renderTime}ms`);
@@ -257,9 +268,7 @@ function node_topic_color() {
 
 function toggleNodeVisibility() {
     // Filter nodes based on the selected types
-    console.log(graph_node);
     var filteredNodes = graph_node.filter(node => selectedNodeTypes[node.label]);
-    console.log(filteredNodes);
     // Filter links based on the selected types
     // A link is included if both its source and target nodes are included
     let new_graph_Link = graph_link.filter(link => 
@@ -275,13 +284,16 @@ function toggleNodeVisibility() {
     const new_graph_node = filteredNodes.filter(function(node) {
         return !isolatedNodes.includes(node);
     });
+
+    // Because this function works on the 'pub nodes', check the 'show_pub' checkbox by default
+    // Set col_count to 1 again
+    document.getElementById("show_pub").checked = true;
+    document.getElementById("col_count").value = 1;
+
+
     refresh();
     build_new_svg(new_graph_node, new_graph_Link);
-    // var simulation = d3.forceSimulation(filteredNodes)
-    //                 .force("group", groupForce(filteredNodes).strength(0.1))
-
-    // simulation.on("tick", tick).alphaDecay(0.05);
-    // simulation.alpha(1).restart();
+    
 
 }
 

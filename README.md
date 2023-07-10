@@ -24,13 +24,13 @@ pip install rcn-py
 
 The `rcn-py` package utilizes data from various research sources including OpenAlex, Scopus, and RSD. Please note the following details about data handling in our package:
 
-OpenAlex: Data is directly accessed through their API.
+- OpenAlex: Data is directly accessed through their API.
 
-Scopus and RSD: For optimal performance, we've pre-stored data from Scopus and RSD in a Neo4j Graph Database. Users are required to manage the data storage for these two sources on their own.
+- Scopus and RSD: For optimal performance, we've pre-stored data from Scopus and RSD in a Neo4j Graph Database. Users are required to manage the data storage for these two sources on their own.
 
-Detailed instructions for setting up and managing data can be found in the `Workflow_D3.ipynb` Jupyter notebook included in the package. We highly recommend going through this notebook to understand the complete workflow and data requirements of the `rcn-py` package.
+Detailed instructions for setting up and managing data can be found in the `Workflow_D3.ipynb` Jupyter notebook in the repository https://github.com/NLeSC/rcn_py. We highly recommend going through this notebook to understand the complete workflow and data requirements of the `rcn-py` package.
 
-After the database has been properly set up and is in use, ensure that all indices and constraints in the Neo4j database have been built. This step is critical to maintaining efficient database search operations.
+After the database has been properly set up and is in use, ensure that all constraints in the Neo4j database have been built. This step is critical to maintaining efficient database search operations.
 
 Then, confirm that the database is active.
 

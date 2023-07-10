@@ -6,13 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- CSS stylesheets -->
-    <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
+    <!-- <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <!-- <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" /> -->
     <link rel="stylesheet" href="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.min.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" /> -->
+
+    <!-- CSS stylesheets -->
+    <link rel="stylesheet" href="https://neo4j-documentation.github.io/developer-resources/language-guides/assets/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/1.1.2/css/bootstrap-multiselect.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/bootstrap.min.css" />
+
+
     
     <!-- Title -->
     <title>RCN</title>    
@@ -40,7 +48,7 @@
         }
         .navbar-brand {
             position: absolute;
-            margin-top: 25px;
+            margin-top: 0px;
         }
         #menu_list {
             position: absolute;
@@ -98,11 +106,13 @@
             background-color: #75a0c1;
             border: none;
             color: white;
+            width: 100px;
+            height: 50px;
             /* padding: 0px 0px; */
             text-align: center;
             text-decoration: none;
             display: inline-block;
-            font-size: 14px;
+            font-size: 16px;
             border-radius: 8px;
             margin: 6px ;
             cursor: pointer;
@@ -164,6 +174,11 @@
             top: 0;
             font-size: 2em;
         }
+        .tooltip-inner {
+            background-color: #6f6f6f;
+            color: #ffffff; 
+        }
+
         #polarchart {
             position: absolute;
             top:10px;
@@ -356,15 +371,6 @@
                             <div class="cell" style="width: 5vw;"  id="work-count-value">0</div>
                             </div>
                         </div>
-<!-- 
-                        <div class="table" id="pub_table" style="display: none;">
-                            <div class="row">
-                            <div class="cell" style="width: 5vw;"  >Citation Count</div>
-                            </div>
-                            <div class="row">
-                            <div class="cell" style="width: 5vw;"  id="pub-citation-count">0</div>
-                            </div>
-                        </div> -->
                     </section>
 
                     <section class="metrics" aria-label="Person metrics section">
@@ -379,11 +385,11 @@
                         </div>
                                  
                     </section>
-                    <span class="info-icon" data-toggle="popover" title="The statistics are based on OpenAlex." data-content="The statistics are based on OpenAlex.">
+                    <span class="info-icon" data-toggle="tooltip" 
+                    title="The statistics are based on OpenAlex. Polar chart presents Concept Score, which is abstract ideas that works are about.">
                             <i class="fa-solid fa-circle-info" style="color: #8f8f8f;"></i>
                     </span>
 
-                
             </div>
         </div>
     </div>
@@ -450,7 +456,7 @@
 
             <br>
             <button class="button button2" type="submit" id="author-submit-btn">Search</button>
-            <button class="button button2" onclick="Find_node('author')">Find</button>
+            <button class="button button2" type="button" onclick="Find_node('author')">Find</button>
         </div>
     </form>
 
@@ -462,7 +468,7 @@
         <br>
         <br>
         <button class="button button2" type="submit" id="pub-submit-btn">Search</button>
-        <button class="button button2" onclick="Find_node('publication')">Find</button>
+        <button class="button button2" type="button" onclick="Find_node('publication')">Find</button>
         </div>
     </form>
 
@@ -574,15 +580,24 @@
 </div>
 
 
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script>
-<script type="text/javascript" src="//code.jquery.com/jquery-1.11.0.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-<script src="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.js"></script>
+<!-- D3.js (version 7.8.4)
+    jQuery (version 3.3.1)
+    jQuery UI (version 1.12.1)
+    Popper (version 2+)
+    Twitter Bootstrap (version 3.3.7)
+    Bootstrap Multiselect (version 0.9.15)
+    Chart.js (version 2.9.4)
+    Chosen (latest version from the specified source) -->
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.4/d3.min.js"></script> 
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-multiselect/0.9.15/js/bootstrap-multiselect.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+<script src="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.jquery.min.js"></script>
+
 
 <!-- local js files -->
 
@@ -598,12 +613,12 @@
 
 
 
-
 <script>
 
-    $(function() {
+    $(document).ready(function() {
+
         $('select[multiple]').multiselect();
-        $('[data-toggle="popover"]').popover();   
+        $('[data-toggle="tooltip"]').tooltip(); 
     });
 
     showForm('topic-search');
@@ -612,13 +627,6 @@
   
 
 <style type="text/css">
-    .topic-label {
-        font-size: 8px; /* Adjust the font size as needed */
-        background-color: #000000; /* Set the background color for the labels */
-        color: #ffffff; /* Set the text color for the labels */
-        padding: 4px; /* Adjust the padding as needed */
-        white-space: nowrap; /* Prevent line breaks */
-    }
     .node.publication { fill: #8398cd; stroke: #6379b2;}
     .node.project { fill: #94bf91; stroke: #71ac6e;}
     .node.software { fill: #c093bd; stroke: #b07bae;}
@@ -674,6 +682,10 @@
     var graph_link;
     var coauthor_graph_node;
     var coauthor_graph_link;
+
+    // Variables for after filtering (for filtering collaboration count/ hiding nodes)
+    var filtered_coauthor_graph_node = [];
+    var filtered_coauthor_graph_link = [];
 
     // Variables for storing chart objects
     var myBarChart, myPolarChart;
@@ -757,69 +769,43 @@
         return force;
     }
 
-    // ######################### Slider ############################
-    function updateSimulationStrength(strength) {
-        force.force("charge").strength(strength);
-
-        // Add an additional force for nodes without links
-        var repulsiveForce = d3.forceManyBody()
-                    .strength(strength*2)        
-        force.force("repulsion", repulsiveForce);
-        
-        force.alpha(1).restart(); // Restart the simulation to apply the changes
-        force.on("tick", tick);   
-    }
     
-    const slider = document.getElementById('mySlider');
-        
-    slider.addEventListener('input', function(){
-        const sliderValue = document.getElementById('sliderValue');
-        sliderValue.textContent = slider.value;
-    })
-    slider.addEventListener('change', function() {
-        slider_value = slider.value * -1;
-        // Handle the slider value change
-        
-        console.log('Slider value:', slider_value);
-        updateSimulationStrength(slider_value);
-        // var aff_name = document.getElementById("name-title").textContent;
-        // slider_change(aff_name, slider_value);
-        
-    });
     
 
     // ##################### Initial network ######################
-    d3.select('#home').style('display', 'none');
-    d3.select('#sidebar').style('display', 'block');
-    d3.select('#graph').style('display', 'block');
-    d3.select('#loadingNotice').style('display', 'block');
-    d3.select('#legend').style('display', 'block');
+    // d3.select('#home').style('display', 'none');
+    // d3.select('#sidebar').style('display', 'block');
+    // d3.select('#graph').style('display', 'block');
+    // d3.select('#loadingNotice').style('display', 'block');
+    // d3.select('#legend').style('display', 'block');
     
-    d3.json("/graph").then(function(graph) {
-        graph_node = graph.nodes;
-        graph_link = graph.links;
-        coauthor_graph_node = graph.coauthor_nodes;
-        coauthor_graph_link = graph.coauthor_links;
-        build_new_svg(graph_node, graph_link);
-        d3.select('#loadingNotice').style('display', 'none');
-    });
+    // d3.json("/graph").then(function(graph) {
+    //     graph_node = graph.nodes;
+    //     graph_link = graph.links;
+    //     coauthor_graph_node = graph.coauthor_nodes;
+    //     coauthor_graph_link = graph.coauthor_links;
+    //     build_new_svg(graph_node, graph_link);
+    //     d3.select('#loadingNotice').style('display', 'none');
+    // });
 
-    // d3.select('#home').style('display', 'block');
-    // d3.select('#sidebar').style('display', 'none');
-    // d3.select('#graph').style('display', 'none');
-    // d3.select('#loadingNotice').style('display', 'none');
-    // d3.select('#legend').style('display', 'none');
+    d3.select('#home').style('display', 'block');
+    d3.select('#sidebar').style('display', 'none');
+    d3.select('#graph').style('display', 'none');
+    d3.select('#loadingNotice').style('display', 'none');
+    d3.select('#legend').style('display', 'none');
 
     document.getElementById('home_page').addEventListener('click', function() {
         // Refresh the page or perform necessary actions
         refresh();
         d3.select('#home').style('display', 'block');
         d3.select('#sidebar').style('display', 'none');
+        d3.select('#toggle-buttons').style('display', 'none');
         d3.select('#graph').style('display', 'none');
         d3.select('#loadingNotice').style('display', 'none');
         d3.select('#legend').style('display', 'none');
         d3.select('#topic_cluster_legend').style('display', 'none');
         d3.select('#profile').style('visibility', 'hidden');
+
     });
 
 
@@ -833,32 +819,30 @@
         // ################### keyword search ###################
         const form_topic = document.getElementById('topic-search');
         form_topic.addEventListener('submit', function(event) {
-            renderStart = performance.now();
-            // console.time('Execution Time');
+            // renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
 
-            d3.select('#node-details').style('display', 'none');
+            // d3.select('#node-details').style('display', 'none');
             d3.select('#toggle-buttons').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            document.getElementById('col_count').value = 1;
             const slider = document.getElementById('mySlider');
             slider.value = 10;
 
             field_search();
             
-            // end = Date.now();
-            // console.log(`Execution time: ${end - start} ms`);
-            // console.timeEnd('Execution Time');
         });
 
         // ################### ORCID search ######################
         const form_orcid = document.getElementById('author-search');
         form_orcid.addEventListener('submit', function(event) {
-            renderStart = performance.now();
+            // renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
 
-            d3.select('#node-details').style('display', 'none');
+            // d3.select('#node-details').style('display', 'none');
             d3.select('#toggle-buttons').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            document.getElementById('col_count').value = 1;
             const slider = document.getElementById('mySlider');
             slider.value = 10;
             
@@ -869,12 +853,13 @@
         // ################### DOI search ######################
         const form_pub = document.getElementById('pub-search');
         form_pub.addEventListener('submit', function(event) {
-            renderStart = performance.now();
+            // renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             
-            d3.select('#node-details').style('display', 'none');
+            // d3.select('#node-details').style('display', 'none');
             d3.select('#toggle-buttons').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
+            document.getElementById('col_count').value = 1;
             const slider = document.getElementById('mySlider');
             slider.value = 10;
 
@@ -885,16 +870,17 @@
         const form_aff = document.getElementById('aff-search');
         
         form_aff.addEventListener('submit', function(event) {
-            renderStart = performance.now();
+            // renderStart = performance.now();
             event.preventDefault(); // prevent the form from submitting and refreshing the page
             
-            d3.select('#node-details').style('display', 'none');
+            // d3.select('#node-details').style('display', 'none');
             document.getElementById("profile").style.visibility = "hidden";
  
             var form = $('#aff-search');
             var initial_aff_name = form.find("input[name='aff']").val();
             var start_year = form.find("input[name='start_year']").val();
             var end_year = form.find("input[name='end_year']").val();
+            document.getElementById('col_count').value = 1;
             const slider = document.getElementById('mySlider');
             slider.value = 10;
 
@@ -906,6 +892,24 @@
 
 
     function RSD_network() {
+        d3.select('#home').style('display', 'none');
+        d3.select('#sidebar').style('display', 'block');
+        d3.select('#graph').style('display', 'block');
+        d3.select("#topic_cluster_legend").style("display", "none");
+        d3.select('#legend').style('display', 'block');
+        
+        // Refresh the page or perform necessary actions
+        refresh();
+        rsd = true;
+        cluster = false;
+        
+        // Hide and show specific elements based on the clicked event
+        d3.select('#scopus-search-button').style('display', 'none');
+        d3.select('#escience-search-button').style('display', 'block');
+        // d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        showForm('author-search');
+
 
         // Set the initial affiliation name
         const initial_aff_name = "Netherlands eScience Center"
@@ -942,6 +946,7 @@
             }
         });
 
+        document.getElementById('col_count').value = 1;
         const slider = document.getElementById('mySlider');
         slider.value = 10;
 
@@ -953,30 +958,34 @@
     // ################### eScience ###################
     // Add event listener to the 'escience' element
     document.getElementById('escience').addEventListener('click', function() {
-        d3.select('#home').style('display', 'none');
-        d3.select('#sidebar').style('display', 'block');
-        d3.select('#graph').style('display', 'block');
-        d3.select("#topic_cluster_legend").style("display", "none");
-        d3.select('#legend').style('display', 'block');
-        
-        // Refresh the page or perform necessary actions
-        refresh();
-        rsd = true;
-        cluster = false;
-        
-        // Hide and show specific elements based on the clicked event
-        d3.select('#scopus-search-button').style('display', 'none');
-        d3.select('#escience-search-button').style('display', 'block');
-        d3.select('#node-details').style('display', 'none');
-        document.getElementById("profile").style.visibility = "hidden";
-        showForm('author-search');
-
         // Show the profile of eScence Center and its network in 2023
         RSD_network();
     });
 
 
     function Scopus_network() {
+
+        d3.select('#home').style('display', 'none');
+        d3.select('#sidebar').style('display', 'block');
+        d3.select('#graph').style('display', 'block');
+        d3.select('#toggle-buttons').style('display', 'none');
+        d3.select("#topic_cluster_legend").style("display", "none");
+        d3.select("#legend").style("display", "block");
+        
+        // Perform actions when the 'scopus' element is clicked
+        refresh();
+        rsd = false;
+        cluster = false;
+        d3.select('#scopus-search-button').style('display', 'block');
+        d3.select('#escience-search-button').style('display', 'none');
+        // d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        
+        document.getElementById('col_count').value = 1;
+        const slider = document.getElementById('mySlider');
+        slider.value = 10;
+        showForm('topic-search');
+
 
         // Fetch graph data using a specific URL
         d3.json("/graph").then(function(graph) {
@@ -1001,32 +1010,36 @@
 
     document.getElementById('scopus').addEventListener('click', function() {
 
-        d3.select('#home').style('display', 'none');
-        d3.select('#sidebar').style('display', 'block');
-        d3.select('#graph').style('display', 'block');
-        d3.select('#toggle-buttons').style('display', 'none');
-        d3.select("#topic_cluster_legend").style("display", "none");
-        d3.select("#legend").style("display", "block");
-        
-        // Perform actions when the 'scopus' element is clicked
-        refresh();
-        rsd = false;
-        cluster = false;
-        d3.select('#scopus-search-button').style('display', 'block');
-        d3.select('#escience-search-button').style('display', 'none');
-        d3.select('#node-details').style('display', 'none');
-        document.getElementById("profile").style.visibility = "hidden";
-        
-        const slider = document.getElementById('mySlider');
-        slider.value = 10;
-        showForm('topic-search');
-
         Scopus_network();
       
     });
 
 
     function Openalex_network() {
+        d3.select('#home').style('display', 'none');
+        d3.select('#sidebar').style('display', 'block');
+        d3.select('#graph').style('display', 'block');
+        
+        // Visibility of the nodes
+        selectedNodeTypes = {
+                publication: true,
+                project: true,
+                software: true,
+                author:true
+        };
+        d3.select('#toggle-buttons').style('display', 'none');
+        
+        // Perform when the 'openalex' element is clicked
+        refresh();
+
+        rsd = false;
+        cluster = true;
+        d3.select('#scopus-search-button').style('display', 'none');
+        d3.select('#escience-search-button').style('display', 'none');
+        // d3.select('#node-details').style('display', 'none');
+        document.getElementById("profile").style.visibility = "hidden";
+        showForm('aff-search');
+
 
         const initial_aff_name = "Netherlands eScience Center"
         d3.json("/openalex-aff-search?aff_name=" + initial_aff_name +
@@ -1078,7 +1091,8 @@
             }
             d3.select("#topic_cluster_legend").style("display", "block");
 
-            // Reset the force slider
+            // Reset the colaboration_limit filter and force slider
+            document.getElementById('col_count').value = 1;
             const slider = document.getElementById('mySlider');
             slider.value = 10;
 
@@ -1086,30 +1100,6 @@
         
     }
     document.getElementById('openalex').addEventListener('click', function() {
-
-        d3.select('#home').style('display', 'none');
-        d3.select('#sidebar').style('display', 'block');
-        d3.select('#graph').style('display', 'block');
-        
-        // Visibility of the nodes
-        selectedNodeTypes = {
-                publication: true,
-                project: true,
-                software: true,
-                author:true
-        };
-        d3.select('#toggle-buttons').style('display', 'none');
-        
-        // Perform when the 'openalex' element is clicked
-        refresh();
-
-        rsd = false;
-        cluster = true;
-        d3.select('#scopus-search-button').style('display', 'none');
-        d3.select('#escience-search-button').style('display', 'none');
-        d3.select('#node-details').style('display', 'none');
-        document.getElementById("profile").style.visibility = "hidden";
-        showForm('aff-search');
 
         Openalex_network();
     

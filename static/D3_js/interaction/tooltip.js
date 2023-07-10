@@ -47,7 +47,7 @@ function addOrRemoveTooltip(d) {
             var node_x = d.x;
             var node_y = d.y;
 
-            console.log(node_x,node_y);
+            console.log("position(x,y):"+ node_x,node_y);
 
             // Present the tooltip of this node
             show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
@@ -155,8 +155,8 @@ function hide_node(node_id) {
 
     const filteredNodes = graph_node.filter(node => node.id !== node_id);
     const filteredLinks = graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
-    const filteredCoauthorNodes = coauthor_graph_node.filter(node => node.id !== node_id);
-    const filteredCoauthorLinks = coauthor_graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
+    const filteredCoauthorNodes = filtered_coauthor_graph_node.filter(node => node.id !== node_id);
+    const filteredCoauthorLinks = filtered_coauthor_graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
 
     // filter isolated nodes that do not have any links
     const isolatedNodes = filteredNodes.filter(function(node) {
@@ -183,16 +183,17 @@ function hide_node(node_id) {
         return !isolatedNodes.includes(node);
     });
     graph_link = filteredLinks;
-    coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
+    filtered_coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
         return !isolatedCoauthorNodes.includes(node);
     });
-    coauthor_graph_link  = filteredCoauthorLinks;
+    filtered_coauthor_graph_link  = filteredCoauthorLinks;
+
     // build new network
     if (show_pub) {
         build_new_svg(graph_node, graph_link)
     }
     else {
-        build_new_svg(coauthor_graph_node, coauthor_graph_link)
+        build_new_svg(filtered_coauthor_graph_node, filtered_coauthor_graph_link)
     }
 
     if (cluster) {
@@ -268,14 +269,14 @@ function show_all_link(unique_id, node_label, node_id) {
         
         graph_node = graph_node.concat(links.nodes);
         graph_link = graph_link.concat(links.links);
-        coauthor_graph_node = coauthor_graph_node.concat(links.coauthor_nodes);
-        coauthor_graph_link = coauthor_graph_link.concat(links.coauthor_links);
+        filtered_coauthor_graph_node = filtered_coauthor_graph_node.concat(links.coauthor_nodes);
+        filtered_coauthor_graph_link = filtered_coauthor_graph_link.concat(links.coauthor_links);
 
         if (show_pub) {
             build_new_svg(graph_node, graph_link);
         }
         else {
-            build_new_svg(coauthor_graph_node, coauthor_graph_link);
+            build_new_svg(filtered_coauthor_graph_node, filtered_coauthor_graph_link);
         }
 
         if (cluster) {

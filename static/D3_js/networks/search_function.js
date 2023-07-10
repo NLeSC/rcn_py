@@ -108,7 +108,7 @@ function author_search(){
             if (!graph || graph.length == 0) return;
 
             // Profile
-            author_profile(graph);
+            author_profile(graph, orcid);
 
             graph_node = graph.nodes;
             graph_link = graph.links;
@@ -143,7 +143,7 @@ function pub_search(){
                 return false;
             }
             // Profile
-            pub_profile(graph);
+            pub_profile(graph,doi);
 
             graph_node = graph.nodes;
             graph_link = graph.links;
@@ -266,9 +266,9 @@ function Find_node(option) {
     var search_name_value = document.getElementById('firstname').value+' '+document.getElementById('surname').value;
     var search_doi_value = document.getElementById('doi').value;
 
-    console.log(search_orcid_value, search_name_value, search_doi_value);
-
     var nodeExists = checkNodeExists(search_orcid_value, search_name_value, search_doi_value);
+
+    console.log("nodeExists:" + nodeExists);
 
     // If the node exists, highlight it; otherwise, show a message
     if (!nodeExists) {
@@ -284,7 +284,7 @@ function hideMessage() {
 
 function checkNodeExists(search_orcid_value, search_name_value, search_doi_value) {
     // Iterate over the nodes in the network
-    const NodeToFind = svg.selectAll(".node")
+    const NodeToFind = network.selectAll(".node")
                             .filter(function(d) {
                                 // Check if the search value matches any property of the node
                                 return ((d.doi === search_doi_value && search_doi_value)
@@ -292,12 +292,12 @@ function checkNodeExists(search_orcid_value, search_name_value, search_doi_value
                                 || (d.title === search_name_value && search_name_value)) 
                             });
 
-    console.log(NodeToFind.data());
-
     if (NodeToFind.data().length != 0) { // Node exists
         
         handleNodeClick(NodeToFind.data()[0]);
         addOrRemoveTooltip(NodeToFind.data()[0]);
+
+        clicked[NodeToFind.data()[0].id] = true;
         
         return true;
     }

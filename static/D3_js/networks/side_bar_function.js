@@ -3,12 +3,13 @@ function check_show_pub() {
     var checkbox = document.getElementById("show_pub");
     if (checkbox.checked) {
         // Clear the existing network elements
-        network.selectAll(".node").remove();
-        network.selectAll(".link").remove();
-        network.selectAll("text").remove();
-        maxId = 0;
-        arcs.selectAll("path").remove();
-        arcs.selectAll("text").remove();
+        // network.selectAll(".node").remove();
+        // network.selectAll(".link").remove();
+        // network.selectAll("text").remove();
+        // maxId = 0;
+        // arcs.selectAll("path").remove();
+        // arcs.selectAll("text").remove();
+        refresh();
 
         show_pub = true;
 
@@ -34,12 +35,13 @@ function check_show_pub() {
        
     } else {
         // Clear the existing network elements
-        network.selectAll(".node").remove();
-        network.selectAll(".link").remove();
-        network.selectAll("text").remove();
-        maxId = 0;
-        arcs.selectAll("path").remove();
-        arcs.selectAll("text").remove();
+        // network.selectAll(".node").remove();
+        // network.selectAll(".link").remove();
+        // network.selectAll("text").remove();
+        // maxId = 0;
+        // arcs.selectAll("path").remove();
+        // arcs.selectAll("text").remove();
+        refresh();
 
         show_pub = false;
         document.getElementById('col_count').disabled = false;
@@ -62,17 +64,19 @@ function collaMin() {
             });
         });
         // delete the original canvas
-        network.selectAll(".node").remove();
-        network.selectAll(".link").remove();
-        network.selectAll("text").remove();
-        maxId = 0;
+        // network.selectAll(".node").remove();
+        // network.selectAll(".link").remove();
+        // network.selectAll("text").remove();
+        // maxId = 0;
         
-        filteredCoauthorNodes = filteredCoauthorNodes.filter(function(node) {
+        filtered_coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
             return !isolatedNodes.includes(node);
         });
+        filtered_coauthor_graph_link = filteredCoauthorLinks;
         
+        refresh();
         // build new network
-        build_new_svg(filteredCoauthorNodes, filteredCoauthorLinks)
+        build_new_svg(filtered_coauthor_graph_node, filtered_coauthor_graph_link);
 
         // remove the tooltip
         arcs.selectAll("path").remove();
@@ -81,3 +85,33 @@ function collaMin() {
     }
 
 }
+
+// ######################### Slider ############################
+function updateSimulationStrength(strength) {
+    force.force("charge", d3.forceManyBody().strength(strength))
+
+    // Add an additional force for nodes without links
+    // var repulsiveForce = d3.forceManyBody()
+    //             .strength(strength*2)        
+    // force.force("repulsion", repulsiveForce);
+    
+    force.on("tick", tick).alphaDecay(0.05);   
+    force.alpha(1).restart(); // Restart the simulation to apply the changes
+}
+
+const slider = document.getElementById('mySlider');
+    
+slider.addEventListener('input', function(){
+    const sliderValue = document.getElementById('sliderValue');
+    sliderValue.textContent = slider.value;
+})
+slider.addEventListener('change', function() {
+    slider_value = slider.value * -1;
+    // Handle the slider value change
+    
+    console.log('Slider value:', slider_value);
+    updateSimulationStrength(slider_value);
+    // var aff_name = document.getElementById("name-title").textContent;
+    // slider_change(aff_name, slider_value);
+    
+});
