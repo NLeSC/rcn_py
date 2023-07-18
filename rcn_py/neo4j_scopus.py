@@ -1,14 +1,20 @@
-import os
-import pandas as pd
-from neo4j import GraphDatabase
 
 
-# Add constraint for author nodes and publication nodes
+# Add constraint for Person nodes and Publication nodes
 def add_constraint(tx):
+    """
+    This function is used to add constraints to the nodes in a Neo4j database. 
+    It ensures that the 'doi' property of Publication nodes and the 'scopus_id' property of Person nodes are unique.
+    """
+
+    # This Cypher command creates a unique constraint on the 'doi' property of Publication nodes.
+    # If a constraint by the name 'pub_doi' does not exist, it will be created.
     tx.run("""
             CREATE CONSTRAINT pub_doi IF NOT EXISTS
             FOR (p:Publication) REQUIRE p.doi IS UNIQUE
             """)
+    # This Cypher command creates a unique constraint on the 'scopus_id' property of Person nodes.
+    # If a constraint by the name 'scopus_id' does not exist, it will be created.
     tx.run("""
             CREATE CONSTRAINT scopus_id IF NOT EXISTS
             FOR (n:Person) REQUIRE n.scopus_id IS UNIQUE
@@ -17,19 +23,30 @@ def add_constraint(tx):
 
 
 def neo4j_create_people(tx, df, subject):
+    """
+    This function is used to create nodes for people in a Neo4j database. 
+    It iterates over each row of the input DataFrame, parsing and adding necessary information.
+
+    Parameters:
+    tx (neo4j.Session): A session object for Neo4j to run Cypher commands.
+    df (pandas.DataFrame): A DataFrame containing information about the people to be added.
+    subject (str): The subject associated with the people being added.
+    """
+
+    # Iterate over each row in the DataFrame
     for i in range(len(df)):
-        # remove noise data
+        # Skip rows where 'Author(s) ID' is not a string
         if not isinstance(df['Author(s) ID'][i], str):
             continue
         author_scopus_id = df["Author(s) ID"][i].split(";")[0:-1]
 
-        # remove papers with single author
+        # Skip rows with less than two authors
         if len(author_scopus_id) < 2:
             continue
         year = int(df.Year[i])
         author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]
 
-        # country and affiliation
+        # Extract the author's affiliations and country
         author_aff = df['Authors with affiliations'][i].split("; ")[0:len(author_scopus_id)]
         if author_aff[-1] == ".":
             author_aff = ""
@@ -37,7 +54,7 @@ def neo4j_create_people(tx, df, subject):
         else:
             author_country = [aff.split(", ")[-1] for aff in author_aff]
         
-        # keywords
+        # Extract the author's keywords
         if not isinstance(df['Author Keywords'][i], str):
             if not isinstance(df['Index Keywords'][i], str):
                 keywords = []
@@ -51,12 +68,13 @@ def neo4j_create_people(tx, df, subject):
         else:
             keywords = df["Author Keywords"][i].split("; ")
 
-        # APOC plugin should be installed in your Neo4j Server
-        # Create people nodes
+        # Iterate over each author in the list of authors
         for n in range(len(author_scopus_id)):
-            # if the person exists, append keywords and year
-            # avoid adding duplicate years
-            # orcid, prefername,link = get_orcid_from_scopus(author_scopus_id[n])
+            # If the person exists, append keywords and year
+            # Avoid adding duplicate years
+            
+            # Use the MERGE command to either create a new node or update an existing one
+            # Use the apoc.coll.toSet function from the APOC plugin to add new items to a list property without creating duplicates
             
             tx.run("""
                 MERGE (p:Person {scopus_id: $id})
@@ -79,20 +97,34 @@ def neo4j_create_people(tx, df, subject):
         
 
 def neo4j_create_publication(tx, df, subject):
+    """
+    This function is used to create nodes for publications in a Neo4j database. 
+    It iterates over each row of the input DataFrame, parsing and adding necessary information.
+
+    Parameters:
+    tx (neo4j.Session): A session object for Neo4j to run Cypher commands.
+    df (pandas.DataFrame): A DataFrame containing information about the publications to be added.
+    subject (str): The subject associated with the publications being added.
+    """
+
+    # Iterate over each row in the DataFrame
     for i in range(len(df)):
-        # remove noise data
+        # Skip rows where 'Author(s) ID' is not a string
         if not isinstance(df['Author(s) ID'][i], str):
             continue
         author_scopus_id = df["Author(s) ID"][i].split(";")[0:-1]
-        # remove papers with single author
+
+        # Skip rows with less than two authors
         if len(author_scopus_id) < 2:
             continue
 
+        # Extract necessary publication information
         doi = df.DOI[i]
         title = df.Title[i]
         year = int(df.Year[i])
         cited = df["Cited by"][i]
-        # keywords
+        
+        # Extract the publication's keywords
         if not isinstance(df['Author Keywords'][i], str):
             if not isinstance(df['Index Keywords'][i], str):
                 keywords = []
@@ -106,7 +138,8 @@ def neo4j_create_publication(tx, df, subject):
         else:
             keywords = df["Author Keywords"][i].split("; ")
 
-        # Create publication nodes
+        # Use the MERGE command to either create a new node or update an existing one
+        # Use the apoc.coll.toSet function from the APOC plugin to add new items to a list property without creating duplicates
         tx.run("""
                 MERGE (p:Publication {doi: $doi})
                 SET p.title = $title,
@@ -127,21 +160,32 @@ def neo4j_create_publication(tx, df, subject):
         
         
 def neo4j_create_author_pub_edge(tx, df):
+    """
+    This function is used to create edges between authors and publications in a Neo4j database. 
+    It iterates over each row of the input DataFrame, creating a relationship for each author-publication pair.
+
+    Parameters:
+    tx (neo4j.Session): A session object for Neo4j to run Cypher commands.
+    df (pandas.DataFrame): A DataFrame containing information about the publications and authors to be added.
+    """
+    
+    # Iterate over each row in the DataFrame
     for i in range(len(df)):
-        # remove noise data
+        # Skip rows where 'Author(s) ID' is not a string
         if not isinstance(df['Author(s) ID'][i], str):
             continue
         author_scopus_id = df["Author(s) ID"][i].split(";")[0:-1]
-        # remove papers with single author
+        # Skip rows with less than two authors
         if len(author_scopus_id) < 2:
             continue     
 
+        # Extract necessary author-publication relationship information
         author_name = df["Authors"][i].split(", ")[0:len(author_scopus_id)]   
         year = int(df.Year[i])
         doi = df.DOI[i]
         title = df.Title[i]
-        # APOC plugin should be installed in your Neo4j Server
-        # Create edges
+
+        # For each author-publication pair, create an IS_AUTHOR_OF relationship
         for i in range(len(author_scopus_id)):
             tx.run("""
                     MATCH 
@@ -165,20 +209,20 @@ def neo4j_create_author_pub_edge(tx, df):
 # Input the scopus csv filepath, and its main subject
 # and Neo4j driver uri, username and password
 
-def execution(filepath, subject, uri, user, password):
-    with GraphDatabase.driver(uri, auth=(user, password)) as driver:
-        driver.verify_connectivity()
-        with driver.session(database="neo4j") as session:
-            # Create nodes & edges
-            if os.path.exists(filepath):
-            # Skipping bad lines (very rare occurrence): 
-            # Replace the following line: df = pd.read_csv(path, on_bad_lines = 'skip')
-                df = pd.read_csv(filepath)
+# def execution(filepath, subject, uri, user, password):
+#     with GraphDatabase.driver(uri, auth=(user, password)) as driver:
+#         driver.verify_connectivity()
+#         with driver.session(database="neo4j") as session:
+#             # Create nodes & edges
+#             if os.path.exists(filepath):
+#             # Skipping bad lines (very rare occurrence): 
+#             # Replace the following line: df = pd.read_csv(path, on_bad_lines = 'skip')
+#                 df = pd.read_csv(filepath)
                     
-                session.execute_write(neo4j_create_people, df, subject) 
-                session.execute_write(neo4j_create_publication, df, subject)
-                session.execute_write(neo4j_create_author_pub_edge, df)
-                print ("Successfully insert " + subject + " csv file.")  
-            else:
-                print("Filepath doesn't exist!") 
+#                 session.execute_write(neo4j_create_people, df, subject) 
+#                 session.execute_write(neo4j_create_publication, df, subject)
+#                 session.execute_write(neo4j_create_author_pub_edge, df)
+#                 print ("Successfully insert " + subject + " csv file.")  
+#             else:
+#                 print("Filepath doesn't exist!") 
 

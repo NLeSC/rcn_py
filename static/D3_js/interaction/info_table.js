@@ -1,4 +1,7 @@
 function handleLinkClick(event, d){
+    arcs.selectAll("path").remove();
+    arcs.selectAll("text").remove();
+    
     d3.selectAll('#node_info tbody tr').remove();
     if (d.count) {
         var countRow = d3.select('#node_info tbody')
@@ -15,6 +18,15 @@ function handleLinkClick(event, d){
                 .text('DOI');
         doiRow.append('td')
                 .text(d.doi);
+
+        if(d.author_name) {
+            var nameRow = d3.select('#node_info tbody')
+                .append('tr');
+            nameRow.append('td')
+                    .text('Author name');
+            nameRow.append('td')
+                    .text(d.author_name);
+        }
     }
     else {
         for(let i = 0; i< d.doi.length; i++) {
@@ -48,7 +60,7 @@ function handleLinkClick(event, d){
 
 function handleNodeClick(d){
     
-        console.log(d.id);
+        console.log("ID:" + d.id);
         d3.selectAll('#node_info tbody tr').remove();
         
         if (d.label.indexOf("author") != -1) {
@@ -67,19 +79,32 @@ function handleNodeClick(d){
             titleRow.append('td')
                 .text(d.title);
 
-            var idRow = d3.select('#node_info tbody')
-                .append('tr');
-            idRow.append('td')
-                .text('Scopus id');
-            idRow.append('td')
-                .text(d.scopus_id);
+            if(d.scopus_id) {
+                var idRow = d3.select('#node_info tbody')
+                    .append('tr');
+                idRow.append('td')
+                    .text('Scopus id');
+                idRow.append('td')
+                    .text(d.scopus_id);
+            }
 
-            var orcidRow = d3.select('#node_info tbody')
-                .append('tr');
-            orcidRow.append('td')
-                .text('ORCID');
-            orcidRow.append('td')
-                .text(d.orcid);
+            if(d.orcid) {
+                var orcidRow = d3.select('#node_info tbody')
+                    .append('tr');
+                orcidRow.append('td')
+                    .text('ORCID');
+                orcidRow.append('td')
+                    .text(d.orcid);
+            }
+
+            if(d.openalex_id) {
+                var idRow = d3.select('#node_info tbody')
+                    .append('tr');
+                idRow.append('td')
+                    .text('OpenAlex id');
+                idRow.append('td')
+                    .text(d.openalex_id);
+            }
 
             // Create a new table row for the node description
             var countryRow = d3.select('#node_info tbody')
@@ -119,12 +144,14 @@ function handleNodeClick(d){
             idRow.append('td')
                 .text(d.doi);
 
-            var subjectRow = d3.select('#node_info tbody')
-                .append('tr');
-            subjectRow.append('td')
-                .text('Group');
-            subjectRow.append('td')
-                .text("Topic "+ d.group + ": " +d.topic_name);
+            if (d.hasOwnProperty('group')) {
+                var subjectRow = d3.select('#node_info tbody')
+                    .append('tr');
+                subjectRow.append('td')
+                    .text('Group');
+                subjectRow.append('td')
+                    .text("Cluster "+ d.group + ": " +d.topic_name);
+            }
 
             var yearRow = d3.select('#node_info tbody')
                 .append('tr');

@@ -20,42 +20,36 @@ function addOrRemoveTooltip(d) {
             var node_id = d.id;
             var node_label = d.label;
             var node_radius = d.radius;
-            // get unique_id for Database Selecting function 
+
+            // Get unique_id for Database Selecting function
+            var unique_id;
             if (node_label == "publication" ){
-                var unique_id = d.doi;
-                // if (d.citation_count != 0) {
-                //     node_radius =  6 + Math.log(d.citation_count);
-                // }
-                // else {node_radius = 6;}
+                unique_id = d.doi;
             }
             else if (node_label == "author") {
                 if (d.scopus_id) {
-                    var unique_id = d.scopus_id; }
+                    unique_id = d.scopus_id; }
                 else {
-                    var unique_id = d.orcid;
+                    unique_id = d.orcid;
                 }
-
-                // node_radius = 5 + Math.log(d.link_num);;
             }
             else if (node_label == "software"){
-                var unique_id = d.software_id;
-                // node_radius = 5;
+                unique_id = d.software_id;
             }
             else if (node_label == "project") {
-                var unique_id = d.project_id;
-                // node_radius = 5;
+                unique_id = d.project_id;
             }
 
-            // lock node
+            // fix the position of the node
             d.fx = d.x;
             d.fy = d.y;
 
             var node_x = d.x;
             var node_y = d.y;
 
-            console.log(node_x,node_y);
+            console.log("position(x,y):"+ node_x,node_y);
 
-            // present the tooltip of this node
+            // Present the tooltip of this node
             show_new_tooltip(node_id, unique_id, node_label, node_x, node_y, node_radius);
                     
             last_clicked_node = d.id;
@@ -161,8 +155,8 @@ function hide_node(node_id) {
 
     const filteredNodes = graph_node.filter(node => node.id !== node_id);
     const filteredLinks = graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
-    const filteredCoauthorNodes = coauthor_graph_node.filter(node => node.id !== node_id);
-    const filteredCoauthorLinks = coauthor_graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
+    const filteredCoauthorNodes = filtered_coauthor_graph_node.filter(node => node.id !== node_id);
+    const filteredCoauthorLinks = filtered_coauthor_graph_link.filter(link => link.source.id !== node_id && link.target.id !== node_id);
 
     // filter isolated nodes that do not have any links
     const isolatedNodes = filteredNodes.filter(function(node) {
@@ -189,20 +183,34 @@ function hide_node(node_id) {
         return !isolatedNodes.includes(node);
     });
     graph_link = filteredLinks;
-    coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
+    filtered_coauthor_graph_node = filteredCoauthorNodes.filter(function(node) {
         return !isolatedCoauthorNodes.includes(node);
     });
-    coauthor_graph_link  = filteredCoauthorLinks;
+    filtered_coauthor_graph_link  = filteredCoauthorLinks;
+
     // build new network
     if (show_pub) {
         build_new_svg(graph_node, graph_link)
     }
     else {
-        build_new_svg(coauthor_graph_node, coauthor_graph_link)
+        build_new_svg(filtered_coauthor_graph_node, filtered_coauthor_graph_link)
     }
+
+    if (cluster) {
+
+        // Make the nodes in the same group be together
+        var PubNodes = graph_node.filter(node => node.group !== undefined);
+        // Add a custom force to cluster nodes based on their group
+        var simulation = d3.forceSimulation(PubNodes)
+                        .force("group", groupForce(PubNodes).strength(0.1))
+        simulation.on("tick", tick).alphaDecay(0.05);
+        simulation.alpha(1).restart();
+    }
+
     // If we hide the node, then remove the tooltip of this node.
     arcs.selectAll("path").remove();
     arcs.selectAll("text").remove();
+    d3.select('#node-details').style('display', 'none');
 
 }
 
@@ -257,17 +265,29 @@ function show_all_link(unique_id, node_label, node_id) {
         maxId = 0;
         arcs.selectAll("path").remove();
         arcs.selectAll("text").remove();
+        d3.select('#node-details').style('display', 'none');
         
         graph_node = graph_node.concat(links.nodes);
         graph_link = graph_link.concat(links.links);
-        coauthor_graph_node = coauthor_graph_node.concat(links.coauthor_nodes);
-        coauthor_graph_link = coauthor_graph_link.concat(links.coauthor_links);
+        filtered_coauthor_graph_node = filtered_coauthor_graph_node.concat(links.coauthor_nodes);
+        filtered_coauthor_graph_link = filtered_coauthor_graph_link.concat(links.coauthor_links);
 
         if (show_pub) {
             build_new_svg(graph_node, graph_link);
         }
         else {
-            build_new_svg(coauthor_graph_node, coauthor_graph_link);
+            build_new_svg(filtered_coauthor_graph_node, filtered_coauthor_graph_link);
+        }
+
+        if (cluster) {
+
+            // Make the nodes in the same group be together
+            var filteredNodes = graph_node.filter(node => node.group !== undefined);
+            // Add a custom force to cluster nodes based on their group
+            var simulation = d3.forceSimulation(filteredNodes)
+                            .force("group", groupForce(filteredNodes).strength(0.1))
+            simulation.on("tick", tick).alphaDecay(0.05);
+            simulation.alpha(1).restart();
         }
         
     });
