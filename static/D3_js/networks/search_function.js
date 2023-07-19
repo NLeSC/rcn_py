@@ -183,6 +183,7 @@ function aff_search(aff_name, start_year, end_year){
         graph_link = graph.links;
         coauthor_graph_node = graph.coauthor_nodes;
         coauthor_graph_link = graph.coauthor_links;
+        topic_names = graph.topic_names;
 
         if (show_pub) {
             build_new_svg(graph_node, graph_link);
@@ -205,6 +206,7 @@ function aff_search(aff_name, start_year, end_year){
         // New topic legend
         var topic_colors = ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff'];
 
+        d3.select("#topic_cluster_legend").style("display", "none");
         d3.select('#legend').style('display', 'none');
         d3.select("#legend_list").html("");
 
